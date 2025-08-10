@@ -35,11 +35,11 @@ export function Header() {
             <Image
               src="/TrésorPublicGabon.jpg"
               alt="Trésor Public Gabon"
-              width={40}
-              height={40}
-              className="rounded-lg object-contain"
+              width={48}
+              height={48}
+              className="rounded-lg object-contain shadow-sm"
             />
-            <h1 className="text-xl font-semibold text-[#134074]">GED - Trésor Public</h1>
+            <h1 className="text-xl font-semibold text-[#134074]">ACGE</h1>
           </div>
         </div>
 

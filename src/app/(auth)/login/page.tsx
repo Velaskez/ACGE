@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, Mail, Lock, Shield } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -53,14 +54,20 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
-            <Shield className="h-6 w-6 text-white" />
+          <div className="mx-auto mb-4">
+            <Image
+              src="/TrésorPublicGabon.jpg"
+              alt="Trésor Public Gabon"
+              width={80}
+              height={80}
+              className="rounded-xl object-contain shadow-lg mx-auto"
+            />
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            ACGE Application
+          <h2 className="mt-6 text-3xl font-extrabold text-[#134074]">
+            AGENCE COMPTABLE DES GRANDES ÉCOLES
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Agence Comptable des Grandes Écoles
+            République du Gabon
           </p>
         </div>
 
@@ -157,7 +164,7 @@ export default function LoginPage() {
 
             <div className="mt-4 text-center text-sm text-gray-600">
               <p><strong>Test :</strong></p>
-              <p>Email: admin@acge.local</p>
+              <p>Email: admin@acge.ga</p>
               <p>Mot de passe: admin123</p>
             </div>
           </CardContent>

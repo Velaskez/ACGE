@@ -33,7 +33,7 @@ UPLOAD_DIR="./uploads"`
 
     console.log('\n📊 Accès pgAdmin (optionnel) :')
     console.log('URL: http://localhost:8080')
-    console.log('Email: admin@acge.local')
+    console.log('Email: admin@acge.ga')
     console.log('Password: admin123')
 
   } catch (error) {
