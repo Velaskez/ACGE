@@ -1,36 +1,167 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🗂️ GED - Gestion Électronique des Documents
 
-## Getting Started
+Une application web moderne et responsive pour la gestion électronique des documents, construite avec Next.js 14, TypeScript, et Tailwind CSS.
 
-First, run the development server:
+## ✨ Fonctionnalités
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 🔐 Authentification
+- Inscription et connexion sécurisées
+- Gestion des rôles utilisateurs (Admin, Manager, User)
+- Sessions persistantes avec NextAuth.js
+
+### 📁 Gestion des Documents
+- Upload multi-fichiers avec drag & drop
+- Support de tous les formats courants (PDF, DOC, XLS, images, etc.)
+- Métadonnées automatiques (date, taille, type)
+- Versioning des documents
+- Recherche full-text
+
+### 🗂️ Organisation
+- Dossiers hiérarchiques
+- Tags et catégories personnalisables
+- Système de partage et permissions
+- Commentaires et annotations
+
+### 🎨 Interface Utilisateur
+- Design responsive (mobile, tablette, desktop)
+- Interface moderne avec shadcn/ui
+- Thème sombre/clair
+- Navigation intuitive
+
+## 🚀 Technologies Utilisées
+
+- **Frontend :** Next.js 14, TypeScript, Tailwind CSS
+- **UI Components :** shadcn/ui, Radix UI
+- **Base de données :** PostgreSQL avec Prisma ORM
+- **Authentification :** NextAuth.js
+- **Styling :** Tailwind CSS
+- **Icons :** Lucide React
+
+## 📋 Prérequis
+
+- Node.js 18+ 
+- PostgreSQL
+- npm ou yarn
+
+## 🛠️ Installation
+
+1. **Cloner le repository**
+   ```bash
+   git clone <repository-url>
+   cd ged-app
+   ```
+
+2. **Installer les dépendances**
+   ```bash
+   npm install
+   ```
+
+3. **Configuration de l'environnement**
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Modifier le fichier `.env.local` avec vos configurations :
+   ```env
+   DATABASE_URL="postgresql://username:password@localhost:5432/ged_db"
+   NEXTAUTH_URL="http://localhost:3000"
+   NEXTAUTH_SECRET="your-secret-key-here"
+   ```
+
+4. **Configuration de la base de données**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+
+5. **Démarrer l'application**
+   ```bash
+   npm run dev
+   ```
+
+L'application sera accessible sur `http://localhost:3000`
+
+## 📁 Structure du Projet
+
+```
+src/
+├── app/                    # App Router Next.js
+│   ├── (auth)/            # Routes d'authentification
+│   │   ├── login/
+│   │   └── register/
+│   ├── api/               # API routes
+│   │   └── auth/
+│   ├── dashboard/         # Dashboard principal
+│   └── globals.css
+├── components/
+│   ├── ui/               # Composants shadcn/ui
+│   ├── layout/           # Header, Sidebar, Layout
+│   ├── documents/        # Composants spécifiques
+│   └── providers/        # Providers (Session, etc.)
+├── lib/                  # Utilitaires et configs
+│   ├── auth.ts          # Configuration NextAuth
+│   ├── db.ts            # Configuration Prisma
+│   └── utils.ts         # Utilitaires
+├── types/                # Types TypeScript
+└── prisma/
+    └── schema.prisma     # Schéma base de données
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔧 Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Base de Données
+L'application utilise PostgreSQL avec Prisma ORM. Le schéma inclut :
+- **Users** : Gestion des utilisateurs et rôles
+- **Documents** : Stockage des métadonnées des documents
+- **Folders** : Organisation hiérarchique
+- **Tags** : Catégorisation des documents
+- **DocumentShare** : Partage et permissions
+- **Comments** : Commentaires sur les documents
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Authentification
+- NextAuth.js avec provider credentials
+- Hashage des mots de passe avec bcryptjs
+- Sessions JWT sécurisées
 
-## Learn More
+## 🎯 Fonctionnalités à Venir
 
-To learn more about Next.js, take a look at the following resources:
+### Phase 2
+- [ ] Upload de fichiers avec drag & drop
+- [ ] Prévisualisation des documents
+- [ ] Système de recherche avancée
+- [ ] Notifications en temps réel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Phase 3
+- [ ] Collaboration en temps réel
+- [ ] Workflow d'approbation
+- [ ] Audit trail complet
+- [ ] API REST complète
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Phase 4
+- [ ] Application mobile
+- [ ] Intégration cloud storage
+- [ ] OCR pour les images
+- [ ] Analytics avancées
 
-## Deploy on Vercel
+## 🤝 Contribution
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Fork le projet
+2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
+3. Commit les changements (`git commit -m 'Add some AmazingFeature'`)
+4. Push vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrir une Pull Request
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📝 Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+## 🆘 Support
+
+Pour toute question ou problème :
+- Ouvrir une issue sur GitHub
+- Consulter la documentation
+- Contacter l'équipe de développement
+
+---
+
+**Développé avec ❤️ pour une gestion documentaire moderne et efficace**

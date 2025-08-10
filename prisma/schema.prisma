@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  documents     Document[]
+  folders       Folder[]
+  sharedWith    DocumentShare[]
+  comments      Comment[]
+  
+  @@map("users")
+}
+
+model Document {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  fileName    String
+  fileSize    Int
+  fileType    String
+  filePath    String
+  version     Int       @default(1)
+  isPublic    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  folderId    String?
+  folder      Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags        Tag[]
+  shares      DocumentShare[]
+  comments    Comment[]
+  
+  @@map("documents")
+}
+
+model Folder {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Folder?   @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[]  @relation("FolderHierarchy")
+  documents   Document[]
+  
+  @@map("folders")
+}
+
+model Tag {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  color     String?
+  createdAt DateTime   @default(now())
+  
+  // Relations
+  documents Document[]
+  
+  @@map("tags")
+}
+
+model DocumentShare {
+  id         String   @id @default(cuid())
+  permission Permission
+  createdAt  DateTime @default(now())
+  
+  // Relations
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([documentId, userId])
+  @@map("document_shares")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  @@map("comments")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+enum Permission {
+  READ
+  WRITE
+  ADMIN
+}
