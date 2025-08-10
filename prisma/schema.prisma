@@ -18,7 +18,7 @@ model User {
   name          String?
   email         String    @unique
   password      String
-  role          Role      @default(USER)
+  role          String    @default("USER")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
@@ -88,7 +88,7 @@ model Tag {
 
 model DocumentShare {
   id         String   @id @default(cuid())
-  permission Permission
+  permission String
   createdAt  DateTime @default(now())
   
   // Relations
@@ -116,14 +116,7 @@ model Comment {
   @@map("comments")
 }
 
-enum Role {
-  ADMIN
-  MANAGER
-  USER
-}
-
-enum Permission {
-  READ
-  WRITE
-  ADMIN
-}
+// Les enums ne sont pas supportés par SQLite
+// Utilisation de chaînes à la place
+// Valeurs possibles pour role: "ADMIN", "MANAGER", "USER"
+// Valeurs possibles pour permission: "READ", "WRITE", "ADMIN"

@@ -1,6 +1,10 @@
+'use client'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MainLayout } from '@/components/layout/main-layout'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useRouter } from 'next/navigation'
 import { 
   FileText, 
   FolderOpen, 
@@ -13,6 +17,45 @@ import {
 } from 'lucide-react'
 
 export default function DashboardPage() {
+  const router = useRouter()
+
+  const handleNewDocument = () => {
+    router.push('/upload')
+  }
+
+  const handleNewFolder = () => {
+    // TODO: Implémenter la création de dossier
+    console.log('Créer un nouveau dossier')
+  }
+
+  const handleShare = () => {
+    // TODO: Implémenter le partage
+    console.log('Partager des documents')
+  }
+
+  const handleHistory = () => {
+    // TODO: Implémenter l'historique
+    console.log('Afficher l\'historique')
+  }
+
+  const handleViewAllDocuments = () => {
+    router.push('/documents')
+  }
+
+  const handleViewUsers = () => {
+    router.push('/users')
+  }
+
+  const handleDownloadDocument = async (documentName: string) => {
+    // TODO: Implémenter le téléchargement réel
+    console.log('Télécharger:', documentName)
+  }
+
+  const handleViewDocument = (documentName: string) => {
+    // TODO: Implémenter la visualisation
+    console.log('Voir:', documentName)
+  }
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -24,7 +67,7 @@ export default function DashboardPage() {
               Vue d'ensemble de vos documents et activités
             </p>
           </div>
-          <Button>
+          <Button onClick={handleNewDocument}>
             <Upload className="mr-2 h-4 w-4" />
             Nouveau document
           </Button>
@@ -32,7 +75,7 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleViewAllDocuments}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
@@ -71,7 +114,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleViewUsers}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Utilisateurs actifs</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -90,10 +133,17 @@ export default function DashboardPage() {
           {/* Documents récents */}
           <Card className="col-span-4">
             <CardHeader>
-              <CardTitle>Documents récents</CardTitle>
-              <CardDescription>
-                Vos derniers documents ajoutés ou modifiés
-              </CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Documents récents</CardTitle>
+                  <CardDescription>
+                    Vos derniers documents ajoutés ou modifiés
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleViewAllDocuments}>
+                  Voir tous
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -104,8 +154,8 @@ export default function DashboardPage() {
                   { name: 'Contrat_client.docx', date: 'Il y a 1 semaine', size: '3.1 MB', type: 'DOCX' },
                 ].map((doc, index) => (
                   <div key={index} className="flex items-center space-x-4">
-                    <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-blue-600" />
+                    <div className="w-8 h-8 bg-powder-blue/20 rounded flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-powder-blue" />
                     </div>
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium leading-none">{doc.name}</p>
@@ -114,12 +164,30 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="icon">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc.name)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Voir le document</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleDownloadDocument(doc.name)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Télécharger</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                 ))}
@@ -145,7 +213,7 @@ export default function DashboardPage() {
                   { action: 'Dossier créé', doc: 'Projet_2024', time: 'Il y a 2 jours' },
                 ].map((activity, index) => (
                   <div key={index} className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                    <div className="w-2 h-2 bg-powder-blue rounded-full mt-2"></div>
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{activity.action}</p>
                       <p className="text-xs text-muted-foreground">{activity.doc}</p>
@@ -168,19 +236,19 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
-              <Button variant="outline" className="h-20 flex-col">
+              <Button variant="outline" className="h-20 flex-col" onClick={handleNewDocument}>
                 <Upload className="h-6 w-6 mb-2" />
                 <span>Upload</span>
               </Button>
-              <Button variant="outline" className="h-20 flex-col">
+              <Button variant="outline" className="h-20 flex-col" onClick={handleNewFolder}>
                 <FolderOpen className="h-6 w-6 mb-2" />
                 <span>Nouveau dossier</span>
               </Button>
-              <Button variant="outline" className="h-20 flex-col">
+              <Button variant="outline" className="h-20 flex-col" onClick={handleShare}>
                 <Users className="h-6 w-6 mb-2" />
                 <span>Partager</span>
               </Button>
-              <Button variant="outline" className="h-20 flex-col">
+              <Button variant="outline" className="h-20 flex-col" onClick={handleHistory}>
                 <Clock className="h-6 w-6 mb-2" />
                 <span>Historique</span>
               </Button>

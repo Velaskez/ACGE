@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useAuth } from '@/contexts/auth-context'
 import { Search, Bell, Settings, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,7 +16,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export function Header() {
-  const { data: session } = useSession()
+  const { user, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleSearch = (e: React.FormEvent) => {
@@ -25,49 +25,44 @@ export function Header() {
     console.log('Recherche:', searchQuery)
   }
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/login' })
-  }
-
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+    <header className="border-b">
+      <div className="flex h-16 items-center px-4">
         {/* Logo */}
-        <div className="mr-4 flex">
-          <a href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold text-xl">GED</span>
-          </a>
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-semibold">GED</h1>
         </div>
 
         {/* Barre de recherche */}
-        <div className="flex-1 max-w-md mx-4">
+        <div className="flex-1 max-w-sm mx-4">
           <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
+              type="search"
               placeholder="Rechercher des documents..."
+              className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8"
             />
           </form>
         </div>
 
-        {/* Actions utilisateur */}
-        <div className="flex items-center space-x-2">
+        {/* Actions */}
+        <div className="flex items-center space-x-4">
           {/* Notifications */}
           <Button variant="ghost" size="icon">
             <Bell className="h-4 w-4" />
           </Button>
 
           {/* Menu utilisateur */}
-          {session?.user && (
+          {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                    <AvatarImage src="" alt={user.name || ''} />
                     <AvatarFallback>
-                      {session.user.name?.charAt(0).toUpperCase() || session.user.email?.charAt(0).toUpperCase()}
+                      {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -75,9 +70,9 @@ export function Header() {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{session.user.name}</p>
+                    <p className="text-sm font-medium leading-none">{user.name}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {session.user.email}
+                      {user.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -91,7 +86,7 @@ export function Header() {
                   <span>Paramètres</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem onClick={() => logout()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Se déconnecter</span>
                 </DropdownMenuItem>

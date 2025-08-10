@@ -1,49 +1,37 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { AuthSessionProvider } from "@/components/providers/session-provider"
+import { useMounted } from '@/hooks/use-mounted'
 
 export default function ProtectedLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  return (
-    <AuthSessionProvider>
-      <ProtectedContent>
-        {children}
-      </ProtectedContent>
-    </AuthSessionProvider>
-  );
-}
-
-function ProtectedContent({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
+  const isMounted = useMounted()
 
   useEffect(() => {
-    if (status === 'loading') return // En cours de chargement
-
-    if (!session) {
+    if (!isMounted || isLoading) return
+    
+    if (!user) {
       router.push('/login')
     }
-  }, [session, status, router])
+  }, [user, isLoading, router, isMounted])
 
-  if (status === 'loading') {
+  if (!isMounted || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-lg">Chargement...</p>
-        </div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     )
   }
 
-  if (!session) {
-    return null // Redirection en cours
+  if (!user) {
+    return null
   }
 
   return <>{children}</>

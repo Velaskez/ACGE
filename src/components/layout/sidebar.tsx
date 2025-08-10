@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -16,6 +17,7 @@ import {
   Plus,
   ChevronDown,
   ChevronRight,
+  Upload,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -34,6 +36,11 @@ const mainNav = [
     icon: FileText,
   },
   {
+    title: 'Upload',
+    href: '/upload',
+    icon: Upload,
+  },
+  {
     title: 'Dossiers',
     href: '/folders',
     icon: FolderOpen,
@@ -42,6 +49,7 @@ const mainNav = [
     title: 'Utilisateurs',
     href: '/users',
     icon: Users,
+    adminOnly: true,
   },
   {
     title: 'Paramètres',
@@ -52,6 +60,7 @@ const mainNav = [
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
+  const { user } = useAuth()
   const [expandedFolders, setExpandedFolders] = useState<string[]>([])
 
   const toggleFolder = (folderId: string) => {
@@ -62,6 +71,15 @@ export function Sidebar({ className }: SidebarProps) {
     )
   }
 
+  // Filtrer les éléments de navigation selon le rôle
+  const filteredNav = mainNav.filter(item => {
+    // On vérifie que la propriété 'role' existe bien avant de l'utiliser
+    if (item.adminOnly && user?.role !== 'ADMIN') {
+      return false
+    }
+    return true
+  })
+
   return (
     <div className={cn('pb-12', className)}>
       <div className="space-y-4 py-4">
@@ -71,7 +89,7 @@ export function Sidebar({ className }: SidebarProps) {
             Navigation
           </h2>
           <div className="space-y-1">
-            {mainNav.map((item) => (
+            {filteredNav.map((item) => (
               <Link key={item.href} href={item.href}>
                 <Button
                   variant={pathname === item.href ? 'secondary' : 'ghost'}

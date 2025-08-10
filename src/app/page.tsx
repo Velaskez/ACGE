@@ -1,43 +1,35 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { AuthSessionProvider } from '@/components/providers/session-provider'
+import { useMounted } from '@/hooks/use-mounted'
 
-function HomePageContent() {
-  const { data: session, status } = useSession()
+export default function HomePage() {
+  const { user, isLoading } = useAuth()
   const router = useRouter()
+  const isMounted = useMounted()
 
   useEffect(() => {
-    if (status === 'loading') return // En cours de chargement
+    if (!isMounted || isLoading) return // Attendre le montage et le chargement
 
-    if (!session) {
+    if (!user) {
+      // Non authentifié, rediriger vers login
       router.push('/login')
     } else {
+      // Authentifié, rediriger vers dashboard
       router.push('/dashboard')
     }
-  }, [session, status, router])
+  }, [user, isLoading, router, isMounted])
 
-  // Affichage de chargement pendant la vérification
-  if (status === 'loading') {
+  // Ne rien afficher pendant l'hydratation ou le chargement
+  if (!isMounted || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-lg text-gray-600">Chargement...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     )
   }
 
-  return null // Redirection en cours
-}
-
-export default function HomePage() {
-  return (
-    <AuthSessionProvider>
-      <HomePageContent />
-    </AuthSessionProvider>
-  )
+  return null // Ne rien afficher car on redirige
 }

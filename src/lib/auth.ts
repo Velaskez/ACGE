@@ -1,47 +1,50 @@
-import { NextAuthOptions } from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
-import CredentialsProvider from 'next-auth/providers/credentials'
+import NextAuth from 'next-auth'
+import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
-import { prisma } from './db'
+import { prisma } from '@/lib/db'
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Mot de passe', type: 'password' }
+        password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
+        try {
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email as string
+            }
+          })
+
+          if (!user) {
+            return null
           }
-        })
 
-        if (!user) {
+          const isValidPassword = await bcrypt.compare(
+            credentials.password as string,
+            user.password
+          )
+
+          if (!isValidPassword) {
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name || '',
+            role: user.role,
+          }
+        } catch (error) {
+          console.error('Erreur d\'authentification:', error)
           return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role
         }
       }
     })
@@ -53,12 +56,13 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role
+        token.id = user.id
       }
       return token
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub!
+        session.user.id = token.id as string
         session.user.role = token.role as string
       }
       return session
@@ -66,6 +70,12 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login',
-    signUp: '/register'
   }
+})
+
+// Pour la compatibilité avec l'ancienne API
+export const authOptions = {
+  providers: [],
+  session: { strategy: 'jwt' as const },
+  callbacks: {}
 }

@@ -1,0 +1,171 @@
+import { NextRequest, NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
+import { prisma } from '@/lib/db'
+import { auth } from '@/lib/auth'
+
+// PUT - Modifier un utilisateur
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params
+    const session = await auth()
+
+    // Vérifier l'authentification
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // Vérifier les permissions (seuls les admins peuvent modifier des utilisateurs)
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Permissions insuffisantes' },
+        { status: 403 }
+      )
+    }
+
+    const { name, email, password, role } = await request.json()
+
+    // Validation des données
+    if (!name || !email || !role) {
+      return NextResponse.json(
+        { error: 'Nom, email et rôle sont requis' },
+        { status: 400 }
+      )
+    }
+
+    // Vérifier si l'utilisateur existe
+    const existingUser = await prisma.user.findUnique({
+      where: { id: resolvedParams.id }
+    })
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: 'Utilisateur non trouvé' },
+        { status: 404 }
+      )
+    }
+
+    // Vérifier si l'email existe déjà (sauf pour l'utilisateur actuel)
+    const emailExists = await prisma.user.findFirst({
+      where: {
+        email,
+        id: { not: resolvedParams.id }
+      }
+    })
+
+    if (emailExists) {
+      return NextResponse.json(
+        { error: 'Un utilisateur avec cet email existe déjà' },
+        { status: 400 }
+      )
+    }
+
+    // Préparer les données de mise à jour
+    const updateData: any = {
+      name,
+      email,
+      role
+    }
+
+    // Hasher le mot de passe seulement s'il est fourni
+    if (password && password.length >= 6) {
+      updateData.password = await bcrypt.hash(password, 12)
+    }
+
+    // Mettre à jour l'utilisateur
+    const user = await prisma.user.update({
+      where: { id: resolvedParams.id },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+
+    return NextResponse.json(
+      { 
+        message: 'Utilisateur modifié avec succès',
+        user 
+      }
+    )
+
+  } catch (error) {
+    console.error('Erreur lors de la modification de l\'utilisateur:', error)
+    return NextResponse.json(
+      { error: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - Supprimer un utilisateur
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params
+    const session = await auth()
+
+    // Vérifier l'authentification
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // Vérifier les permissions (seuls les admins peuvent supprimer des utilisateurs)
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Permissions insuffisantes' },
+        { status: 403 }
+      )
+    }
+
+    // Empêcher l'administrateur de se supprimer lui-même
+    if (session.user.id === resolvedParams.id) {
+      return NextResponse.json(
+        { error: 'Vous ne pouvez pas supprimer votre propre compte' },
+        { status: 400 }
+      )
+    }
+
+    // Vérifier si l'utilisateur existe
+    const existingUser = await prisma.user.findUnique({
+      where: { id: resolvedParams.id }
+    })
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: 'Utilisateur non trouvé' },
+        { status: 404 }
+      )
+    }
+
+    // Supprimer l'utilisateur
+    await prisma.user.delete({
+      where: { id: resolvedParams.id }
+    })
+
+    return NextResponse.json(
+      { message: 'Utilisateur supprimé avec succès' }
+    )
+
+  } catch (error) {
+    console.error('Erreur lors de la suppression de l\'utilisateur:', error)
+    return NextResponse.json(
+      { error: 'Erreur interne du serveur' },
+      { status: 500 }
+    )
+  }
+}
