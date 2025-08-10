@@ -164,10 +164,10 @@ export default function UploadPage() {
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
                 <Upload className="w-8 h-8" />
-                Upload de Documents
+                Upload de Fichiers
               </h1>
               <p className="text-muted-foreground">
-                Ajoutez de nouveaux documents à votre GED
+                Ajoutez de nouveaux fichiers à l'application
               </p>
             </div>
           </div>

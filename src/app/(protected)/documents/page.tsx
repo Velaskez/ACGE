@@ -97,7 +97,7 @@ export default function DocumentItemsPage() {
         const data = await response.json()
         setDocumentItems(data.documents)
       } else {
-        setError('Erreur lors du chargement des documents')
+        setError('Erreur lors du chargement des fichiers')
       }
     } catch (error) {
       setError('Erreur de connexion')
@@ -219,7 +219,7 @@ export default function DocumentItemsPage() {
       <MainLayout>
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2">Chargement des documents...</p>
+          <p className="mt-2">Chargement des fichiers...</p>
         </div>
       </MainLayout>
     )
@@ -236,12 +236,12 @@ export default function DocumentItemsPage() {
               Mes DocumentItems
             </h1>
             <p className="text-muted-foreground">
-              {documents.length} document(s) au total
+              {documents.length} fichier(s) au total
             </p>
           </div>
           <Button onClick={() => router.push('/upload')}>
             <Plus className="mr-2 h-4 w-4" />
-            Ajouter des documents
+            Ajouter des fichiers
           </Button>
         </div>
 
@@ -253,7 +253,7 @@ export default function DocumentItemsPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
-                  placeholder="Rechercher des documents..."
+                  placeholder="Rechercher des fichiers..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -415,13 +415,13 @@ export default function DocumentItemsPage() {
                   <p className="text-gray-500 mb-4">
                     {searchQuery 
                       ? 'Essayez de modifier votre recherche'
-                      : 'Commencez par uploader vos premiers documents'
+                      : 'Commencez par uploader vos premiers fichiers'
                     }
                   </p>
                   {!searchQuery && (
                     <Button onClick={() => router.push('/upload')}>
                       <Plus className="mr-2 h-4 w-4" />
-                      Ajouter des documents
+                      Ajouter des fichiers
                     </Button>
                   )}
                 </div>

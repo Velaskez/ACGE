@@ -40,7 +40,7 @@ async function createDatabase() {
     console.log('\n❌ Impossible de se connecter avec les mots de passe courants')
     console.log('\n💡 Solutions :')
     console.log('1. Modifiez le mot de passe dans scripts/create-database.ts')
-    console.log('2. Ou utilisez pgAdmin pour créer la base "ged_database" manuellement')
+    console.log('2. Ou utilisez pgAdmin pour créer la base "acge_database" manuellement')
     console.log('3. Ou réinitialisez le mot de passe postgres')
     return
   }
@@ -53,15 +53,15 @@ async function createDatabase() {
 
     // Vérifier si la base existe déjà
     const result = await client.query(
-      "SELECT 1 FROM pg_database WHERE datname = 'ged_database'"
+      "SELECT 1 FROM pg_database WHERE datname = 'acge_database'"
     )
 
     if (result.rows.length > 0) {
-      console.log('✅ La base de données "ged_database" existe déjà')
+      console.log('✅ La base de données "acge_database" existe déjà')
     } else {
       // Créer la base de données
-      await client.query('CREATE DATABASE ged_database')
-      console.log('✅ Base de données "ged_database" créée avec succès')
+      await client.query('CREATE DATABASE acge_database')
+      console.log('✅ Base de données "acge_database" créée avec succès')
     }
 
     console.log('\n🔄 Étapes suivantes :')

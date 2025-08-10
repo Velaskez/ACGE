@@ -8,7 +8,7 @@ Créez un fichier `.env.local` à la racine du projet avec ce contenu :
 
 ```env
 # Configuration de la base de données PostgreSQL
-DATABASE_URL="postgresql://postgres:password@localhost:5432/ged_db"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/acge_db"
 
 # Configuration NextAuth
 NEXTAUTH_URL="http://localhost:3000"
@@ -24,7 +24,7 @@ NODE_ENV="development"
 - **postgres** : nom d'utilisateur (par défaut)
 - **password** : votre mot de passe PostgreSQL
 - **localhost:5432** : hôte et port (par défaut)
-- **ged_db** : nom de la base de données (sera créée)
+- **acge_db** : nom de la base de données (sera créée)
 
 #### Si vous utilisez PostgreSQL hébergé :
 Remplacez DATABASE_URL par l'URL fournie par votre hébergeur.
@@ -33,7 +33,7 @@ Remplacez DATABASE_URL par l'URL fournie par votre hébergeur.
 
 Connectez-vous à PostgreSQL et créez la base :
 ```sql
-CREATE DATABASE ged_db;
+CREATE DATABASE acge_db;
 ```
 
 Ou utilisez pgAdmin pour créer la base graphiquement.
@@ -56,7 +56,7 @@ npm run create-admin
 ## 🔐 Identifiants de l'administrateur
 
 Après avoir exécuté `npm run create-admin` :
-- **Email** : `admin@ged.local`
+- **Email** : `admin@acge.local`
 - **Mot de passe** : `admin123`
 
 ## ⚠️ Important

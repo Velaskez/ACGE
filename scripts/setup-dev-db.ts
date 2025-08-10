@@ -47,7 +47,7 @@ async function setupDevDatabase() {
     // Données de l'administrateur par défaut
     const adminData = {
       name: 'Administrateur',
-      email: 'admin@ged.local',
+      email: 'admin@acge.local',
       password: 'admin123',
       role: 'ADMIN' as const
     }

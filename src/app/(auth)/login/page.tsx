@@ -57,10 +57,10 @@ export default function LoginPage() {
             <Shield className="h-6 w-6 text-white" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            GED Application
+            ACGE Application
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Gestion Électronique des Documents
+            Agence Comptable des Grandes Écoles
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">Connexion</CardTitle>
             <CardDescription className="text-center">
-              Connectez-vous pour accéder à votre espace documentaire
+              Connectez-vous pour accéder à votre espace de gestion
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -157,7 +157,7 @@ export default function LoginPage() {
 
             <div className="mt-4 text-center text-sm text-gray-600">
               <p><strong>Test :</strong></p>
-              <p>Email: admin@ged.local</p>
+              <p>Email: admin@acge.local</p>
               <p>Mot de passe: admin123</p>
             </div>
           </CardContent>

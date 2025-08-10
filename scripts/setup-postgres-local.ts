@@ -9,8 +9,8 @@ async function setupPostgreSQLLocal() {
     const envPath = path.join(process.cwd(), '.env.local')
     const envContent = `# Base de données PostgreSQL locale
 # Assurez-vous que PostgreSQL est installé et en cours d'exécution
-# Créez la base de données : createdb ged_database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/ged_database"
+# Créez la base de données : createdb acge_database
+DATABASE_URL="postgresql://postgres:password@localhost:5432/acge_database"
 
 # Configuration NextAuth
 NEXTAUTH_URL="http://localhost:3000"
@@ -28,7 +28,7 @@ UPLOAD_DIR="./uploads"`
 
     console.log('\n🗄️ Instructions PostgreSQL local :')
     console.log('1. Assurez-vous que PostgreSQL est démarré')
-    console.log('2. Créez la base de données : createdb ged_database')
+    console.log('2. Créez la base de données : createdb acge_database')
     console.log('3. Ou utilisez pgAdmin/psql pour créer la DB')
     console.log('4. Modifiez le mot de passe dans .env.local si nécessaire')
     

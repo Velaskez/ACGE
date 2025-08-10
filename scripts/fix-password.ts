@@ -6,7 +6,7 @@ async function fixPassword() {
   
   // Utiliser le mot de passe simplifié
   const envContent = `# Base de données PostgreSQL locale
-DATABASE_URL="postgresql://postgres:Reviti2025@localhost:5432/ged_database"
+DATABASE_URL="postgresql://postgres:Reviti2025@localhost:5432/acge_database"
 
 # Configuration NextAuth
 NEXTAUTH_URL="http://localhost:3000"

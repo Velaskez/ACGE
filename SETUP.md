@@ -16,7 +16,7 @@ Créez un fichier `.env.local` à la racine du projet avec le contenu suivant :
 
 ```env
 # Base de données PostgreSQL
-DATABASE_URL="postgresql://username:password@localhost:5432/ged_db"
+DATABASE_URL="postgresql://username:password@localhost:5432/acge_db"
 
 # NextAuth Configuration
 NEXTAUTH_URL="http://localhost:3000"
@@ -29,7 +29,7 @@ NODE_ENV="development"
 **⚠️ Important :** Remplacez les valeurs par vos propres configurations :
 - `username` : Votre nom d'utilisateur PostgreSQL
 - `password` : Votre mot de passe PostgreSQL
-- `ged_db` : Nom de votre base de données
+- `acge_db` : Nom de votre base de données
 - `your-super-secret-key-change-this-in-production` : Une clé secrète aléatoire
 
 ### 2. Configuration PostgreSQL
@@ -39,9 +39,9 @@ NODE_ENV="development"
 1. **Installer PostgreSQL** sur votre machine
 2. **Créer une base de données** :
    ```sql
-   CREATE DATABASE ged_db;
-   CREATE USER ged_user WITH PASSWORD 'your_password';
-   GRANT ALL PRIVILEGES ON DATABASE ged_db TO ged_user;
+   CREATE DATABASE acge_db;
+   CREATE USER acge_user WITH PASSWORD 'your_password';
+   GRANT ALL PRIVILEGES ON DATABASE acge_db TO acge_user;
    ```
 
 #### Option B : Base de Données Cloud (Recommandé)

@@ -6,8 +6,8 @@ import { ClientProviders } from "@/components/providers/client-providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GED - Gestion Électronique des Documents",
-  description: "Application moderne de gestion électronique des documents",
+  title: "ACGE - Agence Comptable des Grandes Écoles",
+  description: "Application moderne de gestion comptable des grandes écoles",
   formatDetection: {
     email: false,
     address: false,

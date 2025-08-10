@@ -64,7 +64,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold">Tableau de bord</h1>
             <p className="text-muted-foreground">
-              Vue d'ensemble de vos documents et activités
+              Vue d'ensemble de vos fichiers et activités
             </p>
           </div>
           <Button onClick={handleNewDocument}>
@@ -77,7 +77,7 @@ export default function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleViewAllDocuments}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Fichiers</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -135,9 +135,9 @@ export default function DashboardPage() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle>Documents récents</CardTitle>
+                  <CardTitle>Fichiers récents</CardTitle>
                   <CardDescription>
-                    Vos derniers documents ajoutés ou modifiés
+                    Vos derniers fichiers ajoutés ou modifiés
                   </CardDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleViewAllDocuments}>
@@ -200,7 +200,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>Activité récente</CardTitle>
               <CardDescription>
-                Dernières actions sur vos documents
+                Dernières actions sur vos fichiers
               </CardDescription>
             </CardHeader>
             <CardContent>

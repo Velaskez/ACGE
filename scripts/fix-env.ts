@@ -6,7 +6,7 @@ async function fixEnv() {
   
   // Le @ doit être encodé en %40 dans l'URL
   const envContent = `# Base de données PostgreSQL locale
-DATABASE_URL="postgresql://postgres:Reviti2025%40@localhost:5432/ged_database"
+DATABASE_URL="postgresql://postgres:Reviti2025%40@localhost:5432/acge_database"
 
 # Configuration NextAuth
 NEXTAUTH_URL="http://localhost:3000"

@@ -1,6 +1,6 @@
-# 🗂️ GED - Gestion Électronique des Documents
+# 🏢 ACGE - Agence Comptable des Grandes Écoles
 
-Une application web moderne et responsive pour la gestion électronique des documents, construite avec Next.js 14, TypeScript, et Tailwind CSS.
+Une application web moderne et responsive pour la gestion de l'agence comptable des grandes écoles, construite avec Next.js 14, TypeScript, et Tailwind CSS.
 
 ## ✨ Fonctionnalités
 
@@ -9,11 +9,11 @@ Une application web moderne et responsive pour la gestion électronique des docu
 - Gestion des rôles utilisateurs (Admin, Manager, User)
 - Sessions persistantes avec NextAuth.js
 
-### 📁 Gestion des Documents
+### 📁 Gestion des Fichiers
 - Upload multi-fichiers avec drag & drop
 - Support de tous les formats courants (PDF, DOC, XLS, images, etc.)
 - Métadonnées automatiques (date, taille, type)
-- Versioning des documents
+- Versioning des fichiers
 - Recherche full-text
 
 ### 🗂️ Organisation
@@ -63,7 +63,7 @@ Une application web moderne et responsive pour la gestion électronique des docu
    
    Modifier le fichier `.env.local` avec vos configurations :
    ```env
-   DATABASE_URL="postgresql://username:password@localhost:5432/ged_db"
+   DATABASE_URL="postgresql://username:password@localhost:5432/acge_db"
    NEXTAUTH_URL="http://localhost:3000"
    NEXTAUTH_SECRET="your-secret-key-here"
    ```
@@ -112,11 +112,11 @@ src/
 ### Base de Données
 L'application utilise PostgreSQL avec Prisma ORM. Le schéma inclut :
 - **Users** : Gestion des utilisateurs et rôles
-- **Documents** : Stockage des métadonnées des documents
+- **Documents** : Stockage des métadonnées des fichiers
 - **Folders** : Organisation hiérarchique
 - **Tags** : Catégorisation des documents
 - **DocumentShare** : Partage et permissions
-- **Comments** : Commentaires sur les documents
+- **Comments** : Commentaires sur les fichiers
 
 ### Authentification
 - NextAuth.js avec provider credentials
@@ -164,4 +164,4 @@ Pour toute question ou problème :
 
 ---
 
-**Développé avec ❤️ pour une gestion documentaire moderne et efficace**
+**Développé avec ❤️ pour une gestion moderne et efficace de l'agence comptable**

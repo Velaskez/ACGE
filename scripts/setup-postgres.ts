@@ -8,7 +8,7 @@ async function setupPostgreSQL() {
     // Créer le fichier .env.local pour PostgreSQL
     const envPath = path.join(process.cwd(), '.env.local')
     const envContent = `# Base de données PostgreSQL avec Docker
-DATABASE_URL="postgresql://ged_user:ged_password_dev@localhost:5432/ged_database"
+DATABASE_URL="postgresql://acge_user:acge_password_dev@localhost:5432/acge_database"
 
 # Configuration NextAuth
 NEXTAUTH_URL="http://localhost:3000"
@@ -33,7 +33,7 @@ UPLOAD_DIR="./uploads"`
 
     console.log('\n📊 Accès pgAdmin (optionnel) :')
     console.log('URL: http://localhost:8080')
-    console.log('Email: admin@ged.local')
+    console.log('Email: admin@acge.local')
     console.log('Password: admin123')
 
   } catch (error) {

@@ -19,7 +19,7 @@ npm install
 ### 3. Configuration de l'Environnement
 Créez un fichier `.env.local` :
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/ged_db"
+DATABASE_URL="postgresql://username:password@localhost:5432/acge_db"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-super-secret-key-change-this-in-production"
 NODE_ENV="development"
@@ -56,7 +56,7 @@ npm run dev
 ### 🔑 **Première Connexion**
 
 Après avoir exécuté `npm run create-admin`, utilisez :
-- **Email** : `admin@ged.local`
+- **Email** : `admin@acge.local`
 - **Mot de passe** : `admin123`
 
 ⚠️ **IMPORTANT** : Changez le mot de passe après la première connexion !

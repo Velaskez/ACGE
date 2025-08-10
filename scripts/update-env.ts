@@ -4,7 +4,7 @@ import path from 'path'
 async function updateEnv() {
   const envPath = path.join(process.cwd(), '.env.local')
   const envContent = `# Base de données PostgreSQL locale avec le bon mot de passe
-DATABASE_URL="postgresql://postgres:Reviti2025@localhost:5432/ged_database"
+DATABASE_URL="postgresql://postgres:Reviti2025@localhost:5432/acge_database"
 
 # Configuration NextAuth
 NEXTAUTH_URL="http://localhost:3000"

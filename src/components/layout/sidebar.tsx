@@ -31,7 +31,7 @@ const mainNav = [
     icon: Home,
   },
   {
-    title: 'Mes documents',
+    title: 'Mes fichiers',
     href: '/documents',
     icon: FileText,
   },
@@ -118,7 +118,7 @@ export function Sidebar({ className }: SidebarProps) {
           <ScrollArea className="h-[300px] px-1">
             <div className="space-y-1">
               {/* TODO: Remplacer par les vrais dossiers */}
-              {['Documents', 'Images', 'Vidéos', 'Musique'].map((folder, index) => (
+              {['Comptabilité', 'Factures', 'Contrats', 'Rapports'].map((folder, index) => (
                 <div key={index}>
                   <Button
                     variant="ghost"
@@ -160,7 +160,7 @@ export function Sidebar({ className }: SidebarProps) {
           </h2>
           <div className="space-y-2 px-4">
             <div className="flex justify-between text-sm">
-              <span>Documents</span>
+              <span>Fichiers</span>
               <span className="font-medium">1,234</span>
             </div>
             <div className="flex justify-between text-sm">

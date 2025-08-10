@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Search, Bell, Settings, LogOut, User } from 'lucide-react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -30,7 +31,16 @@ export function Header() {
       <div className="flex h-16 items-center px-4">
         {/* Logo */}
         <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-semibold">GED</h1>
+          <div className="flex items-center space-x-3">
+            <Image
+              src="/TrésorPublicGabon.jpg"
+              alt="Trésor Public Gabon"
+              width={40}
+              height={40}
+              className="rounded-lg object-contain"
+            />
+            <h1 className="text-xl font-semibold text-[#134074]">GED - Trésor Public</h1>
+          </div>
         </div>
 
         {/* Barre de recherche */}
@@ -39,7 +49,7 @@ export function Header() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Rechercher des documents..."
+              placeholder="Rechercher..."
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
