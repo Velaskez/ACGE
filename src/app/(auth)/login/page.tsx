@@ -3,13 +3,12 @@
 import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, Shield } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -61,14 +60,17 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="text-center">
-            <h1 className="text-2xl font-bold">GED</h1>
+            <div className="flex items-center justify-center mb-4">
+              <Shield className="w-8 h-8 text-blue-600 mr-2" />
+              <h1 className="text-2xl font-bold">GED</h1>
+            </div>
             <p className="text-sm text-muted-foreground">
               Gestion Électronique des Documents
             </p>
           </div>
           <CardTitle className="text-xl text-center">Connexion</CardTitle>
           <CardDescription className="text-center">
-            Entrez vos identifiants pour accéder à votre espace
+            Accédez à votre espace de travail sécurisé
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,13 +132,9 @@ export default function LoginPage() {
               {isLoading ? 'Connexion...' : 'Se connecter'}
             </Button>
 
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">
-                Pas encore de compte ?{' '}
-              </span>
-              <Link href="/register" className="text-primary hover:underline">
-                Créer un compte
-              </Link>
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Accès réservé aux utilisateurs autorisés</p>
+              <p className="mt-1">Contactez votre administrateur pour obtenir un compte</p>
             </div>
           </form>
         </CardContent>
