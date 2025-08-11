@@ -23,37 +23,66 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   // Relations
-  documents     Document[]
-  folders       Folder[]
-  sharedWith    DocumentShare[]
-  comments      Comment[]
+  documents         Document[]
+  documentVersions  DocumentVersion[]
+  folders           Folder[]
+  sharedWith        DocumentShare[]
+  comments          Comment[]
   
   @@map("users")
 }
 
 model Document {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  fileName    String
-  fileSize    Int
-  fileType    String
-  filePath    String
-  version     Int       @default(1)
-  isPublic    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  title             String
+  description       String?
+  isPublic          Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Version actuelle (pour accès rapide)
+  currentVersionId  String?  @unique
+  currentVersion    DocumentVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
   
   // Relations
-  authorId    String
-  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  folderId    String?
-  folder      Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  tags        Tag[]
-  shares      DocumentShare[]
-  comments    Comment[]
+  authorId          String
+  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  folderId          String?
+  folder            Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  
+  // Toutes les versions de ce document
+  versions          DocumentVersion[] @relation("DocumentVersions")
+  
+  tags              Tag[]
+  shares            DocumentShare[]
+  comments          Comment[]
   
   @@map("documents")
+}
+
+model DocumentVersion {
+  id            String    @id @default(cuid())
+  versionNumber Int       @default(1)
+  fileName      String
+  fileSize      Int
+  fileType      String
+  filePath      String
+  changeLog     String?   // Description des changements
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  documentId    String
+  document      Document  @relation("DocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
+  
+  // Qui a créé cette version
+  createdById   String
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  
+  // Version actuelle (relation inverse)
+  isCurrentFor  Document? @relation("CurrentVersion")
+  
+  @@unique([documentId, versionNumber])
+  @@map("document_versions")
 }
 
 model Folder {
