@@ -59,7 +59,12 @@ export default function DocumentsPage() {
     deleteDocument, 
     downloadDocument, 
     updateDocument, 
-    refreshData 
+    refreshData,
+    hasMore,
+    isLoadingMore,
+    loadMore,
+    page,
+    total
   } = useDocumentsData()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [selectedDocument, setSelectedDocument] = useState<DocumentItem | null>(null)
@@ -204,9 +209,9 @@ export default function DocumentsPage() {
                   <TableRow>
                     <TableHead className="w-12"></TableHead>
                     <TableHead>Nom</TableHead>
-                    <TableHead>Taille</TableHead>
-                    <TableHead>Date d'ajout</TableHead>
-                    <TableHead>Propriétaire</TableHead>
+                    <TableHead className="hidden sm:table-cell">Taille</TableHead>
+                    <TableHead className="hidden md:table-cell">Date d'ajout</TableHead>
+                    <TableHead className="hidden lg:table-cell">Propriétaire</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -218,18 +223,18 @@ export default function DocumentsPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{document.title}</div>
-                          <div className="text-sm text-gray-500">{document.currentVersion?.fileName || 'Sans fichier'}</div>
+                          <div className="font-medium truncate max-w-[60vw] sm:max-w-none">{document.title}</div>
+                          <div className="text-sm text-gray-500 truncate max-w-[60vw] sm:max-w-none">{document.currentVersion?.fileName || 'Sans fichier'}</div>
                           {document.description && (
-                            <div className="text-xs text-gray-400 mt-1">{document.description}</div>
+                            <div className="text-xs text-gray-400 mt-1 line-clamp-2 sm:line-clamp-none">{document.description}</div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{formatFileSize(document.currentVersion?.fileSize || 0)}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">{formatFileSize(document.currentVersion?.fileSize || 0)}</TableCell>
+                      <TableCell className="hidden md:table-cell">
                         {new Date(document.createdAt).toLocaleDateString('fr-FR')}
                       </TableCell>
-                      <TableCell>{document.author?.name || 'Inconnu'}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{document.author?.name || 'Inconnu'}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -298,12 +303,78 @@ export default function DocumentsPage() {
                   )}
                 </div>
               )}
+
+              {/* Pagination */}
+              {filteredDocuments.length > 0 && (
+                <div className="mt-4 flex items-center justify-center">
+                  <Button onClick={loadMore} disabled={!hasMore || isLoadingMore} variant="outline">
+                    {isLoadingMore ? 'Chargement...' : hasMore ? 'Charger plus' : 'Tout est chargé'}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (
-          /* Vue en grille - TODO: Implémenter */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* TODO: Cartes de documents */}
+          /* Vue en grille */
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {filteredDocuments.map((doc) => (
+                <div key={doc.id} className="group border rounded-lg p-3 hover:shadow-sm transition">
+                  <div className="flex items-start gap-2">
+                    {getFileIcon(doc.currentVersion?.fileType || 'unknown')}
+                    <div className="min-w-0">
+                      <div className="font-medium truncate" title={doc.title}>{doc.title}</div>
+                      <div className="text-xs text-muted-foreground truncate" title={doc.currentVersion?.fileName || ''}>
+                        {doc.currentVersion?.fileName || 'Sans fichier'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{formatFileSize(doc.currentVersion?.fileSize || 0)}</span>
+                    <span>{new Date(doc.createdAt).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+                    <Button size="sm" variant="outline" className="h-7" onClick={() => handleView(doc)}>
+                      <Eye className="h-3 w-3 mr-1" /> Aperçu
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7" onClick={() => handleDownload(doc)}>
+                      <Download className="h-3 w-3 mr-1" /> Télécharger
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-7 px-2">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(doc)}>
+                          <Edit className="mr-2 h-4 w-4" /> Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <DocumentVersionHistory 
+                            documentId={doc.id}
+                            documentTitle={doc.title}
+                            trigger={<div className="w-full px-2 py-1.5 cursor-pointer">Versions ({doc._count.versions})</div>}
+                          />
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(doc.id)}>
+                          <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {filteredDocuments.length > 0 && (
+              <div className="flex items-center justify-center">
+                <Button onClick={loadMore} disabled={!hasMore || isLoadingMore} variant="outline">
+                  {isLoadingMore ? 'Chargement...' : hasMore ? 'Charger plus' : 'Tout est chargé'}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

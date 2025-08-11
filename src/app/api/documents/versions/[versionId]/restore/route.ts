@@ -1,38 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
+import { getServerUser } from '@/lib/server-auth'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ versionId: string }> }
 ) {
   try {
-    // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
-    const userId = decoded.userId
+    // Auth unifiée
+    const authUser = await getServerUser(request)
+    if (!authUser) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const userId = authUser.userId
     
     const { versionId } = await params
 
-    // Récupérer la version à restaurer
-    const versionToRestore = await prisma.documentVersion.findUnique({
-      where: { id: versionId },
-      include: {
-        document: {
-          include: {
-            author: true
-          }
-        }
+    // Récupérer la version à restaurer (PG), fallback SQLite
+    let versionToRestore: any
+    try {
+      versionToRestore = await (prisma as any).documentVersion.findUnique({
+        where: { id: versionId },
+        include: {
+          document: {
+            include: {
+              author: { select: { id: true } },
+            },
+          },
+        } as any,
+      })
+    } catch (_err) {
+      const v = await (prisma as any).document.findUnique({
+        where: { id: versionId },
+      })
+      // Ancien schéma: pas de versions dédiées → non supporté pour restore
+      if (!v) {
+        return NextResponse.json(
+          { error: 'Version non trouvée' },
+          { status: 404 }
+        )
       }
-    })
+      return NextResponse.json(
+        { error: 'Restauration de versions non supportée sur le schéma legacy' },
+        { status: 400 }
+      )
+    }
 
     if (!versionToRestore) {
       return NextResponse.json(
@@ -58,7 +68,7 @@ export async function POST(
     }
 
     // Mettre à jour le document pour pointer vers cette version
-    const updatedDocument = await prisma.document.update({
+    const updatedDocument = await (prisma as any).document.update({
       where: { id: versionToRestore.documentId },
       data: { 
         currentVersionId: versionId,
@@ -66,12 +76,12 @@ export async function POST(
       },
       include: {
         currentVersion: true
-      }
+      } as any,
     })
 
-    // Journaliser restauration
+    // Journaliser restauration (si modèle disponible)
     try {
-      await prisma.activity.create({
+      await (prisma as any).activity.create({
         data: {
           type: 'version_restored',
           targetType: 'document',

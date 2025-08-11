@@ -1,27 +1,6 @@
 import { NextResponse } from 'next/server'
 
+// Plus nécessaire avec NextAuth côté client; on garde pour compat net si appelé
 export async function POST() {
-  try {
-    const response = NextResponse.json(
-      { message: 'Déconnexion réussie' },
-      { status: 200 }
-    )
-
-    // Supprimer le cookie
-    response.cookies.set('auth-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0 // Expire immédiatement
-    })
-
-    return response
-
-  } catch (error) {
-    console.error('Erreur lors de la déconnexion:', error)
-    return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
-      { status: 500 }
-    )
-  }
+  return NextResponse.json({ message: 'Déconnexion NextAuth' })
 }

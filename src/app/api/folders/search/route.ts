@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
+import { getServerUser } from '@/lib/server-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
-    const userId = decoded.userId
+    // Auth unifiée
+    const authUser = await getServerUser(request)
+    if (!authUser) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const userId = authUser.userId
 
     // Récupérer le terme de recherche
     const { searchParams } = new URL(request.url)
@@ -63,8 +55,8 @@ export async function GET(request: NextRequest) {
             OR: searchConditions
           }
         ]
-      },
-      include: {
+      } as any,
+      include: ({
         author: {
           select: {
             id: true,
@@ -93,10 +85,10 @@ export async function GET(request: NextRequest) {
             documents: true
           }
         }
-      },
+      } as any),
       orderBy: [
         {
-          folderNumber: 'asc' // Prioriser les résultats par numéro
+          name: 'asc'
         },
         {
           updatedAt: 'desc'
@@ -105,19 +97,19 @@ export async function GET(request: NextRequest) {
     })
 
     // Formater les données
-    const formattedFolders = folders.map(folder => ({
+    const formattedFolders = (folders as any[]).map((folder: any) => ({
       id: folder.id,
       folderNumber: folder.folderNumber,
       name: folder.name,
       description: folder.description,
-      documentCount: folder._count.documents,
+      documentCount: folder._count?.documents ?? 0,
       createdAt: folder.createdAt,
       updatedAt: folder.updatedAt,
       author: {
-        id: folder.author.id,
-        name: folder.author.name
+        id: folder.author?.id,
+        name: folder.author?.name
       },
-      recentDocuments: folder.documents.map(doc => ({
+      recentDocuments: (folder.documents as any[]).map((doc: any) => ({
         id: doc.id,
         title: doc.title || doc.currentVersion?.fileName || 'Sans titre',
         fileName: doc.currentVersion?.fileName || 'Sans fichier',

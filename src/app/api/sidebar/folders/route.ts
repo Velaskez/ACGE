@@ -1,68 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
+import { getServerUser } from '@/lib/server-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
+    // Auth unifiée
+    const authUser = await getServerUser(request)
+    if (!authUser) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const userId = authUser.userId
 
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
+    // Récupérer les dossiers de l'utilisateur avec quelques documents récents (support PG/SQLite)
+    const findFolders = async () => {
+      try {
+        return await prisma.folder.findMany({
+          where: { authorId: userId } as any,
+          include: {
+            documents: {
+              select: { id: true, title: true, updatedAt: true, currentVersion: { select: { fileName: true, fileType: true } } } as any,
+              orderBy: { updatedAt: 'desc' },
+              take: 3,
+            },
+            _count: { select: { documents: true } },
+          } as any,
+          orderBy: { updatedAt: 'desc' },
+          take: 6,
+        })
+      } catch {
+        try {
+          return await prisma.folder.findMany({
+            where: { userId } as any,
+            include: {
+              documents: {
+                select: { id: true, name: true, mimeType: true, updatedAt: true } as any,
+                orderBy: { updatedAt: 'desc' },
+                take: 3,
+              },
+              _count: { select: { documents: true } },
+            } as any,
+            orderBy: { updatedAt: 'desc' },
+            take: 6,
+          })
+        } catch {
+          return []
+        }
+      }
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
-    const userId = decoded.userId
-
-    // Récupérer les dossiers de l'utilisateur avec quelques documents récents
-    const folders = await prisma.folder.findMany({
-      where: { 
-        authorId: userId 
-      },
-      include: {
-        documents: {
-          select: {
-            id: true,
-            title: true,
-            updatedAt: true,
-            currentVersion: {
-              select: {
-                fileName: true,
-                fileType: true
-              }
-            }
-          },
-          orderBy: {
-            updatedAt: 'desc'
-          },
-          take: 3 // Seulement les 3 documents les plus récents par dossier
-        },
-        _count: {
-          select: {
-            documents: true
-          }
-        }
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      },
-      take: 6 // Limiter à 6 dossiers récents pour la sidebar
-    })
+    const folders = await findFolders()
 
     // Formater les données pour la sidebar
-    const formattedFolders = folders.map(folder => ({
+    const formattedFolders = folders.map((folder: any) => ({
       id: folder.id,
       name: folder.name,
       documentCount: folder._count.documents,
-      recentDocuments: folder.documents.map(doc => ({
+      recentDocuments: folder.documents.map((doc: any) => ({
         id: doc.id,
-        title: doc.title || doc.currentVersion?.fileName || 'Sans titre',
-        fileName: doc.currentVersion?.fileName || 'Sans fichier',
-        fileType: doc.currentVersion?.fileType || 'unknown'
-      }))
+        title: (doc.title || (doc as any).name || (doc as any).currentVersion?.fileName || 'Sans titre'),
+        fileName: ((doc as any).currentVersion?.fileName || (doc as any).name || 'Sans fichier'),
+        fileType: ((doc as any).currentVersion?.fileType || (doc as any).mimeType || 'unknown'),
+      })),
     }))
 
     return NextResponse.json({ 

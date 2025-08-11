@@ -1,31 +1,79 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { DocumentItem } from '@/types/document'
 
 export function useDocumentsData() {
+  const router = useRouter()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(20)
+  const [total, setTotal] = useState(0)
 
-  const fetchDocuments = async () => {
+  const hasMore = useMemo(() => documents.length < total, [documents.length, total])
+
+  const fetchDocuments = useCallback(async ({ reset = false, pageParam }: { reset?: boolean; pageParam?: number } = {}) => {
     try {
-      setIsLoading(true)
-      setError(null)
-      
-      const response = await fetch('/api/documents', { cache: 'no-store' })
-      if (!response.ok) {
-        throw new Error('Erreur lors du chargement des fichiers')
+      if (reset) {
+        setIsLoading(true)
+      } else {
+        setIsLoadingMore(true)
       }
-      
+      setError(null)
+
+      const currentPage = pageParam ?? page
+      const params = new URLSearchParams()
+      params.set('page', String(currentPage))
+      params.set('limit', String(limit))
+      const q = searchQuery.trim()
+      if (q) params.set('search', q)
+
+      const response = await fetch(`/api/documents?${params.toString()}`, { cache: 'no-store', credentials: 'include' })
+      if (!response.ok) {
+        let message = 'Erreur lors du chargement des fichiers'
+        try {
+          const err = await response.json().catch(() => null)
+          if (err?.error && typeof err.error === 'string') message = err.error
+        } catch (_) {
+          // ignore
+        }
+
+        if (response.status === 401) {
+          setError('Session expirée. Redirection vers la connexion...')
+          try { router.push('/login') } catch { window.location.href = '/login' }
+          return
+        }
+        if (response.status === 403) {
+          setError('Accès refusé')
+          return
+        }
+
+        setError(message)
+        return
+      }
+
       const data = await response.json()
-      setDocuments(data.documents || [])
+      const list: DocumentItem[] = data.documents || []
+      const newTotal: number = data.pagination?.total ?? list.length
+      setTotal(newTotal)
+
+      if (reset) {
+        setDocuments(list)
+        setPage(1)
+      } else {
+        setDocuments(prev => [...prev, ...list])
+      }
     } catch (err) {
       console.error('Erreur lors de la récupération des documents:', err)
       setError(err instanceof Error ? err.message : 'Erreur de connexion')
     } finally {
       setIsLoading(false)
+      setIsLoadingMore(false)
     }
-  }
+  }, [page, limit, searchQuery, router])
 
   // Filtrage des documents avec recherche
   const filteredDocuments = useMemo(() => {
@@ -94,23 +142,44 @@ export function useDocumentsData() {
   }
 
   useEffect(() => {
-    fetchDocuments()
+    fetchDocuments({ reset: true, pageParam: 1 })
   }, [])
 
+  // Rechargement quand la recherche change
+  useEffect(() => {
+    setPage(1)
+    fetchDocuments({ reset: true, pageParam: 1 })
+  }, [searchQuery, fetchDocuments])
+
   const refreshData = () => {
-    fetchDocuments()
+    setPage(1)
+    fetchDocuments({ reset: true, pageParam: 1 })
+  }
+
+  const loadMore = async () => {
+    if (!hasMore || isLoadingMore) return
+    const next = page + 1
+    setPage(next)
+    await fetchDocuments({ reset: false, pageParam: next })
   }
 
   return {
     documents,
     filteredDocuments,
     isLoading,
+    isLoadingMore,
     error,
     searchQuery,
     setSearchQuery,
     deleteDocument,
     downloadDocument,
     updateDocument,
-    refreshData
+    refreshData,
+    hasMore,
+    loadMore,
+    page,
+    limit,
+    setLimit,
+    total
   }
 }

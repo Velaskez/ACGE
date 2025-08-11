@@ -1,26 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verify } from 'jsonwebtoken'
+import { getServerUser } from '@/lib/server-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
+    const authUser = await getServerUser(request)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
-
-    // Vérifier le token
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
-
     return NextResponse.json({
       user: {
-        id: decoded.userId,
-        email: decoded.email,
-        name: decoded.name,
-        role: decoded.role
+        id: authUser.userId,
+        role: authUser.role,
+        email: authUser.email || '',
+        name: authUser.name || ''
       }
     })
 

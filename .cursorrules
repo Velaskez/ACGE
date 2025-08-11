@@ -1,0 +1,38 @@
+# Règles Cursor du projet ACGE
+
+Ces règles guident la génération et les edits dans ce dépôt. Elles sont bloquantes pour toutes les créations/modifications d’UI.
+
+## UI/Responsive — règle obligatoire
+- Toujours concevoir mobile-first et vérifier le rendu aux largeurs clés: 360px, 640px (sm), 768px (md), 1024px (lg), 1280px (xl).
+- Interdire tout débordement horizontal: utiliser `w-full`, `max-w-full`, conteneurs avec `overflow-x-auto` pour les tables, et `overflow-x-hidden` au niveau layout.
+- Utiliser Tailwind (flex/grid) pour la mise en page, jamais de tailles fixes en px qui cassent la responsivité. Préférer unités relatives (`%`, `vw`, `rem`).
+- Troncature et wraps: appliquer `truncate`, `text-ellipsis`, `line-clamp-*`, `break-words` pour éviter les casses de layout sur petits écrans.
+- Espacement et alignement: utiliser une grille d’espacement cohérente (`gap-2/3/4/6`, `p-4/6`), aligner verticalement avec `items-center`/`start` selon le contexte, éviter les marges magiques.
+
+## Composants shadcn/ui (obligatoire)
+- Lors de la création ou modification d’un composant UI, utiliser shadcn/ui:
+  - Ajouter un composant via: `npx shadcn@latest add [component-name]`.
+  - Importer depuis `@/components/ui/[component-name]`.
+  - Suivre les patterns de composition Radix + Tailwind + cva.
+- Personnaliser directement le code du composant copié (« Open Code »), pas d’override CSS global.
+
+## Patrons responsives à appliquer
+- Modales: largeur responsive `w-[95vw] sm:max-w-4xl md:max-w-5xl`, hauteur `max-h-[90vh] overflow-y-auto`.
+- Tables: wrapper `div` avec `overflow-x-auto`; colonnes masquées progressivement (`hidden sm:table-cell`, `md:table-cell`, `lg:table-cell`).
+- Grilles de cartes: `grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4`.
+- Boutons/inputs: tailles `sm`/`md` selon contexte; éviter les libellés trop longs sans troncature.
+
+## Organisation et positionnement
+- Respecter l’architecture existante: pages dans `src/app`, layout via `MainLayout` et `Sidebar`.
+- Nommer les fichiers et symboles explicitement (pas d’abbréviations), isoler la logique dans des hooks (`src/hooks`) et garder les composants « dumb » quand possible.
+- Aucun style inline; tout via classes Tailwind. Éviter `!important`.
+
+## Vérifications après chaque edit
+- Construire le projet (`npm run -s build`) pour détecter les erreurs types/JS.
+- Vérifier l’absence de débordement horizontal et la lisibilité mobile (éléments cliquables facilement, pas de contenu collé aux bords).
+
+## Accessibilité
+- Utiliser les primitives Radix (focus/keyboard) via shadcn/ui et conserver les attributs ARIA fournis.
+- Contrastes et tailles de cible: conserver les styles par défaut shadcn/ui ou améliorer, jamais réduire la surface cliquable sous 32px.
+
+

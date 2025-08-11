@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
+import { getServerUser } from '@/lib/server-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
+    // Auth unifiée
+    const authUser = await getServerUser(request)
+    if (!authUser) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
-
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
-    const userId = decoded.userId
+    const userId = authUser.userId
 
     // Récupérer les paramètres de requête
     const { searchParams } = new URL(request.url)
@@ -29,12 +23,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Vérifier que l'utilisateur a accès au document
-    const document = await prisma.document.findFirst({
-      where: {
-        id: documentId,
-        authorId: userId
-      }
+    let document = await prisma.document.findFirst({
+      where: { id: documentId, authorId: userId } as any,
     })
+    if (!document) {
+      document = await prisma.document.findFirst({
+        where: { id: documentId, userId: userId } as any,
+      })
+    }
 
     if (!document) {
       return NextResponse.json(
@@ -44,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer toutes les versions du document
-    const versions = await prisma.documentVersion.findMany({
+    const versions = await (prisma as any).documentVersion.findMany({
       where: {
         documentId: documentId
       },
@@ -64,9 +60,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       documentId,
-      documentTitle: document.title,
-      currentVersionId: document.currentVersionId,
-      versions: versions.map(version => ({
+      documentTitle: (document as any).title ?? (document as any).name ?? '',
+      currentVersionId: (document as any).currentVersionId ?? null,
+      versions: (versions as any[]).map((version: any) => ({
         id: version.id,
         versionNumber: version.versionNumber,
         fileName: version.fileName,
@@ -75,7 +71,7 @@ export async function GET(request: NextRequest) {
         changeLog: version.changeLog,
         createdAt: version.createdAt,
         createdBy: version.createdBy,
-        isCurrent: version.id === document.currentVersionId
+        isCurrent: version.id === (document as any).currentVersionId
       }))
     })
 
@@ -90,18 +86,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
-    const userId = decoded.userId
+    // Auth unifiée
+    const authUser = await getServerUser(request)
+    if (!authUser) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const userId = authUser.userId
 
     const body = await request.json()
     const { documentId, fileName, fileSize, fileType, filePath, changeLog } = body
@@ -114,18 +102,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier que l'utilisateur a accès au document
-    const document = await prisma.document.findFirst({
-      where: {
-        id: documentId,
-        authorId: userId
-      },
+    let document = await prisma.document.findFirst({
+      where: { id: documentId, authorId: userId } as any,
       include: {
         versions: {
           orderBy: { versionNumber: 'desc' },
           take: 1
         }
-      }
+      } as any,
     })
+    if (!document) {
+      document = await prisma.document.findFirst({
+        where: { id: documentId, userId: userId } as any,
+        include: {
+          versions: { orderBy: { versionNumber: 'desc' }, take: 1 },
+        } as any,
+      })
+    }
 
     if (!document) {
       return NextResponse.json(
@@ -134,12 +127,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculer le nouveau numéro de version
-    const lastVersion = document.versions[0]
-    const newVersionNumber = lastVersion ? lastVersion.versionNumber + 1 : 1
+    // Calculer le nouveau numéro de version (tolérant)
+    const lastVersion = (document as any).versions && (document as any).versions.length > 0
+      ? (document as any).versions[0]
+      : null
+    const newVersionNumber = lastVersion && typeof (lastVersion as any).versionNumber === 'number'
+      ? (lastVersion as any).versionNumber + 1
+      : 1
 
     // Créer la nouvelle version
-    const newVersion = await prisma.documentVersion.create({
+    const newVersion = await (prisma as any).documentVersion.create({
       data: {
         versionNumber: newVersionNumber,
         fileName,
@@ -153,7 +150,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Mettre à jour le document pour pointer vers cette nouvelle version
-    await prisma.document.update({
+    await (prisma as any).document.update({
       where: { id: documentId },
       data: { 
         currentVersionId: newVersion.id,

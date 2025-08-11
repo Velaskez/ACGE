@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { readFile } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { readStoredFile } from '@/lib/storage'
+import { getServerUser } from '@/lib/server-auth'
 
 export async function GET(
   request: NextRequest,
@@ -11,29 +9,22 @@ export async function GET(
 ) {
   try {
     const resolvedParams = await params
-    // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
+    // Auth unifiée
+    const authUser = await getServerUser(request)
+    if (!authUser) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const userId = authUser.userId
 
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
-    const userId = decoded.userId
-
-    // Récupérer le document avec sa version actuelle
-    const document = await prisma.document.findFirst({
-      where: {
-        id: resolvedParams.id,
-        authorId: userId // Sécurité : seul le propriétaire peut télécharger
-      },
-      include: {
-        currentVersion: true
-      }
+    // Récupérer le document avec sa version actuelle (support PG/SQLite)
+    let document = await prisma.document.findFirst({
+      where: { id: resolvedParams.id, authorId: userId } as any,
+      include: { currentVersion: true } as any,
     })
+    if (!document) {
+      document = await prisma.document.findFirst({
+        where: { id: resolvedParams.id, userId: userId } as any,
+        include: { currentVersion: true } as any,
+      })
+    }
 
     if (!document || !document.currentVersion) {
       return NextResponse.json(
@@ -42,31 +33,19 @@ export async function GET(
       )
     }
 
-    // Construire le chemin du fichier
-    const fileName = document.currentVersion.filePath.split('/').pop() || ''
-    const filePath = join(process.cwd(), 'uploads', userId, fileName)
+    // Lire le fichier via provider de stockage
+    const filePath = (document as any).currentVersion?.filePath || (document as any).filePath || ''
+    const fileType = (document as any).currentVersion?.fileType || (document as any).fileType || ''
+    const fileName = (document as any).currentVersion?.fileName || (document as any).fileName || 'document'
 
-    // Vérifier que le fichier existe
-    if (!existsSync(filePath)) {
-      return NextResponse.json(
-        { error: 'Fichier non trouvé sur le serveur' },
-        { status: 404 }
-      )
-    }
-
-    // Lire le fichier
-    const fileBuffer = await readFile(filePath)
-
-    // Déterminer le type MIME
-    const mimeType = document.currentVersion.fileType || 'application/octet-stream'
-
-    // Créer la réponse avec le fichier
-    const response = new NextResponse(fileBuffer as unknown as ReadableStream, {
+    const storageRes = await readStoredFile(userId, filePath)
+    const mimeType = fileType || storageRes.contentType || 'application/octet-stream'
+    const response = new NextResponse(storageRes.body as any, {
       status: 200,
       headers: {
         'Content-Type': mimeType,
-        'Content-Disposition': `attachment; filename="${document.currentVersion.fileName}"`,
-        'Content-Length': fileBuffer.length.toString(),
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        ...(storageRes.contentLength ? { 'Content-Length': String(storageRes.contentLength) } : {}),
       },
     })
 

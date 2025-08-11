@@ -1,82 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
+import { getServerUser } from '@/lib/server-auth'
 import { generateFolderNumberWithInitials } from '@/lib/folder-numbering'
 
 export async function GET(request: NextRequest) {
   try {
-    // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
-    const userId = decoded.userId
+    // Auth unifiée
+    const authUser = await getServerUser(request)
+    if (!authUser) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const userId = authUser.userId
 
     // Récupérer TOUS les dossiers de l'utilisateur avec les détails complets
-    const folders = await prisma.folder.findMany({
-      where: { 
-        authorId: userId 
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        documents: {
-          select: {
-            id: true,
-            title: true,
-            updatedAt: true,
-            currentVersion: {
-              select: {
-                fileName: true,
-                fileType: true
-              }
-            }
+    // Compatibilité SQLite: utiliser userId (pas authorId) et champs Document existants
+    const isSQLite = (process.env.DATABASE_URL || '').includes('file:') || (process.env.DATABASE_URL || '').includes('sqlite')
+    const ownerKey = isSQLite ? 'userId' : 'authorId'
+    const includeClause: any = isSQLite
+      ? {
+          user: { select: { id: true, name: true } },
+          documents: {
+            select: { id: true, name: true, mimeType: true, updatedAt: true },
+            orderBy: { updatedAt: 'desc' },
+            take: 3,
           },
-          orderBy: {
-            updatedAt: 'desc'
-          },
-          take: 3 // Quelques documents récents par dossier
-        },
-        _count: {
-          select: {
-            documents: true
-          }
+          _count: { select: { documents: true } },
         }
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      }
+      : {
+          author: { select: { id: true, name: true } },
+          documents: {
+            select: {
+              id: true,
+              title: true,
+              updatedAt: true,
+              currentVersion: { select: { fileName: true, fileType: true } },
+            },
+            orderBy: { updatedAt: 'desc' },
+            take: 3,
+          },
+          _count: { select: { documents: true } },
+        }
+
+    const folders = await prisma.folder.findMany({
+      where: { [ownerKey]: userId } as any,
+      include: includeClause as any,
+      orderBy: { updatedAt: 'desc' },
     })
 
     // Formater les données pour la page dossiers
-    const formattedFolders = folders.map(folder => ({
+    const formattedFolders = folders.map((folder: any) => ({
       id: folder.id,
-      folderNumber: folder.folderNumber,
+      folderNumber: isSQLite ? `FOL-${folder.id.slice(0, 6)}` : folder.folderNumber,
       name: folder.name,
-      description: folder.description,
+      description: folder.description || undefined,
       documentCount: folder._count.documents,
       createdAt: folder.createdAt,
       updatedAt: folder.updatedAt,
-      author: {
-        id: folder.author.id,
-        name: folder.author.name
-      },
-      recentDocuments: folder.documents.map(doc => ({
+      author: isSQLite
+        ? { id: folder.user.id, name: folder.user.name || '' }
+        : { id: folder.author.id, name: folder.author.name || '' },
+      recentDocuments: folder.documents.map((doc: any) => ({
         id: doc.id,
-        title: doc.title || doc.currentVersion?.fileName || 'Sans titre',
-        fileName: doc.currentVersion?.fileName || 'Sans fichier',
-        fileType: doc.currentVersion?.fileType || 'unknown'
-      }))
+        title: isSQLite ? (doc.name || 'Sans titre') : (doc.title || doc.currentVersion?.fileName || 'Sans titre'),
+        fileName: isSQLite ? (doc.name || 'Sans fichier') : (doc.currentVersion?.fileName || 'Sans fichier'),
+        fileType: isSQLite ? (doc.mimeType || 'unknown') : (doc.currentVersion?.fileType || 'unknown'),
+      })),
     }))
 
     return NextResponse.json({ 
@@ -94,18 +80,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
-    const userId = decoded.userId
+    // Auth unifiée
+    const authUser = await getServerUser(request)
+    if (!authUser) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const userId = authUser.userId
 
     const { name, description } = await request.json()
 
@@ -116,12 +94,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Détection du provider et clé propriétaire dynamiques
+    const isSQLite = (process.env.DATABASE_URL || '').includes('file:') || (process.env.DATABASE_URL || '').includes('sqlite')
+    const ownerKey = isSQLite ? 'userId' : 'authorId'
+
     // Vérifier si un dossier avec ce nom existe déjà pour cet utilisateur
     const existingFolder = await prisma.folder.findFirst({
-      where: {
-        name: name.trim(),
-        authorId: userId
-      }
+      where: ({ name: name.trim(), [ownerKey]: userId } as any),
     })
 
     if (existingFolder) {
@@ -131,46 +110,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Générer le numéro de dossier personnalisé
-    const folderNumber = await generateFolderNumberWithInitials(name.trim())
-
     // Créer le nouveau dossier
+    const createData: any = isSQLite
+      ? { name: name.trim(), description: description?.trim() || null, userId: userId }
+      : { name: name.trim(), description: description?.trim() || null, authorId: userId }
+    const includeNew: any = isSQLite
+      ? { user: { select: { id: true, name: true } }, _count: { select: { documents: true } } }
+      : { author: { select: { id: true, name: true } }, _count: { select: { documents: true } } }
     const newFolder = await prisma.folder.create({
-      data: {
-        folderNumber: folderNumber,
-        name: name.trim(),
-        description: description?.trim() || null,
-        authorId: userId
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        _count: {
-          select: {
-            documents: true
-          }
-        }
-      }
+      data: createData,
+      include: includeNew,
     })
 
     // Formater la réponse
     const formattedFolder = {
       id: newFolder.id,
-      folderNumber: newFolder.folderNumber,
+      folderNumber: isSQLite ? `FOL-${newFolder.id.slice(0, 6)}` : (newFolder as any).folderNumber,
       name: newFolder.name,
-      description: newFolder.description,
-      documentCount: newFolder._count.documents,
+      description: newFolder.description || undefined,
+      documentCount: (newFolder as any)._count.documents,
       createdAt: newFolder.createdAt,
       updatedAt: newFolder.updatedAt,
-      author: {
-        id: newFolder.author.id,
-        name: newFolder.author.name
-      },
-      recentDocuments: []
+      author: isSQLite
+        ? { id: (newFolder as any).user.id, name: (newFolder as any).user.name || '' }
+        : { id: (newFolder as any).author.id, name: (newFolder as any).author.name || '' },
+      recentDocuments: [] as any[],
     }
 
     return NextResponse.json({ folder: formattedFolder }, { status: 201 })

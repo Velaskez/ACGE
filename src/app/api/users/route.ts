@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
-import { auth } from '@/lib/auth'
+import { getServerUser } from '@/lib/server-auth'
 
 // GET - Récupérer tous les utilisateurs
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
+    const serverUser = await getServerUser(request)
 
     // Vérifier l'authentification
-    if (!session) {
+    if (!serverUser) {
       return NextResponse.json(
         { error: 'Non authentifié' },
         { status: 401 }
@@ -17,7 +17,7 @@ export async function GET() {
     }
 
     // Vérifier les permissions (seuls les admins peuvent voir tous les utilisateurs)
-    if (session.user.role !== 'ADMIN') {
+    if (serverUser.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Permissions insuffisantes' },
         { status: 403 }
@@ -52,10 +52,10 @@ export async function GET() {
 // POST - Créer un nouvel utilisateur
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
+    const serverUser = await getServerUser(request)
 
     // Vérifier l'authentification
-    if (!session) {
+    if (!serverUser) {
       return NextResponse.json(
         { error: 'Non authentifié' },
         { status: 401 }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier les permissions (seuls les admins peuvent créer des utilisateurs)
-    if (session.user.role !== 'ADMIN') {
+    if (serverUser.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Permissions insuffisantes' },
         { status: 403 }

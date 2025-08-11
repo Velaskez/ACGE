@@ -22,7 +22,12 @@ import {
   Eye,
   Download,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Trash2,
+  Pencil,
+  PlusCircle,
+  ArrowRightLeft,
+  RotateCcw
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -31,20 +36,57 @@ export default function DashboardPage() {
 
   const [historyOpen, setHistoryOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [queryDebounced, setQueryDebounced] = useState('')
   const [filterType, setFilterType] = useState<string>('')
   const [filterTargetType, setFilterTargetType] = useState<string>('')
   const [results, setResults] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyError, setHistoryError] = useState<string>('')
+  const getActivityLabel = (type: string, targetType?: string) => {
+    const subject = targetType === 'folder' ? 'Dossier' : 'Document'
+    switch (type) {
+      case 'document_created':
+      case 'folder_created':
+        return `${subject} créé`
+      case 'document_updated':
+        return `${subject} mis à jour`
+      case 'document_deleted':
+        return `${subject} supprimé`
+      case 'document_moved':
+        return `${subject} déplacé`
+      case 'version_restored':
+        return `${subject} restauré`
+      default:
+        return type.replaceAll('_', ' ')
+    }
+  }
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'document_created':
+      case 'folder_created':
+        return <PlusCircle className="h-4 w-4 text-emerald-600" />
+      case 'document_updated':
+        return <Pencil className="h-4 w-4 text-blue-600" />
+      case 'document_deleted':
+        return <Trash2 className="h-4 w-4 text-red-600" />
+      case 'document_moved':
+        return <ArrowRightLeft className="h-4 w-4 text-amber-600" />
+      case 'version_restored':
+        return <RotateCcw className="h-4 w-4 text-purple-600" />
+      default:
+        return <FileText className="h-4 w-4 text-muted-foreground" />
+    }
+  }
 
   const fetchHistory = async () => {
     try {
       setLoadingHistory(true)
       setHistoryError('')
       const params = new URLSearchParams()
-      if (query) params.set('q', query)
-      if (filterType) params.set('type', filterType)
-      if (filterTargetType) params.set('targetType', filterTargetType)
+      if (queryDebounced) params.set('q', queryDebounced)
+      if (filterType && filterType !== 'all') params.set('type', filterType)
+      if (filterTargetType && filterTargetType !== 'all') params.set('targetType', filterTargetType)
       const res = await fetch(`/api/activity?${params.toString()}`)
       if (!res.ok) throw new Error("Erreur de chargement de l'historique")
       const data = await res.json()
@@ -58,10 +100,14 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    const timer = setTimeout(() => setQueryDebounced(query), 300)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  useEffect(() => {
     if (!historyOpen) return
     fetchHistory()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyOpen])
+  }, [historyOpen, queryDebounced, filterType, filterTargetType])
 
   const handleNewDocument = () => {
     router.push('/upload')
@@ -261,7 +307,7 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[45vh] overflow-y-auto overflow-x-hidden pr-1">
                 {isLoading ? (
                   Array.from({ length: 4 }).map((_, index) => (
                     <div key={index} className="flex items-center space-x-4">
@@ -344,7 +390,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[45vh] overflow-y-auto overflow-x-hidden pr-1">
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
                     <div key={index} className="flex items-start space-x-3">
@@ -411,16 +457,16 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Historique</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col sm:flex-row gap-2 mb-4">
-              <Input placeholder="Rechercher..." value={query} onChange={(e) => setQuery(e.target.value)} />
+              <Input className="w-full" placeholder="Rechercher..." value={query} onChange={(e) => setQuery(e.target.value)} />
               <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Type" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous</SelectItem>
+                  <SelectItem value="all">Tous</SelectItem>
                   <SelectItem value="document_created">Création</SelectItem>
                   <SelectItem value="document_updated">Mise à jour</SelectItem>
                   <SelectItem value="document_deleted">Suppression</SelectItem>
@@ -431,14 +477,14 @@ export default function DashboardPage() {
               <Select value={filterTargetType} onValueChange={setFilterTargetType}>
                 <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Cible" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Toutes</SelectItem>
+                  <SelectItem value="all">Toutes</SelectItem>
                   <SelectItem value="document">Document</SelectItem>
                   <SelectItem value="folder">Dossier</SelectItem>
                 </SelectContent>
               </Select>
-              <Button onClick={fetchHistory} disabled={loadingHistory}>Rechercher</Button>
+              <Button className="w-full sm:w-auto" onClick={fetchHistory} disabled={loadingHistory}>Rechercher</Button>
             </div>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto overflow-x-hidden">
               {loadingHistory ? (
                 <p>Chargement…</p>
               ) : historyError ? (
@@ -447,9 +493,25 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground">Aucun résultat</p>
               ) : (
                 results.map((it) => (
-                  <div key={it.id} className="border rounded-md p-3">
-                    <div className="text-sm font-medium">{it.action || it.type}</div>
-                    <div className="text-xs text-muted-foreground">{it.targetType} • {it.title}</div>
+                  <div key={it.id} className="border rounded-md p-3 overflow-hidden">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="mt-0.5">
+                        {getActivityIcon(it.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium truncate">
+                            {getActivityLabel(it.type, it.targetType)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {it.createdAt ? formatRelativeTime(it.createdAt) : ''}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {(it.targetType === 'folder' ? 'Dossier' : 'Document')} • {it.title}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))
               )}

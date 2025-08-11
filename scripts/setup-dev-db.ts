@@ -29,8 +29,8 @@ async function setupDevDatabase() {
   try {
     console.log('🔧 Configuration de la base de données de développement...')
 
-    // Créer les tables
-    await prisma.$executeRaw`SELECT 1`
+    // Vérifier la connexion (SQLite n'autorise pas $executeRaw avec résultats)
+    await prisma.$queryRaw`SELECT 1`
     console.log('✅ Base de données connectée')
 
     // Vérifier si un admin existe déjà

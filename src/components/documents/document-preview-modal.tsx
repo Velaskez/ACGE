@@ -58,16 +58,16 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">{document.title}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Informations du document */}
-          <div className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
+          <div className="flex flex-col sm:flex-row items-start gap-4 p-4 bg-gray-50 rounded-lg">
             {getFileIcon(document.currentVersion?.fileType)}
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-2 w-full">
               <div className="flex items-center space-x-2">
                 <h3 className="font-medium">{document.currentVersion?.fileName || 'Sans nom'}</h3>
                 <Badge variant="secondary">{document.currentVersion?.fileType || 'Inconnu'}</Badge>
@@ -83,7 +83,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
                 <span>Par {document.author?.name || 'Inconnu'}</span>
               </div>
             </div>
-            <Button onClick={handleDownload} size="sm">
+            <Button onClick={handleDownload} size="sm" className="w-full sm:w-auto">
               <Download className="mr-2 h-4 w-4" />
               Télécharger
             </Button>

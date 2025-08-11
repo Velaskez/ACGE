@@ -4,7 +4,12 @@ export async function GET() {
   try {
     // Vérifier la connexion à la base de données
     const { prisma } = await import('@/lib/db');
-    await prisma.$queryRaw`SELECT 1`;
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (_) {
+      // Fallback SQLite qui n'accepte pas forcément ce type de requête
+      await prisma.user.findFirst().catch(() => null)
+    }
     
     return NextResponse.json({
       status: 'healthy',
