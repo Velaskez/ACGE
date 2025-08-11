@@ -75,10 +75,10 @@ type ViewMode = 'list' | 'grid'
 type SortField = 'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'
 type SortOrder = 'asc' | 'desc'
 
-export default function DocumentItemsPage() {
+export default function DocumentsPage() {
   const router = useRouter()
-  const [documents, setDocumentItems] = useState<DocumentItem[]>([])
-  const [filteredDocumentItems, setFilteredDocumentItems] = useState<DocumentItem[]>([])
+  const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [filteredDocuments, setFilteredDocuments] = useState<DocumentItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -90,19 +90,19 @@ export default function DocumentItemsPage() {
   const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
-    fetchDocumentItems()
+    fetchDocuments()
   }, [])
 
   useEffect(() => {
-    filterAndSortDocumentItems()
+    filterAndSortDocuments()
   }, [documents, searchQuery, sortField, sortOrder])
 
-  const fetchDocumentItems = async () => {
+  const fetchDocuments = async () => {
     try {
       const response = await fetch('/api/documents')
       if (response.ok) {
         const data = await response.json()
-        setDocumentItems(data.documents)
+        setDocuments(data.documents)
       } else {
         setError('Erreur lors du chargement des fichiers')
       }
@@ -113,7 +113,7 @@ export default function DocumentItemsPage() {
     }
   }
 
-  const filterAndSortDocumentItems = () => {
+  const filterAndSortDocuments = () => {
     let filtered = documents
 
     // Filtrer par recherche
@@ -142,7 +142,7 @@ export default function DocumentItemsPage() {
       }
     })
 
-    setFilteredDocumentItems(filtered)
+    setFilteredDocuments(filtered)
   }
 
   const formatFileSize = (bytes: number) => {
@@ -179,7 +179,7 @@ export default function DocumentItemsPage() {
         const a = document.createElement('a')
         a.style.display = 'none'
         a.href = url
-        a.download = documentItem.fileName
+        a.download = documentItem.currentVersion?.fileName || 'document'
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -200,7 +200,7 @@ export default function DocumentItemsPage() {
       })
 
       if (response.ok) {
-        setDocumentItems(prev => prev.filter(doc => doc.id !== documentId))
+        setDocuments(prev => prev.filter(doc => doc.id !== documentId))
       } else {
         setError('Erreur lors de la suppression')
       }
@@ -240,7 +240,7 @@ export default function DocumentItemsPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <FileText className="w-8 h-8" />
-              Mes DocumentItems
+              Mes Documents
             </h1>
             <p className="text-muted-foreground">
               {documents.length} fichier(s) au total
@@ -310,9 +310,9 @@ export default function DocumentItemsPage() {
         {viewMode === 'list' ? (
           <Card>
             <CardHeader>
-              <CardTitle>DocumentItems</CardTitle>
+              <CardTitle>Documents</CardTitle>
               <CardDescription>
-                {filteredDocumentItems.length} document(s) affiché(s)
+                {filteredDocuments.length} document(s) affiché(s)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -358,7 +358,7 @@ export default function DocumentItemsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredDocumentItems.map((document) => (
+                  {filteredDocuments.map((document) => (
                     <TableRow key={document.id}>
                       <TableCell>
                         {getFileIcon(document.currentVersion?.fileType || 'unknown')}
@@ -425,7 +425,7 @@ export default function DocumentItemsPage() {
                 </TableBody>
               </Table>
 
-              {filteredDocumentItems.length === 0 && (
+              {filteredDocuments.length === 0 && (
                 <div className="text-center py-8">
                   <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                   <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -471,7 +471,7 @@ export default function DocumentItemsPage() {
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           onSave={(updatedDocument) => {
-            setDocumentItems(prev => 
+            setDocuments(prev => 
               prev.map(doc => doc.id === updatedDocument.id ? updatedDocument : doc)
             )
             setShowEditModal(false)

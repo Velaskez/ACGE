@@ -9,14 +9,22 @@ interface DocumentItem {
   id: string
   title: string
   description?: string
-  fileName: string
-  fileSize: number
-  fileType: string
-  filePath: string
-  version: number
   isPublic: boolean
   createdAt: string
   updatedAt: string
+  currentVersion?: {
+    id: string
+    versionNumber: number
+    fileName: string
+    fileSize: number
+    fileType: string
+    filePath: string
+    changeLog?: string
+    createdAt: string
+  }
+  _count?: {
+    versions: number
+  }
   author?: {
     name: string
     email: string
@@ -37,7 +45,8 @@ const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-const getFileIcon = (fileType: string) => {
+const getFileIcon = (fileType?: string) => {
+  if (!fileType) return <FileText className="h-8 w-8 text-gray-500" />
   if (fileType.startsWith('image/')) return <Image className="h-8 w-8 text-blue-500" />
   if (fileType.startsWith('video/')) return <Video className="h-8 w-8 text-purple-500" />
   if (fileType.startsWith('audio/')) return <Music className="h-8 w-8 text-green-500" />
@@ -45,7 +54,8 @@ const getFileIcon = (fileType: string) => {
   return <FileText className="h-8 w-8 text-gray-500" />
 }
 
-const canPreview = (fileType: string) => {
+const canPreview = (fileType?: string) => {
+  if (!fileType) return false
   return fileType.startsWith('image/') || 
          fileType === 'application/pdf' ||
          fileType.startsWith('text/')
@@ -61,7 +71,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
         const a = window.document.createElement('a')
         a.style.display = 'none'
         a.href = url
-        a.download = document.fileName
+        a.download = document.currentVersion?.fileName || 'document'
         window.document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -81,14 +91,14 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
         <div className="space-y-6">
           {/* Informations du document */}
           <div className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-            {getFileIcon(document.fileType)}
+            {getFileIcon(document.currentVersion?.fileType)}
             <div className="flex-1 space-y-2">
               <div className="flex items-center space-x-2">
-                <h3 className="font-medium">{document.fileName}</h3>
-                <Badge variant="secondary">{document.fileType}</Badge>
+                <h3 className="font-medium">{document.currentVersion?.fileName || 'Sans nom'}</h3>
+                <Badge variant="secondary">{document.currentVersion?.fileType || 'Inconnu'}</Badge>
               </div>
               <p className="text-sm text-gray-600">
-                {formatFileSize(document.fileSize)} • Version {document.version}
+                {formatFileSize(document.currentVersion?.fileSize || 0)} • Version {document.currentVersion?.versionNumber || 0}
               </p>
               {document.description && (
                 <p className="text-sm text-gray-700">{document.description}</p>
@@ -106,13 +116,13 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
           {/* Aperçu du contenu */}
           <div className="border rounded-lg overflow-hidden">
-            {canPreview(document.fileType) ? (
+            {canPreview(document.currentVersion?.fileType) ? (
               <div className="bg-white">
-                {document.fileType.startsWith('image/') && (
+                {document.currentVersion?.fileType?.startsWith('image/') && (
                   <div className="p-4 text-center">
                     <img 
                       src={`/api/documents/${document.id}/download`} 
-                      alt={document.fileName}
+                      alt={document.currentVersion?.fileName || 'Image'}
                       className="max-w-full max-h-96 mx-auto rounded"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
@@ -125,22 +135,22 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
                   </div>
                 )}
                 
-                {document.fileType === 'application/pdf' && (
+                {document.currentVersion?.fileType === 'application/pdf' && (
                   <div className="p-4 text-center">
                     <iframe 
                       src={`/api/documents/${document.id}/download`}
                       className="w-full h-96 border-0"
-                      title={document.fileName}
+                      title={document.currentVersion?.fileName || 'PDF'}
                     />
                   </div>
                 )}
                 
-                {document.fileType.startsWith('text/') && (
+                {document.currentVersion?.fileType?.startsWith('text/') && (
                   <div className="p-4">
                     <iframe 
                       src={`/api/documents/${document.id}/download`}
                       className="w-full h-64 border-0"
-                      title={document.fileName}
+                      title={document.currentVersion?.fileName || 'Texte'}
                     />
                   </div>
                 )}
@@ -148,7 +158,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
             ) : (
               <div className="p-8 text-center text-gray-500">
                 <div className="mb-4">
-                  {getFileIcon(document.fileType)}
+                  {getFileIcon(document.currentVersion?.fileType)}
                 </div>
                 <p className="text-lg font-medium mb-2">Aperçu non disponible</p>
                 <p className="text-sm">

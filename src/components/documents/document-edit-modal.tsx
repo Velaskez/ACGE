@@ -14,14 +14,22 @@ interface DocumentItem {
   id: string
   title: string
   description?: string
-  fileName: string
-  fileSize: number
-  fileType: string
-  filePath: string
-  version: number
   isPublic: boolean
   createdAt: string
   updatedAt: string
+  currentVersion?: {
+    id: string
+    versionNumber: number
+    fileName: string
+    fileSize: number
+    fileType: string
+    filePath: string
+    changeLog?: string
+    createdAt: string
+  }
+  _count?: {
+    versions: number
+  }
   author?: {
     name: string
     email: string
@@ -103,11 +111,11 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
           <div className="bg-gray-50 p-4 rounded-lg space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700">Fichier</span>
-              <Badge variant="secondary">{document.fileType}</Badge>
+              <Badge variant="secondary">{document.currentVersion?.fileType || 'Inconnu'}</Badge>
             </div>
-            <p className="text-sm text-gray-600">{document.fileName}</p>
+            <p className="text-sm text-gray-600">{document.currentVersion?.fileName || 'Sans nom'}</p>
             <p className="text-xs text-gray-500">
-              {formatFileSize(document.fileSize)} • Version {document.version}
+              {formatFileSize(document.currentVersion?.fileSize || 0)} • Version {document.currentVersion?.versionNumber || 0}
             </p>
           </div>
 

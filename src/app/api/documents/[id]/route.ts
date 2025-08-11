@@ -32,6 +32,12 @@ export async function GET(
         authorId: userId // Sécurité : seul le propriétaire peut voir le document
       },
       include: {
+        currentVersion: true,
+        _count: {
+          select: {
+            versions: true
+          }
+        },
         author: {
           select: {
             id: true,
@@ -86,11 +92,18 @@ export async function DELETE(
     const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
     const userId = decoded.userId
 
-    // Récupérer le document pour vérifier les permissions
+    // Récupérer le document avec toutes ses versions pour vérifier les permissions
     const document = await prisma.document.findFirst({
       where: {
         id: resolvedParams.id,
         authorId: userId
+      },
+      include: {
+        versions: {
+          select: {
+            filePath: true
+          }
+        }
       }
     })
 
@@ -101,14 +114,16 @@ export async function DELETE(
       )
     }
 
-    // Supprimer le fichier physique
-    const filePath = join(process.cwd(), 'uploads', userId, document.filePath.split('/').pop() || '')
-    if (existsSync(filePath)) {
-      try {
-        await unlink(filePath)
-      } catch (fileError) {
-        console.error('Erreur lors de la suppression du fichier:', fileError)
-        // Continuer quand même la suppression en base
+    // Supprimer tous les fichiers physiques de toutes les versions
+    for (const version of document.versions) {
+      const filePath = join(process.cwd(), 'uploads', userId, version.filePath.split('/').pop() || '')
+      if (existsSync(filePath)) {
+        try {
+          await unlink(filePath)
+        } catch (fileError) {
+          console.error('Erreur lors de la suppression du fichier:', fileError)
+          // Continuer quand même la suppression en base
+        }
       }
     }
 
@@ -178,6 +193,12 @@ export async function PUT(
         updatedAt: new Date()
       },
       include: {
+        currentVersion: true,
+        _count: {
+          select: {
+            versions: true
+          }
+        },
         author: {
           select: {
             id: true,
