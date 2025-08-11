@@ -67,28 +67,97 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(bytes)
         await writeFile(filePath, buffer)
 
-        // Enregistrer dans la base de données
-        const document = await prisma.document.create({
-          data: {
-            title: metadata.name || file.name.split('.')[0],
-            description: metadata.description || null,
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type,
-            filePath: `/uploads/${userId}/${fileName}`,
-            version: 1,
-            isPublic: false,
-            authorId: userId,
-            folderId: metadata.folderId || null,
-          }
-        })
+        // Vérifier s'il s'agit d'une nouvelle version d'un document existant
+        const existingDocument = metadata.documentId ? 
+          await prisma.document.findFirst({
+            where: {
+              id: metadata.documentId,
+              authorId: userId
+            },
+            include: {
+              versions: {
+                orderBy: { versionNumber: 'desc' },
+                take: 1
+              }
+            }
+          }) : null
+
+        let document
+        let documentVersion
+
+        if (existingDocument) {
+          // Nouvelle version d'un document existant
+          const lastVersion = existingDocument.versions[0]
+          const newVersionNumber = lastVersion ? lastVersion.versionNumber + 1 : 1
+
+          documentVersion = await prisma.documentVersion.create({
+            data: {
+              versionNumber: newVersionNumber,
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+              filePath: `/uploads/${userId}/${fileName}`,
+              changeLog: metadata.changeLog || `Version ${newVersionNumber}`,
+              documentId: existingDocument.id,
+              createdById: userId
+            }
+          })
+
+          // Mettre à jour le document pour pointer vers la nouvelle version
+          document = await prisma.document.update({
+            where: { id: existingDocument.id },
+            data: { 
+              currentVersionId: documentVersion.id,
+              updatedAt: new Date()
+            }
+          })
+
+        } else {
+          // Nouveau document
+          document = await prisma.document.create({
+            data: {
+              title: metadata.name || file.name.split('.')[0],
+              description: metadata.description || null,
+              isPublic: false,
+              authorId: userId,
+              folderId: metadata.folderId || null,
+            }
+          })
+
+          // Créer la première version
+          documentVersion = await prisma.documentVersion.create({
+            data: {
+              versionNumber: 1,
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+              filePath: `/uploads/${userId}/${fileName}`,
+              changeLog: 'Version initiale',
+              documentId: document.id,
+              createdById: userId
+            }
+          })
+
+          // Mettre à jour le document pour pointer vers cette version
+          await prisma.document.update({
+            where: { id: document.id },
+            data: { currentVersionId: documentVersion.id }
+          })
+        }
 
         uploadedFiles.push({
           id: document.id,
+          title: document.title,
           name: file.name,
           size: file.size,
           type: file.type,
-          path: document.filePath
+          path: documentVersion.filePath,
+          version: {
+            id: documentVersion.id,
+            number: documentVersion.versionNumber,
+            changeLog: documentVersion.changeLog,
+            isNewDocument: !existingDocument
+          }
         })
 
       } catch (error) {

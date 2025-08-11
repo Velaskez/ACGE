@@ -25,6 +25,10 @@
     "test:api": "tsx scripts/test-api-data.ts",
     "migrate:versioning": "tsx scripts/migrate-to-versioning.ts",
     "backup:documents": "tsx scripts/safe-versioning-migration.ts",
+    "restore:documents": "tsx scripts/restore-documents.ts",
+    "check:versioning": "tsx scripts/check-versioning-data.ts",
+    "test:versioning": "tsx scripts/test-versioning-apis.ts",
+    "test:upload": "tsx scripts/test-upload-versioning.ts",
     "dev:clean": "rm -f prisma/dev.db && rm -f .env.local && npm run setup:dev",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
@@ -34,7 +38,8 @@
     "setup:production": "tsx scripts/setup-production.ts",
     "build:prod": "NODE_ENV=production next build",
     "start:prod": "NODE_ENV=production next start -p $PORT",
-    "postbuild": "npm run db:generate"
+    "postbuild": "npm run db:generate",
+    "vercel:setup": "tsx scripts/vercel-setup-admin.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^1.0.0",

@@ -45,22 +45,29 @@ import {
 } from 'lucide-react'
 import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
+import { DocumentVersionHistory } from '@/components/documents/document-version-history'
 
 interface DocumentItem {
   id: string
   title: string
   description?: string
-  fileName: string
-  fileSize: number
-  fileType: string
-  filePath: string
-  version: number
   isPublic: boolean
   createdAt: string
   updatedAt: string
   author?: {
     name: string
     email: string
+  }
+  currentVersion: {
+    id: string
+    versionNumber: number
+    fileName: string
+    fileSize: number
+    fileType: string
+    filePath: string
+  } | null
+  _count: {
+    versions: number
   }
 }
 
@@ -354,18 +361,18 @@ export default function DocumentItemsPage() {
                   {filteredDocumentItems.map((document) => (
                     <TableRow key={document.id}>
                       <TableCell>
-                        {getFileIcon(document.fileType)}
+                        {getFileIcon(document.currentVersion?.fileType || 'unknown')}
                       </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{document.title}</div>
-                          <div className="text-sm text-gray-500">{document.fileName}</div>
+                          <div className="text-sm text-gray-500">{document.currentVersion?.fileName || 'Sans fichier'}</div>
                           {document.description && (
                             <div className="text-xs text-gray-400 mt-1">{document.description}</div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{formatFileSize(document.fileSize)}</TableCell>
+                      <TableCell>{formatFileSize(document.currentVersion?.fileSize || 0)}</TableCell>
                       <TableCell>
                         {new Date(document.createdAt).toLocaleDateString('fr-FR')}
                       </TableCell>
@@ -385,6 +392,18 @@ export default function DocumentItemsPage() {
                             <DropdownMenuItem onClick={() => handleDownload(document)}>
                               <Download className="mr-2 h-4 w-4" />
                               Télécharger
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <DocumentVersionHistory 
+                                documentId={document.id}
+                                documentTitle={document.title}
+                                trigger={
+                                  <div className="flex items-center w-full px-2 py-1.5 cursor-pointer">
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Versions ({document._count.versions})
+                                  </div>
+                                }
+                              />
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(document)}>
                               <Edit className="mr-2 h-4 w-4" />

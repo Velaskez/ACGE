@@ -50,9 +50,11 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' }
       }),
       
-      // Taille totale des fichiers de l'utilisateur
-      prisma.document.aggregate({
-        where: { authorId: userId },
+      // Taille totale des fichiers de l'utilisateur (via les versions)
+      prisma.documentVersion.aggregate({
+        where: { 
+          document: { authorId: userId }
+        },
         _sum: {
           fileSize: true
         }
@@ -71,6 +73,12 @@ export async function GET(request: NextRequest) {
           folder: {
             select: {
               name: true
+            }
+          },
+          currentVersion: true,
+          _count: {
+            select: {
+              versions: true
             }
           }
         },
@@ -116,14 +124,16 @@ export async function GET(request: NextRequest) {
     // Formatage des documents récents
     const formattedRecentDocuments = recentDocuments.map(doc => ({
       id: doc.id,
-      name: doc.fileName,
+      name: doc.currentVersion?.fileName || 'Sans fichier',
       title: doc.title,
-      size: doc.fileSize,
-      type: doc.fileType,
+      size: doc.currentVersion?.fileSize || 0,
+      type: doc.currentVersion?.fileType || 'unknown',
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
       author: doc.author,
-      folder: doc.folder
+      folder: doc.folder,
+      versionCount: doc._count.versions,
+      currentVersion: doc.currentVersion?.versionNumber || 0
     }))
 
     const stats = {

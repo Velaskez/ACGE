@@ -34,8 +34,12 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { fileName: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { description: { contains: search, mode: 'insensitive' } },
+        { 
+          currentVersion: {
+            fileName: { contains: search, mode: 'insensitive' }
+          }
+        }
       ]
     }
 
@@ -62,10 +66,16 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true
             }
+          },
+          currentVersion: true,
+          _count: {
+            select: {
+              versions: true
+            }
           }
         },
         orderBy: {
-          createdAt: 'desc'
+          updatedAt: 'desc'
         },
         skip: offset,
         take: limit
