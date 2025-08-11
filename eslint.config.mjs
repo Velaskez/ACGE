@@ -10,6 +10,18 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    // Ignore les dossiers générés et non pertinents pour l'analyse
+    ignores: [
+      "**/.next/**",
+      "**/node_modules/**",
+      "uploads/**",
+      "public/**",
+      "prisma/**",
+      "dist/**",
+      "build/**",
+    ],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 
