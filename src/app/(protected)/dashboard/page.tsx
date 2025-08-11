@@ -4,7 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useRouter } from 'next/navigation'
+import { useDashboardData } from '@/hooks/use-dashboard-data'
+import { formatFileSize, formatRelativeTime, getFileTypeLabel } from '@/lib/utils'
 import { 
   FileText, 
   FolderOpen, 
@@ -13,11 +16,14 @@ import {
   TrendingUp, 
   Clock,
   Eye,
-  Download
+  Download,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { stats, activity, isLoading, error, refreshData } = useDashboardData()
 
   const handleNewDocument = () => {
     router.push('/upload')
@@ -67,11 +73,33 @@ export default function DashboardPage() {
               Vue d'ensemble de vos fichiers et activités
             </p>
           </div>
-          <Button onClick={handleNewDocument}>
-            <Upload className="mr-2 h-4 w-4" />
-            Nouveau document
-          </Button>
+          <div className="flex gap-2">
+            {error && (
+              <Button variant="outline" size="sm" onClick={refreshData}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Actualiser
+              </Button>
+            )}
+            <Button onClick={handleNewDocument}>
+              <Upload className="mr-2 h-4 w-4" />
+              Nouveau document
+            </Button>
+          </div>
         </div>
+
+        {/* Error state */}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <p className="text-sm text-red-600">
+                  Erreur lors du chargement des données: {error}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -81,10 +109,25 @@ export default function DashboardPage() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
-              <p className="text-xs text-muted-foreground">
-                +12% par rapport au mois dernier
-              </p>
+              {isLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats?.totalDocuments?.toLocaleString() || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.monthlyGrowthPercentage ? (
+                      stats.monthlyGrowthPercentage > 0 ? 
+                        `+${stats.monthlyGrowthPercentage}% par rapport au mois dernier` :
+                        stats.monthlyGrowthPercentage < 0 ?
+                          `${stats.monthlyGrowthPercentage}% par rapport au mois dernier` :
+                          'Aucune évolution ce mois'
+                    ) : 'Pas de données historiques'}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -94,10 +137,21 @@ export default function DashboardPage() {
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">45</div>
-              <p className="text-xs text-muted-foreground">
-                +3 nouveaux ce mois
-              </p>
+              {isLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats?.totalFolders?.toLocaleString() || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.documentsThisMonth ? 
+                      `+${stats.documentsThisMonth} nouveaux ce mois` : 
+                      'Aucun nouveau ce mois'}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -107,10 +161,23 @@ export default function DashboardPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2.5 GB</div>
-              <p className="text-xs text-muted-foreground">
-                65% de votre quota
-              </p>
+              {isLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {stats?.spaceUsed ? `${stats.spaceUsed.gb} GB` : '0 GB'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.spaceUsed ? 
+                      `${stats.spaceUsed.percentage}% de votre quota` : 
+                      '0% de votre quota'}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -120,10 +187,21 @@ export default function DashboardPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">
-                3 en ligne actuellement
-              </p>
+              {isLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats?.activeUsers || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.activeUsers ? 
+                      `${stats.activeUsers} en ligne récemment` : 
+                      'Aucun utilisateur actif'}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -147,50 +225,75 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { name: 'Rapport_2024.pdf', date: 'Il y a 2 heures', size: '2.3 MB', type: 'PDF' },
-                  { name: 'Présentation_Q1.pptx', date: 'Hier', size: '15.7 MB', type: 'PPTX' },
-                  { name: 'Budget_2024.xlsx', date: 'Il y a 3 jours', size: '1.2 MB', type: 'XLSX' },
-                  { name: 'Contrat_client.docx', date: 'Il y a 1 semaine', size: '3.1 MB', type: 'DOCX' },
-                ].map((doc, index) => (
-                  <div key={index} className="flex items-center space-x-4">
-                    <div className="w-8 h-8 bg-powder-blue/20 rounded flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-powder-blue" />
+                {isLoading ? (
+                  Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="flex items-center space-x-4">
+                      <Skeleton className="w-8 h-8 rounded" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-48" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                      <div className="flex space-x-2">
+                        <Skeleton className="w-8 h-8" />
+                        <Skeleton className="w-8 h-8" />
+                      </div>
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium leading-none">{doc.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {doc.date} • {doc.size} • {doc.type}
-                      </p>
+                  ))
+                ) : stats?.recentDocuments && stats.recentDocuments.length > 0 ? (
+                  stats.recentDocuments.map((doc) => (
+                    <div key={doc.id} className="flex items-center space-x-4">
+                      <div className="w-8 h-8 bg-powder-blue/20 rounded flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-powder-blue" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">{doc.title || doc.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatRelativeTime(doc.updatedAt)} • {formatFileSize(doc.size)} • {getFileTypeLabel(doc.type)}
+                        </p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc.name)}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Voir le document</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => handleDownloadDocument(doc.name)}>
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Télécharger</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc.name)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Voir le document</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => handleDownloadDocument(doc.name)}>
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Télécharger</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-2 text-sm font-medium text-muted-foreground">Aucun document</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Commencez par télécharger votre premier document.
+                    </p>
+                    <div className="mt-6">
+                      <Button onClick={handleNewDocument}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Télécharger un document
+                      </Button>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>
@@ -205,22 +308,37 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { action: 'Document téléchargé', doc: 'Rapport_2024.pdf', time: 'Il y a 5 min' },
-                  { action: 'Document partagé', doc: 'Présentation_Q1.pptx', time: 'Il y a 1 heure' },
-                  { action: 'Nouveau document', doc: 'Budget_2024.xlsx', time: 'Il y a 3 heures' },
-                  { action: 'Document modifié', doc: 'Contrat_client.docx', time: 'Hier' },
-                  { action: 'Dossier créé', doc: 'Projet_2024', time: 'Il y a 2 jours' },
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-powder-blue rounded-full mt-2"></div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-xs text-muted-foreground">{activity.doc}</p>
-                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="flex items-start space-x-3">
+                      <Skeleton className="w-2 h-2 rounded-full mt-2" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
                     </div>
+                  ))
+                ) : activity?.activities && activity.activities.length > 0 ? (
+                  activity.activities.map((act) => (
+                    <div key={act.id} className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-powder-blue rounded-full mt-2"></div>
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium">{act.action}</p>
+                        <p className="text-xs text-muted-foreground">{act.target}</p>
+                        <p className="text-xs text-muted-foreground">{formatRelativeTime(act.timestamp)}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <Clock className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <h3 className="mt-2 text-sm font-medium text-muted-foreground">Aucune activité</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Vos activités récentes apparaîtront ici.
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>

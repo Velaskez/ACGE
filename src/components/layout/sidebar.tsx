@@ -4,10 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { cn } from '@/lib/utils'
+import { useSidebarData } from '@/hooks/use-sidebar-data'
+import { cn, formatFileSize } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Home,
   FolderOpen,
@@ -61,6 +63,7 @@ const mainNav = [
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const { user } = useAuth()
+  const { stats, folders, isLoading } = useSidebarData()
   const [expandedFolders, setExpandedFolders] = useState<string[]>([])
 
   const toggleFolder = (folderId: string) => {
@@ -117,36 +120,68 @@ export function Sidebar({ className }: SidebarProps) {
           </div>
           <ScrollArea className="h-[300px] px-1">
             <div className="space-y-1">
-              {/* TODO: Remplacer par les vrais dossiers */}
-              {['Comptabilité', 'Factures', 'Contrats', 'Rapports'].map((folder, index) => (
-                <div key={index}>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start h-8"
-                    onClick={() => toggleFolder(folder)}
-                  >
-                    {expandedFolders.includes(folder) ? (
-                      <ChevronDown className="mr-2 h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="mr-2 h-4 w-4" />
-                    )}
-                    <FolderOpen className="mr-2 h-4 w-4" />
-                    {folder}
-                  </Button>
-                  {expandedFolders.includes(folder) && (
-                    <div className="ml-6 space-y-1">
-                      <Button variant="ghost" className="w-full justify-start h-6 text-sm">
-                        <FileText className="mr-2 h-3 w-3" />
-                        Document 1.pdf
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start h-6 text-sm">
-                        <FileText className="mr-2 h-3 w-3" />
-                        Document 2.docx
-                      </Button>
+              {isLoading ? (
+                // Skeleton pour le chargement
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="space-y-1">
+                    <div className="flex items-center space-x-2 px-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-24" />
                     </div>
-                  )}
+                  </div>
+                ))
+              ) : folders.length > 0 ? (
+                // Affichage des vrais dossiers
+                folders.map((folder) => (
+                  <div key={folder.id}>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start h-8"
+                      onClick={() => toggleFolder(folder.id)}
+                    >
+                      {expandedFolders.includes(folder.id) ? (
+                        <ChevronDown className="mr-2 h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="mr-2 h-4 w-4" />
+                      )}
+                      <FolderOpen className="mr-2 h-4 w-4" />
+                      <span className="flex-1 text-left">{folder.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {folder.documentCount}
+                      </span>
+                    </Button>
+                    {expandedFolders.includes(folder.id) && (
+                      <div className="ml-6 space-y-1">
+                        {folder.recentDocuments.length > 0 ? (
+                          folder.recentDocuments.map((doc) => (
+                            <Button 
+                              key={doc.id}
+                              variant="ghost" 
+                              className="w-full justify-start h-6 text-sm"
+                            >
+                              <FileText className="mr-2 h-3 w-3" />
+                              <span className="truncate">{doc.title}</span>
+                            </Button>
+                          ))
+                        ) : (
+                          <div className="text-xs text-muted-foreground px-2 py-1">
+                            Aucun document
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                // État vide
+                <div className="text-center py-4">
+                  <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Aucun dossier
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </ScrollArea>
         </div>
@@ -159,18 +194,37 @@ export function Sidebar({ className }: SidebarProps) {
             Statistiques
           </h2>
           <div className="space-y-2 px-4">
-            <div className="flex justify-between text-sm">
-              <span>Fichiers</span>
-              <span className="font-medium">1,234</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Espace utilisé</span>
-              <span className="font-medium">2.5 GB</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Dossiers</span>
-              <span className="font-medium">45</span>
-            </div>
+            {isLoading ? (
+              // Skeleton pour le chargement
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="flex justify-between text-sm">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-12" />
+                </div>
+              ))
+            ) : (
+              // Affichage des vraies statistiques
+              <>
+                <div className="flex justify-between text-sm">
+                  <span>Fichiers</span>
+                  <span className="font-medium">
+                    {stats?.totalDocuments?.toLocaleString() || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Espace utilisé</span>
+                  <span className="font-medium">
+                    {stats?.spaceUsed?.gb ? `${stats.spaceUsed.gb} GB` : '0 GB'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Dossiers</span>
+                  <span className="font-medium">
+                    {stats?.totalFolders?.toLocaleString() || 0}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
