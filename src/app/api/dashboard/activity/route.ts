@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
     const [
       recentDocuments,
       recentFolders,
-      recentShares
+      recentShares,
+      recentActivities
     ] = await Promise.all([
       // Documents récemment créés ou modifiés
       prisma.document.findMany({
@@ -73,11 +74,17 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { createdAt: 'desc' },
         take: 5
+      }),
+      // Activités explicites (ex: suppressions)
+      prisma.activity.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
       })
     ])
 
     // Combiner et trier toutes les activités par date
-    const activities = []
+    const activities: any[] = []
 
     // Ajouter les documents
     recentDocuments.forEach(doc => {
@@ -121,6 +128,19 @@ export async function GET(request: NextRequest) {
         metadata: {
           fileType: share.document.currentVersion?.fileType || 'unknown'
         }
+      })
+    })
+
+    // Ajouter les activités explicites (suppression, etc.)
+    recentActivities.forEach(act => {
+      activities.push({
+        id: `act-${act.id}`,
+        type: act.type,
+        action: act.type.replace('_', ' '),
+        target: act.title,
+        targetId: act.targetId,
+        timestamp: act.createdAt,
+        metadata: act.metadata || {}
       })
     })
 

@@ -10,6 +10,10 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Home,
   FolderOpen,
@@ -65,6 +69,10 @@ export function Sidebar({ className }: SidebarProps) {
   const { user } = useAuth()
   const { stats, folders, isLoading } = useSidebarData()
   const [expandedFolders, setExpandedFolders] = useState<string[]>([])
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [newFolderDescription, setNewFolderDescription] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders(prev =>
@@ -72,6 +80,30 @@ export function Sidebar({ className }: SidebarProps) {
         ? prev.filter(id => id !== folderId)
         : [...prev, folderId]
     )
+  }
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return
+
+    setIsCreating(true)
+    try {
+      // TODO: Appeler l'API pour créer le dossier
+      console.log('Création du dossier:', { 
+        name: newFolderName, 
+        description: newFolderDescription 
+      })
+      
+      // Simuler la création pour l'instant
+      setNewFolderName('')
+      setNewFolderDescription('')
+      setShowCreateDialog(false)
+      
+      // TODO: Rafraîchir la liste des dossiers
+    } catch (error) {
+      console.error('Erreur lors de la création du dossier:', error)
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   // Filtrer les éléments de navigation selon le rôle
@@ -84,12 +116,12 @@ export function Sidebar({ className }: SidebarProps) {
   })
 
   return (
-    <div className={cn('fixed left-0 top-16 bottom-0 z-40 w-64 bg-background border-r overflow-hidden', className)}>
-      <ScrollArea className="h-full">
-        <div className="space-y-4 py-4">
+    <div className={cn('fixed left-0 top-16 bottom-0 z-40 w-64 bg-background border-r flex flex-col max-h-screen', className)}>
+      <ScrollArea className="flex-1">
+        <div className="space-y-3 py-3 px-2">
         {/* Navigation principale */}
-        <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+        <div className="px-1 py-2">
+          <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">
             Navigation
           </h2>
           <div className="space-y-1">
@@ -97,10 +129,11 @@ export function Sidebar({ className }: SidebarProps) {
               <Link key={item.href} href={item.href}>
                 <Button
                   variant={pathname === item.href ? 'secondary' : 'ghost'}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-sm min-w-0"
+                  size="sm"
                 >
-                  <item.icon className="mr-2 h-4 w-4" />
-                  {item.title}
+                  <item.icon className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{item.title}</span>
                 </Button>
               </Link>
             ))}
@@ -110,21 +143,73 @@ export function Sidebar({ className }: SidebarProps) {
         <Separator />
 
         {/* Dossiers récents */}
-        <div className="px-3 py-2">
-          <div className="flex items-center justify-between mb-2 px-4">
-            <h2 className="text-lg font-semibold tracking-tight">
+        <div className="px-1 py-2 flex-shrink-0">
+          <div className="flex items-center justify-between mb-2 px-2">
+            <h2 className="text-lg font-semibold tracking-tight truncate">
               Dossiers récents
             </h2>
-            <Button variant="ghost" size="icon" className="h-6 w-6">
-              <Plus className="h-4 w-4" />
-            </Button>
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Créer un nouveau dossier</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="folder-name" className="text-right">
+                      Nom
+                    </Label>
+                    <Input
+                      id="folder-name"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      className="col-span-3"
+                      placeholder="Nom du dossier"
+                      disabled={isCreating}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="folder-description" className="text-right">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="folder-description"
+                      value={newFolderDescription}
+                      onChange={(e) => setNewFolderDescription(e.target.value)}
+                      className="col-span-3"
+                      placeholder="Description (optionnel)"
+                      disabled={isCreating}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowCreateDialog(false)}
+                    disabled={isCreating}
+                  >
+                    Annuler
+                  </Button>
+                  <Button 
+                    onClick={handleCreateFolder}
+                    disabled={!newFolderName.trim() || isCreating}
+                  >
+                    {isCreating ? 'Création...' : 'Créer'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
-          <ScrollArea className="h-[300px] px-1">
-            <div className="space-y-1">
-              {isLoading ? (
-                // Skeleton pour le chargement
-                Array.from({ length: 4 }).map((_, index) => (
-                  <div key={index} className="space-y-1">
+          <div className="space-y-1 max-h-[200px] overflow-y-auto">
+            {isLoading ? (
+              // Skeleton pour le chargement
+              Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="space-y-1">
                     <div className="flex items-center space-x-2 px-2">
                       <Skeleton className="h-4 w-4" />
                       <Skeleton className="h-4 w-4" />
@@ -138,17 +223,17 @@ export function Sidebar({ className }: SidebarProps) {
                   <div key={folder.id}>
                     <Button
                       variant="ghost"
-                      className="w-full justify-start h-8"
+                      className="w-full justify-start h-8 text-sm min-w-0"
                       onClick={() => toggleFolder(folder.id)}
                     >
                       {expandedFolders.includes(folder.id) ? (
-                        <ChevronDown className="mr-2 h-4 w-4" />
+                        <ChevronDown className="mr-2 h-4 w-4 flex-shrink-0" />
                       ) : (
-                        <ChevronRight className="mr-2 h-4 w-4" />
+                        <ChevronRight className="mr-2 h-4 w-4 flex-shrink-0" />
                       )}
-                      <FolderOpen className="mr-2 h-4 w-4" />
-                      <span className="flex-1 text-left">{folder.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <FolderOpen className="mr-2 h-4 w-4 flex-shrink-0" />
+                      <span className="flex-1 min-w-0 text-left truncate">{folder.name}</span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
                         {folder.documentCount}
                       </span>
                     </Button>
@@ -159,10 +244,10 @@ export function Sidebar({ className }: SidebarProps) {
                             <Button 
                               key={doc.id}
                               variant="ghost" 
-                              className="w-full justify-start h-6 text-sm"
+                              className="w-full justify-start h-6 text-sm min-w-0"
                             >
-                              <FileText className="mr-2 h-3 w-3" />
-                              <span className="truncate">{doc.title}</span>
+                              <FileText className="mr-2 h-3 w-3 flex-shrink-0" />
+                              <span className="flex-1 min-w-0 truncate">{doc.title}</span>
                             </Button>
                           ))
                         ) : (
@@ -184,18 +269,18 @@ export function Sidebar({ className }: SidebarProps) {
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         <Separator />
 
         {/* Statistiques rapides */}
-        <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+        <div className="px-1 py-2 flex-shrink-0">
+          <h2 className="mb-2 px-2 text-lg font-semibold tracking-tight">
             Statistiques
           </h2>
-          <div className="space-y-2 px-4">
-            {isLoading ? (
+          <div className="space-y-2 px-2">
+                         {isLoading ? (
               // Skeleton pour le chargement
               Array.from({ length: 3 }).map((_, index) => (
                 <div key={index} className="flex justify-between text-sm">
@@ -227,7 +312,6 @@ export function Sidebar({ className }: SidebarProps) {
               </>
             )}
           </div>
-        </div>
         </div>
       </ScrollArea>
     </div>

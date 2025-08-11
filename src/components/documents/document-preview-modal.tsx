@@ -4,32 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Download, FileText, Image, Video, Music, Archive } from 'lucide-react'
-
-interface DocumentItem {
-  id: string
-  title: string
-  description?: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  currentVersion?: {
-    id: string
-    versionNumber: number
-    fileName: string
-    fileSize: number
-    fileType: string
-    filePath: string
-    changeLog?: string
-    createdAt: string
-  }
-  _count?: {
-    versions: number
-  }
-  author?: {
-    name: string
-    email: string
-  }
-}
+import { DocumentItem } from '@/types/document'
 
 interface DocumentPreviewModalProps {
   document: DocumentItem

@@ -15,7 +15,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <Header />
 
@@ -42,7 +42,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       {/* Main content */}
       <main className="pt-16 md:ml-64 min-h-screen">
-        <div className="p-6 w-full">
+        <div className="p-6 w-full max-w-full overflow-x-hidden">
           {children}
         </div>
       </main>

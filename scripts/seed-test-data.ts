@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { hash } from 'bcryptjs'
+import { generateFolderNumber } from '../src/lib/folder-numbering'
 
 const prisma = new PrismaClient()
 
@@ -27,6 +28,7 @@ async function main() {
       const folders = await Promise.all([
         prisma.folder.create({
           data: {
+            folderNumber: await generateFolderNumber(),
             name: 'Comptabilité',
             description: 'Documents comptables et financiers',
             authorId: testUser.id
@@ -34,6 +36,7 @@ async function main() {
         }),
         prisma.folder.create({
           data: {
+            folderNumber: await generateFolderNumber(),
             name: 'Factures',
             description: 'Factures clients et fournisseurs',
             authorId: testUser.id
@@ -41,6 +44,7 @@ async function main() {
         }),
         prisma.folder.create({
           data: {
+            folderNumber: await generateFolderNumber(),
             name: 'Contrats',
             description: 'Contrats et accords',
             authorId: testUser.id

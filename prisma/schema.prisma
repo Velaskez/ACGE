@@ -28,6 +28,7 @@ model User {
   folders           Folder[]
   sharedWith        DocumentShare[]
   comments          Comment[]
+  activities        Activity[]
   
   @@map("users")
 }
@@ -86,11 +87,12 @@ model DocumentVersion {
 }
 
 model Folder {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  folderNumber String    @unique
+  name         String
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   
   // Relations
   authorId    String
@@ -143,6 +145,24 @@ model Comment {
   author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   
   @@map("comments")
+}
+
+// Journal d'activité (audit)
+model Activity {
+  id          String   @id @default(cuid())
+  type        String   // ex: document_created, document_updated, document_deleted, document_moved, folder_created
+  targetType  String   // ex: document, folder
+  targetId    String
+  title       String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@map("activities")
 }
 
 // Les enums ne sont pas supportés par SQLite

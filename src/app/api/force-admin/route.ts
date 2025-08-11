@@ -55,8 +55,8 @@ export async function GET() {
       { 
         success: false,
         error: 'Erreur lors de la création force admin',
-        details: error.message,
-        code: error.code
+        details: error instanceof Error ? error.message : 'Erreur inconnue',
+        code: (error as any).code || 'UNKNOWN_ERROR'
       },
       { status: 500 }
     );

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Button } from '@/components/ui/button'
@@ -26,7 +26,7 @@ import {
 import { 
   FileText, 
   Plus, 
-  Search, 
+  Search,
   MoreHorizontal, 
   Download, 
   Edit, 
@@ -35,9 +35,6 @@ import {
   Upload,
   Grid,
   List,
-  Filter,
-  SortAsc,
-  SortDesc,
   File,
   Image,
   Video,
@@ -47,103 +44,27 @@ import { DocumentPreviewModal } from '@/components/documents/document-preview-mo
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentVersionHistory } from '@/components/documents/document-version-history'
 
-interface DocumentItem {
-  id: string
-  title: string
-  description?: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  author?: {
-    name: string
-    email: string
-  }
-  currentVersion: {
-    id: string
-    versionNumber: number
-    fileName: string
-    fileSize: number
-    fileType: string
-    filePath: string
-  } | null
-  _count: {
-    versions: number
-  }
-}
-
-type ViewMode = 'list' | 'grid'
-type SortField = 'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'
-type SortOrder = 'asc' | 'desc'
+import { DocumentItem, ViewMode } from '@/types/document'
+import { useDocumentsData } from '@/hooks/use-documents-data'
 
 export default function DocumentsPage() {
   const router = useRouter()
-  const [documents, setDocuments] = useState<DocumentItem[]>([])
-  const [filteredDocuments, setFilteredDocuments] = useState<DocumentItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
+  const { 
+    documents, 
+    filteredDocuments, 
+    isLoading, 
+    error, 
+    searchQuery, 
+    setSearchQuery,
+    deleteDocument, 
+    downloadDocument, 
+    updateDocument, 
+    refreshData 
+  } = useDocumentsData()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
-  const [sortField, setSortField] = useState<SortField>('createdAt')
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [selectedDocument, setSelectedDocument] = useState<DocumentItem | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-
-  useEffect(() => {
-    fetchDocuments()
-  }, [])
-
-  useEffect(() => {
-    filterAndSortDocuments()
-  }, [documents, searchQuery, sortField, sortOrder])
-
-  const fetchDocuments = async () => {
-    try {
-      const response = await fetch('/api/documents')
-      if (response.ok) {
-        const data = await response.json()
-        setDocuments(data.documents)
-      } else {
-        setError('Erreur lors du chargement des fichiers')
-      }
-    } catch (error) {
-      setError('Erreur de connexion')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const filterAndSortDocuments = () => {
-    let filtered = documents
-
-    // Filtrer par recherche
-    if (searchQuery) {
-      filtered = filtered.filter(doc => 
-        doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    // Trier
-    filtered.sort((a, b) => {
-      let aValue: any = a[sortField]
-      let bValue: any = b[sortField]
-
-      if (sortField === 'createdAt' || sortField === 'updatedAt') {
-        aValue = new Date(aValue).getTime()
-        bValue = new Date(bValue).getTime()
-      }
-
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1
-      } else {
-        return aValue < bValue ? 1 : -1
-      }
-    })
-
-    setFilteredDocuments(filtered)
-  }
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
@@ -161,52 +82,16 @@ export default function DocumentsPage() {
     return <File className="w-4 h-4 text-gray-500" />
   }
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortOrder('asc')
-    }
-  }
-
   const handleDownload = async (documentItem: DocumentItem) => {
-    try {
-      const response = await fetch(`/api/documents/${documentItem.id}/download`)
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.style.display = 'none'
-        a.href = url
-        a.download = documentItem.currentVersion?.fileName || 'document'
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-      }
-    } catch (error) {
-      console.error('Erreur téléchargement:', error)
-    }
+    await downloadDocument(documentItem)
   }
 
   const handleDelete = async (documentId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) {
       return
     }
-
-    try {
-      const response = await fetch(`/api/documents/${documentId}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        setDocuments(prev => prev.filter(doc => doc.id !== documentId))
-      } else {
-        setError('Erreur lors de la suppression')
-      }
-    } catch (error) {
-      setError('Erreur de connexion')
-    }
+    
+    await deleteDocument(documentId)
   }
 
   const handleView = (documentItem: DocumentItem) => {
@@ -238,66 +123,64 @@ export default function DocumentsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <FileText className="w-8 h-8" />
               Mes Documents
             </h1>
             <p className="text-muted-foreground">
-              {documents.length} fichier(s) au total
+              {isLoading 
+                ? "Chargement..." 
+                : filteredDocuments.length !== documents.length
+                  ? `${filteredDocuments.length} sur ${documents.length} document${documents.length > 1 ? 's' : ''}`
+                  : `${documents.length} document${documents.length > 1 ? 's' : ''} • Gérez vos fichiers`
+              }
             </p>
           </div>
-          <Button onClick={() => router.push('/upload')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Ajouter des fichiers
-          </Button>
+        
+          <div className="flex items-center gap-2">
+            {/* Bouton refresh si erreur */}
+            {error && (
+              <Button variant="outline" size="sm" onClick={refreshData}>
+                <Upload className="mr-2 h-4 w-4" />
+                Actualiser
+              </Button>
+            )}
+
+            {/* Sélecteur de vue */}
+            <div className="flex items-center rounded-lg border p-1">
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <Button onClick={() => router.push('/upload')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Ajouter des fichiers
+            </Button>
+          </div>
         </div>
 
-        {/* Barre de recherche et filtres */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Recherche */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Rechercher des fichiers..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                {/* Mode d'affichage */}
-                <div className="flex rounded-lg border">
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className="rounded-r-none"
-                  >
-                    <List className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className="rounded-l-none"
-                  >
-                    <Grid className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Filtre */}
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filtres
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Barre de recherche */}
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher des fichiers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
         {/* Messages d'erreur */}
         {error && (
@@ -312,7 +195,7 @@ export default function DocumentsPage() {
             <CardHeader>
               <CardTitle>Documents</CardTitle>
               <CardDescription>
-                {filteredDocuments.length} document(s) affiché(s)
+                {filteredDocuments.length} document(s)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -320,39 +203,9 @@ export default function DocumentsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12"></TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                      onClick={() => handleSort('title')}
-                    >
-                      <div className="flex items-center gap-2">
-                        Nom
-                        {sortField === 'title' && (
-                          sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                      onClick={() => handleSort('fileSize')}
-                    >
-                      <div className="flex items-center gap-2">
-                        Taille
-                        {sortField === 'fileSize' && (
-                          sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                      onClick={() => handleSort('createdAt')}
-                    >
-                      <div className="flex items-center gap-2">
-                        Date d'ajout
-                        {sortField === 'createdAt' && (
-                          sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
-                        )}
-                      </div>
-                    </TableHead>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Taille</TableHead>
+                    <TableHead>Date d'ajout</TableHead>
                     <TableHead>Propriétaire</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
@@ -471,9 +324,7 @@ export default function DocumentsPage() {
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           onSave={(updatedDocument) => {
-            setDocuments(prev => 
-              prev.map(doc => doc.id === updatedDocument.id ? updatedDocument : doc)
-            )
+            updateDocument(updatedDocument)
             setShowEditModal(false)
           }}
         />

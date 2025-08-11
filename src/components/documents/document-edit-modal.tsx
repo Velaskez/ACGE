@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,32 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Save, AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-
-interface DocumentItem {
-  id: string
-  title: string
-  description?: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  currentVersion?: {
-    id: string
-    versionNumber: number
-    fileName: string
-    fileSize: number
-    fileType: string
-    filePath: string
-    changeLog?: string
-    createdAt: string
-  }
-  _count?: {
-    versions: number
-  }
-  author?: {
-    name: string
-    email: string
-  }
-}
+import { DocumentItem } from '@/types/document'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface DocumentEditModalProps {
   document: DocumentItem
@@ -57,8 +33,43 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
     description: document.description || '',
     isPublic: document.isPublic
   })
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(document.folder?.id)
+  const [folders, setFolders] = useState<Array<{ id: string; name: string; folderNumber: string }>>([])
+  const [foldersLoading, setFoldersLoading] = useState(false)
+  const [foldersError, setFoldersError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Charger la liste des dossiers quand la modale s'ouvre
+  useEffect(() => {
+    let mounted = true
+    async function loadFolders() {
+      try {
+        setFoldersError('')
+        setFoldersLoading(true)
+        const res = await fetch('/api/folders', { cache: 'no-store' })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data?.error || 'Erreur lors du chargement des dossiers')
+        }
+        const data = await res.json()
+        if (!mounted) return
+        const opts = (data.folders || []).map((f: any) => ({ id: f.id, name: f.name, folderNumber: f.folderNumber }))
+        setFolders(opts)
+      } catch (e: any) {
+        if (!mounted) return
+        setFoldersError(e?.message || 'Erreur chargement dossiers')
+      } finally {
+        if (mounted) setFoldersLoading(false)
+      }
+    }
+    if (isOpen) {
+      // réinitialiser depuis le document actuel à l'ouverture
+      setSelectedFolderId(document.folder?.id)
+      loadFolders()
+    }
+    return () => { mounted = false }
+  }, [isOpen, document.folder?.id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,13 +85,16 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
-          isPublic: formData.isPublic
+          isPublic: formData.isPublic,
+          // null = racine, undefined = ne pas changer
+          folderId: selectedFolderId ?? null
         }),
       })
 
       if (response.ok) {
         const updatedDocument = await response.json()
         onSave(updatedDocument)
+        try { window.dispatchEvent(new CustomEvent('data:documents-changed')) } catch {}
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Erreur lors de la mise à jour')
@@ -143,6 +157,32 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                 rows={3}
                 disabled={isLoading}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Emplacement du dossier</Label>
+              <div>
+                <Select
+                  value={selectedFolderId ?? 'root'}
+                  onValueChange={(v) => setSelectedFolderId(v === 'root' ? undefined : v)}
+                  disabled={isLoading || foldersLoading}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choisir un dossier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="root">Racine (aucun dossier)</SelectItem>
+                    {folders.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.name} ({f.folderNumber})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {foldersError && (
+                  <p className="text-xs text-red-600 mt-1">{foldersError}</p>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center space-x-2">

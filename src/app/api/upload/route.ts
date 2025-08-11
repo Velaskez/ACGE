@@ -111,6 +111,19 @@ export async function POST(request: NextRequest) {
               updatedAt: new Date()
             }
           })
+          // Journaliser mise à jour (nouvelle version)
+          try {
+            await prisma.activity.create({
+              data: {
+                type: 'document_updated',
+                targetType: 'document',
+                targetId: existingDocument.id,
+                title: existingDocument.title,
+                metadata: { versionNumber: documentVersion.versionNumber },
+                userId,
+              }
+            })
+          } catch {}
 
         } else {
           // Nouveau document
@@ -143,6 +156,20 @@ export async function POST(request: NextRequest) {
             where: { id: document.id },
             data: { currentVersionId: documentVersion.id }
           })
+
+          // Journaliser création
+          try {
+            await prisma.activity.create({
+              data: {
+                type: 'document_created',
+                targetType: 'document',
+                targetId: document.id,
+                title: document.title,
+                metadata: { fileName: documentVersion.fileName },
+                userId,
+              }
+            })
+          } catch {}
         }
 
         uploadedFiles.push({

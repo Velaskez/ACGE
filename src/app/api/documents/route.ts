@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
     const category = searchParams.get('category')
-    const folderId = searchParams.get('folderId')
+    const hasFolderIdParam = searchParams.has('folderId')
+    const folderIdParam = searchParams.get('folderId')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
@@ -43,10 +44,13 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    if (folderId) {
-      where.folderId = folderId
-    } else if (folderId === null) {
-      where.folderId = null // Documents à la racine
+    // Filtrer par dossier uniquement si le paramètre est explicitement présent
+    if (hasFolderIdParam) {
+      if (!folderIdParam || folderIdParam === 'root' || folderIdParam === 'null') {
+        where.folderId = null
+      } else {
+        where.folderId = folderIdParam
+      }
     }
 
     // Récupérer les documents

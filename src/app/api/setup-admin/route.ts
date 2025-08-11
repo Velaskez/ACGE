@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.log('❌ Erreur base de données:', error);
       return NextResponse.json(
-        { error: 'Erreur de connexion à la base de données', details: error.message },
+        { error: 'Erreur de connexion à la base de données', details: error instanceof Error ? error.message : 'Erreur inconnue' },
         { status: 500 }
       );
     }
@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Erreur lors de la configuration',
-        details: error.message,
-        code: error.code
+        details: error instanceof Error ? error.message : 'Erreur inconnue',
+        code: (error as any).code || 'UNKNOWN_ERROR'
       },
       { status: 500 }
     );

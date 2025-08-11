@@ -69,6 +69,20 @@ export async function POST(
       }
     })
 
+    // Journaliser restauration
+    try {
+      await prisma.activity.create({
+        data: {
+          type: 'version_restored',
+          targetType: 'document',
+          targetId: updatedDocument.id,
+          title: updatedDocument.title,
+          metadata: { restoredVersionId: versionId, versionNumber: versionToRestore.versionNumber },
+          userId,
+        }
+      })
+    } catch {}
+
     return NextResponse.json({
       success: true,
       message: `Version ${versionToRestore.versionNumber} restaurée avec succès`,

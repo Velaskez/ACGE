@@ -33,8 +33,8 @@ async function main() {
     console.log(`\n📁 Total documents: ${totalDocuments}`)
     console.log(`🗂️ Total dossiers: ${totalFolders}`)
 
-    // Calculer l'espace utilisé
-    const spaceUsed = await prisma.document.aggregate({
+    // Calculer l'espace utilisé (depuis les versions de documents)
+    const spaceUsed = await prisma.documentVersion.aggregate({
       _sum: {
         fileSize: true
       }

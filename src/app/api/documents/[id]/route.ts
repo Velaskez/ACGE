@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { unlink } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
 
-// GET - Récupérer un document spécifique
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await params
     // Vérifier l'authentification
     const token = request.cookies.get('auth-token')?.value
 
@@ -25,19 +20,13 @@ export async function GET(
     const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
     const userId = decoded.userId
 
-    // Récupérer le document
-    const document = await prisma.document.findFirst({
-      where: {
-        id: resolvedParams.id,
-        authorId: userId // Sécurité : seul le propriétaire peut voir le document
-      },
+    const resolvedParams = await params
+    const documentId = resolvedParams.id
+
+    // Récupérer le document avec ses détails
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
       include: {
-        currentVersion: true,
-        _count: {
-          select: {
-            versions: true
-          }
-        },
         author: {
           select: {
             id: true,
@@ -45,10 +34,16 @@ export async function GET(
             email: true
           }
         },
+        currentVersion: true,
         folder: {
           select: {
             id: true,
             name: true
+          }
+        },
+        _count: {
+          select: {
+            versions: true
           }
         }
       }
@@ -58,6 +53,14 @@ export async function GET(
       return NextResponse.json(
         { error: 'Document non trouvé' },
         { status: 404 }
+      )
+    }
+
+    // Vérifier les permissions (propriétaire ou document public)
+    if (document.authorId !== userId && !document.isPublic) {
+      return NextResponse.json(
+        { error: 'Accès refusé' },
+        { status: 403 }
       )
     }
 
@@ -72,13 +75,11 @@ export async function GET(
   }
 }
 
-// DELETE - Supprimer un document
-export async function DELETE(
+export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await params
     // Vérifier l'authentification
     const token = request.cookies.get('auth-token')?.value
 
@@ -92,19 +93,13 @@ export async function DELETE(
     const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
     const userId = decoded.userId
 
-    // Récupérer le document avec toutes ses versions pour vérifier les permissions
-    const document = await prisma.document.findFirst({
-      where: {
-        id: resolvedParams.id,
-        authorId: userId
-      },
-      include: {
-        versions: {
-          select: {
-            filePath: true
-          }
-        }
-      }
+    const resolvedParams = await params
+    const documentId = resolvedParams.id
+    const { title, description, isPublic, folderId } = await request.json()
+
+    // Vérifier que le document existe et appartient à l'utilisateur
+    const document = await prisma.document.findUnique({
+      where: { id: documentId }
     })
 
     if (!document) {
@@ -114,30 +109,50 @@ export async function DELETE(
       )
     }
 
-    // Supprimer tous les fichiers physiques de toutes les versions
-    for (const version of document.versions) {
-      const filePath = join(process.cwd(), 'uploads', userId, version.filePath.split('/').pop() || '')
-      if (existsSync(filePath)) {
-        try {
-          await unlink(filePath)
-        } catch (fileError) {
-          console.error('Erreur lors de la suppression du fichier:', fileError)
-          // Continuer quand même la suppression en base
-        }
-      }
+    if (document.authorId !== userId) {
+      return NextResponse.json(
+        { error: 'Accès refusé' },
+        { status: 403 }
+      )
     }
 
-    // Supprimer l'enregistrement en base de données
-    await prisma.document.delete({
-      where: { id: resolvedParams.id }
+    // Mettre à jour le document
+    const updatedDocument = await prisma.document.update({
+      where: { id: documentId },
+      data: {
+        title: title?.trim() || document.title,
+        description: description?.trim() || document.description,
+        isPublic: isPublic !== undefined ? isPublic : document.isPublic,
+        // Important: autoriser la mise à null (racine). On ne doit PAS utiliser ||
+        folderId: folderId !== undefined ? folderId : document.folderId
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        currentVersion: true,
+        folder: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        _count: {
+          select: {
+            versions: true
+          }
+        }
+      }
     })
 
-    return NextResponse.json({
-      message: 'Document supprimé avec succès'
-    })
+    return NextResponse.json(updatedDocument)
 
   } catch (error) {
-    console.error('Erreur lors de la suppression du document:', error)
+    console.error('Erreur lors de la mise à jour du document:', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }
@@ -145,13 +160,11 @@ export async function DELETE(
   }
 }
 
-// PUT - Modifier un document
-export async function PUT(
+export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const resolvedParams = await params
     // Vérifier l'authentification
     const token = request.cookies.get('auth-token')?.value
 
@@ -165,63 +178,51 @@ export async function PUT(
     const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
     const userId = decoded.userId
 
-    const { title, description, isPublic, folderId } = await request.json()
+    const resolvedParams = await params
+    const documentId = resolvedParams.id
 
-    // Vérifier que le document appartient à l'utilisateur
-    const existingDocument = await prisma.document.findFirst({
-      where: {
-        id: resolvedParams.id,
-        authorId: userId
-      }
+    // Vérifier que le document existe et appartient à l'utilisateur
+    const document = await prisma.document.findUnique({
+      where: { id: documentId }
     })
 
-    if (!existingDocument) {
+    if (!document) {
       return NextResponse.json(
         { error: 'Document non trouvé' },
         { status: 404 }
       )
     }
 
-    // Mettre à jour le document
-    const updatedDocument = await prisma.document.update({
-      where: { id: resolvedParams.id },
-      data: {
-        title: title || existingDocument.title,
-        description: description !== undefined ? description : existingDocument.description,
-        isPublic: isPublic !== undefined ? isPublic : existingDocument.isPublic,
-        folderId: folderId !== undefined ? folderId : existingDocument.folderId,
-        updatedAt: new Date()
-      },
-      include: {
-        currentVersion: true,
-        _count: {
-          select: {
-            versions: true
-          }
-        },
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        folder: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
+    if (document.authorId !== userId) {
+      return NextResponse.json(
+        { error: 'Accès refusé' },
+        { status: 403 }
+      )
+    }
+
+    // Supprimer le document (cascade vers les versions)
+    await prisma.document.delete({
+      where: { id: documentId }
     })
 
-    return NextResponse.json({
-      message: 'Document modifié avec succès',
-      document: updatedDocument
-    })
+    // Enregistrer une activité de suppression
+    try {
+      await prisma.activity.create({
+        data: {
+          type: 'document_deleted',
+          targetType: 'document',
+          targetId: documentId,
+          title: document.title,
+          metadata: {},
+          userId: userId,
+        }
+      })
+    } catch {}
+
+    return NextResponse.json({ message: 'Document supprimé avec succès' })
 
   } catch (error) {
-    console.error('Erreur lors de la modification du document:', error)
+    console.error('Erreur lors de la suppression du document:', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

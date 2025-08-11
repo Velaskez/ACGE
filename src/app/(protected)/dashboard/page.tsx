@@ -6,6 +6,10 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRouter } from 'next/navigation'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useEffect, useState } from 'react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { formatFileSize, formatRelativeTime, getFileTypeLabel } from '@/lib/utils'
 import { 
@@ -25,6 +29,40 @@ export default function DashboardPage() {
   const router = useRouter()
   const { stats, activity, isLoading, error, refreshData } = useDashboardData()
 
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [filterType, setFilterType] = useState<string>('')
+  const [filterTargetType, setFilterTargetType] = useState<string>('')
+  const [results, setResults] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [historyError, setHistoryError] = useState<string>('')
+
+  const fetchHistory = async () => {
+    try {
+      setLoadingHistory(true)
+      setHistoryError('')
+      const params = new URLSearchParams()
+      if (query) params.set('q', query)
+      if (filterType) params.set('type', filterType)
+      if (filterTargetType) params.set('targetType', filterTargetType)
+      const res = await fetch(`/api/activity?${params.toString()}`)
+      if (!res.ok) throw new Error("Erreur de chargement de l'historique")
+      const data = await res.json()
+      setResults(data.activities || [])
+    } catch (e: any) {
+      setHistoryError(e?.message || 'Erreur')
+      setResults([])
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!historyOpen) return
+    fetchHistory()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyOpen])
+
   const handleNewDocument = () => {
     router.push('/upload')
   }
@@ -40,8 +78,7 @@ export default function DashboardPage() {
   }
 
   const handleHistory = () => {
-    // TODO: Implémenter l'historique
-    console.log('Afficher l\'historique')
+    setHistoryOpen(true)
   }
 
   const handleViewAllDocuments = () => {
@@ -373,6 +410,52 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+        <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Historique</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              <Input placeholder="Rechercher..." value={query} onChange={(e) => setQuery(e.target.value)} />
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tous</SelectItem>
+                  <SelectItem value="document_created">Création</SelectItem>
+                  <SelectItem value="document_updated">Mise à jour</SelectItem>
+                  <SelectItem value="document_deleted">Suppression</SelectItem>
+                  <SelectItem value="document_moved">Déplacement</SelectItem>
+                  <SelectItem value="version_restored">Restauration</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterTargetType} onValueChange={setFilterTargetType}>
+                <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Cible" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Toutes</SelectItem>
+                  <SelectItem value="document">Document</SelectItem>
+                  <SelectItem value="folder">Dossier</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={fetchHistory} disabled={loadingHistory}>Rechercher</Button>
+            </div>
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {loadingHistory ? (
+                <p>Chargement…</p>
+              ) : historyError ? (
+                <p className="text-red-600">{historyError}</p>
+              ) : results.length === 0 ? (
+                <p className="text-muted-foreground">Aucun résultat</p>
+              ) : (
+                results.map((it) => (
+                  <div key={it.id} className="border rounded-md p-3">
+                    <div className="text-sm font-medium">{it.action || it.type}</div>
+                    <div className="text-xs text-muted-foreground">{it.targetType} • {it.title}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   )

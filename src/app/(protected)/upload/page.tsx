@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
 import { FileUploadZone } from '@/components/upload/file-upload-zone'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,7 @@ interface FileMetadata {
 
 export default function UploadPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [metadata, setMetadata] = useState<FileMetadata>({
     name: '',
     description: '',
@@ -90,8 +91,12 @@ export default function UploadPage() {
       
       // Redirection après succès
       setTimeout(() => {
-        router.push('/documents')
-      }, 2000)
+        if (metadata.folderId) {
+          router.push(`/folders/${metadata.folderId}`)
+        } else {
+          router.push('/documents')
+        }
+      }, 1200)
 
     } catch (error) {
       console.error('Erreur upload:', error)
@@ -139,7 +144,7 @@ export default function UploadPage() {
                 Vos fichiers ont été uploadés avec succès.
               </p>
               <p className="text-sm text-gray-500">
-                Redirection vers la liste des documents...
+                Redirection en cours...
               </p>
             </CardContent>
           </Card>
@@ -288,24 +293,7 @@ export default function UploadPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Select
-                  value={metadata.folderId || 'root'}
-                  onValueChange={(value) => setMetadata(prev => ({ 
-                    ...prev, 
-                    folderId: value === 'root' ? undefined : value 
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Racine (aucun dossier)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="root">Racine (aucun dossier)</SelectItem>
-                    {/* TODO: Charger les dossiers depuis l'API */}
-                    <SelectItem value="documents">Documents</SelectItem>
-                    <SelectItem value="images">Images</SelectItem>
-                    <SelectItem value="archives">Archives</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <FolderSelect value={metadata.folderId} onChange={(folderId) => setMetadata(prev => ({ ...prev, folderId }))} />
               </CardContent>
             </Card>
           </div>
@@ -319,5 +307,64 @@ export default function UploadPage() {
         )}
       </div>
     </MainLayout>
+  )
+}
+
+// Sélecteur de dossiers réel depuis l'API
+function FolderSelect({ value, onChange }: { value?: string; onChange: (v?: string) => void }) {
+  const [folders, setFolders] = useState<Array<{ id: string; name: string; folderNumber: string }>>([])
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Préremplir depuis l'URL ?folderId=
+    const paramFolderId = searchParams.get('folderId') || undefined
+    if (paramFolderId) onChange(paramFolderId)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    async function fetchFolders() {
+      try {
+        setLoading(true)
+        const res = await fetch('/api/folders', { cache: 'no-store' })
+        if (!res.ok) throw new Error('Erreur de chargement des dossiers')
+        const data = await res.json()
+        if (!isMounted) return
+        const options = (data.folders || []).map((f: any) => ({ id: f.id, name: f.name, folderNumber: f.folderNumber }))
+        setFolders(options)
+      } catch (e: any) {
+        setError(e?.message || 'Erreur')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchFolders()
+    return () => { isMounted = false }
+  }, [])
+
+  return (
+    <div className="space-y-2">
+      <Select
+        value={value || 'root'}
+        onValueChange={(v) => onChange(v === 'root' ? undefined : v)}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Racine (aucun dossier)" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="root">Racine (aucun dossier)</SelectItem>
+          {folders.map((f) => (
+            <SelectItem key={f.id} value={f.id}>
+              {f.name} ({f.folderNumber})
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {loading && <p className="text-xs text-muted-foreground">Chargement des dossiers…</p>}
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
   )
 }

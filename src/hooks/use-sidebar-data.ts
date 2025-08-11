@@ -33,8 +33,8 @@ export function useSidebarData() {
         
         // Récupérer les statistiques du dashboard (réutilisation)
         const [statsResponse, foldersResponse] = await Promise.all([
-          fetch('/api/dashboard/stats'),
-          fetch('/api/sidebar/folders')
+          fetch('/api/dashboard/stats', { cache: 'no-store' }),
+          fetch('/api/sidebar/folders', { cache: 'no-store' })
         ])
 
         if (!statsResponse.ok) {
@@ -78,6 +78,11 @@ export function useSidebarData() {
     }
 
     fetchSidebarData()
+
+    // rafraîchir si documents changent
+    const onChange = () => fetchSidebarData()
+    window.addEventListener('data:documents-changed', onChange)
+    return () => window.removeEventListener('data:documents-changed', onChange)
   }, [])
 
   return {
