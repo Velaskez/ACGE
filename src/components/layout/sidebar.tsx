@@ -84,8 +84,9 @@ export function Sidebar({ className }: SidebarProps) {
   })
 
   return (
-    <div className={cn('pb-12', className)}>
-      <div className="space-y-4 py-4">
+    <div className={cn('fixed left-0 top-16 bottom-0 z-40 w-64 bg-background border-r overflow-hidden', className)}>
+      <ScrollArea className="h-full">
+        <div className="space-y-4 py-4">
         {/* Navigation principale */}
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
@@ -227,7 +228,8 @@ export function Sidebar({ className }: SidebarProps) {
             )}
           </div>
         </div>
-      </div>
+        </div>
+      </ScrollArea>
     </div>
   )
 }

@@ -44,8 +44,7 @@ export async function GET(request: NextRequest) {
       prisma.document.findMany({
         where: { authorId: userId },
         select: {
-          createdAt: true,
-          fileSize: true
+          createdAt: true
         },
         orderBy: { createdAt: 'desc' }
       }),

@@ -25,7 +25,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden fixed top-16 left-4 z-50"
+            className="md:hidden fixed top-20 left-4 z-50"
           >
             <Menu className="h-4 w-4" />
           </Button>
@@ -35,20 +35,17 @@ export function MainLayout({ children }: MainLayoutProps) {
         </SheetContent>
       </Sheet>
 
-      {/* Desktop layout */}
-      <div className="flex">
-        {/* Desktop sidebar */}
-        <div className="hidden md:block w-80 border-r">
-          <Sidebar />
-        </div>
-
-        {/* Main content */}
-        <main className="flex-1 min-h-[calc(100vh-3.5rem)]">
-          <div className="container mx-auto p-6">
-            {children}
-          </div>
-        </main>
+      {/* Desktop sidebar - maintenant fixe, pas dans le flex */}
+      <div className="hidden md:block">
+        <Sidebar />
       </div>
+
+      {/* Main content */}
+      <main className="pt-16 md:ml-64 min-h-screen">
+        <div className="p-6 w-full">
+          {children}
+        </div>
+      </main>
     </div>
   )
 }

@@ -29,10 +29,14 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           title: true,
-          fileName: true,
           createdAt: true,
           updatedAt: true,
-          fileType: true
+          currentVersion: {
+            select: {
+              fileName: true,
+              fileType: true
+            }
+          }
         },
         orderBy: { updatedAt: 'desc' },
         take: 10
@@ -58,8 +62,12 @@ export async function GET(request: NextRequest) {
           document: {
             select: {
               title: true,
-              fileName: true,
-              fileType: true
+              currentVersion: {
+                select: {
+                  fileName: true,
+                  fileType: true
+                }
+              }
             }
           }
         },
@@ -79,11 +87,11 @@ export async function GET(request: NextRequest) {
         id: `doc-${doc.id}`,
         type: isNew ? 'document_created' : 'document_updated',
         action: isNew ? 'Nouveau document' : 'Document modifié',
-        target: doc.title || doc.fileName,
+        target: doc.title || doc.currentVersion?.fileName || 'Sans titre',
         targetId: doc.id,
         timestamp: doc.updatedAt,
         metadata: {
-          fileType: doc.fileType
+          fileType: doc.currentVersion?.fileType || 'unknown'
         }
       })
     })
@@ -107,11 +115,11 @@ export async function GET(request: NextRequest) {
         id: `share-${share.id}`,
         type: 'document_shared',
         action: 'Document partagé avec vous',
-        target: share.document.title || share.document.fileName,
+        target: share.document.title || share.document.currentVersion?.fileName || 'Sans titre',
         targetId: share.documentId,
         timestamp: share.createdAt,
         metadata: {
-          fileType: share.document.fileType
+          fileType: share.document.currentVersion?.fileType || 'unknown'
         }
       })
     })

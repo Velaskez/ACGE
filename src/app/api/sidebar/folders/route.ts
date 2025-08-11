@@ -27,9 +27,13 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             title: true,
-            fileName: true,
-            fileType: true,
-            updatedAt: true
+            updatedAt: true,
+            currentVersion: {
+              select: {
+                fileName: true,
+                fileType: true
+              }
+            }
           },
           orderBy: {
             updatedAt: 'desc'
@@ -55,9 +59,9 @@ export async function GET(request: NextRequest) {
       documentCount: folder._count.documents,
       recentDocuments: folder.documents.map(doc => ({
         id: doc.id,
-        title: doc.title || doc.fileName,
-        fileName: doc.fileName,
-        fileType: doc.fileType
+        title: doc.title || doc.currentVersion?.fileName || 'Sans titre',
+        fileName: doc.currentVersion?.fileName || 'Sans fichier',
+        fileType: doc.currentVersion?.fileType || 'unknown'
       }))
     }))
 
