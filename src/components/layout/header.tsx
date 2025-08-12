@@ -6,6 +6,7 @@ import { Search, Settings, LogOut, User, Menu } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ import { NotificationDropdown } from '@/components/notifications/notification-dr
 export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const { user, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,7 +33,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b">
-      <div className="flex h-16 items-center px-2 sm:px-4">
+      <div className="relative flex h-16 items-center px-2 sm:px-4">
         {/* Logo */}
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Mobile menu button */}
@@ -57,8 +59,8 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </div>
         </div>
 
-        {/* Barre de recherche */}
-        <div className="hidden sm:block flex-1 max-w-sm mx-4">
+        {/* Barre de recherche centrée (desktop) */}
+        <div className="pointer-events-auto hidden sm:block absolute left-1/2 -translate-x-1/2 w-full max-w-md">
           <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -70,20 +72,19 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
             />
           </form>
         </div>
-        {/* Bouton recherche compact sur mobile */}
-        <div className="sm:hidden px-2">
-          <Button variant="ghost" size="icon" onClick={() => {
-            const q = prompt('Rechercher...') || ''
-            if (q.trim()) {
-              window.location.href = `/documents?search=${encodeURIComponent(q.trim())}`
-            }
-          }}>
-            <Search className="h-5 w-5" />
-          </Button>
-        </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="ml-auto flex items-center gap-2 sm:gap-4">
+          {/* Recherche (mobile) alignée à droite */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="sm:hidden"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Rechercher"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
           {/* Notifications */}
           <NotificationDropdown />
 
@@ -127,6 +128,32 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
             </DropdownMenu>
           )}
         </div>
+
+        {/* Dialog de recherche (mobile) */}
+        <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+          <DialogContent className="modal-responsive">
+            <DialogHeader>
+              <DialogTitle>Rechercher</DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={(e) => {
+                handleSearch(e)
+                setSearchOpen(false)
+              }}
+              className="relative"
+            >
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                autoFocus
+                type="search"
+                placeholder="Rechercher..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </header>
   )
