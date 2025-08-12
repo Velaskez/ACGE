@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
-import { Search, Settings, LogOut, User } from 'lucide-react'
+import { Search, Settings, LogOut, User, Menu } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { NotificationDropdown } from '@/components/notifications/notification-dropdown'
 
-export function Header() {
+export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const { user, logout } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -33,7 +33,18 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b">
       <div className="flex h-16 items-center px-2 sm:px-4">
         {/* Logo */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Mobile menu button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => onOpenMenu?.()}
+            aria-label="Ouvrir le menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+
           <div className="flex items-center space-x-3">
             <Image
               src="/TrésorPublicGabon.jpg"

@@ -17,19 +17,10 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <Header />
+      <Header onOpenMenu={() => setSidebarOpen(true)} />
 
-      {/* Mobile sidebar */}
+      {/* Mobile sidebar controlled by header button */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden fixed top-20 left-2 z-50 bg-background/80 backdrop-blur-sm border"
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-        </SheetTrigger>
         <SheetContent 
           side="left" 
           className="w-[280px] max-w-[90vw] p-0 sm:w-[320px]"

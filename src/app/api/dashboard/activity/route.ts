@@ -17,9 +17,13 @@ export async function GET(request: NextRequest) {
     const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
 
-    // Récupérer les activités récentes
-    const [recentDocuments, recentFolders, recentShares] = await Promise.all([
-      prisma.document.findMany({
+    // Récupérer les activités récentes (requêtes robustes)
+    let recentDocuments: any[] = []
+    let recentFolders: any[] = []
+    let recentShares: any[] = []
+
+    try {
+      recentDocuments = await prisma.document.findMany({
         where: { authorId: userId },
         select: {
           id: true,
@@ -30,32 +34,44 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { updatedAt: 'desc' },
         take: 10
-      }).catch(() => prisma.document.findMany({
-        where: { userId } as any,
-        select: {
-          id: true,
-          title: true,
-          createdAt: true,
-          updatedAt: true,
-          currentVersion: { select: { fileName: true, fileType: true } }
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 10
-      })),
+      })
+    } catch {
+      try {
+        recentDocuments = await prisma.document.findMany({
+          where: { userId } as any,
+          select: {
+            id: true,
+            title: true,
+            createdAt: true,
+            updatedAt: true,
+            currentVersion: { select: { fileName: true, fileType: true } }
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 10
+        })
+      } catch {}
+    }
 
-      prisma.folder.findMany({
+    try {
+      recentFolders = await prisma.folder.findMany({
         where: { authorId: userId },
         select: { id: true, name: true, createdAt: true, updatedAt: true },
         orderBy: { createdAt: 'desc' },
         take: 5
-      }).catch(() => prisma.folder.findMany({
-        where: { userId } as any,
-        select: { id: true, name: true, createdAt: true, updatedAt: true },
-        orderBy: { createdAt: 'desc' },
-        take: 5
-      })),
+      })
+    } catch {
+      try {
+        recentFolders = await prisma.folder.findMany({
+          where: { userId } as any,
+          select: { id: true, name: true, createdAt: true, updatedAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 5
+        })
+      } catch {}
+    }
 
-      prisma.documentShare.findMany({
+    try {
+      recentShares = await prisma.documentShare.findMany({
         where: { userId: userId },
         include: {
           document: { select: { title: true, currentVersion: { select: { fileName: true, fileType: true } } } }
@@ -63,7 +79,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 5
       })
-    ])
+    } catch {}
 
     // Combiner et trier toutes les activités par date
     const activities: Array<{
