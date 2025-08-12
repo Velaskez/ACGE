@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
+    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
 
     // Parser le FormData

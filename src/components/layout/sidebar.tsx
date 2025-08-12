@@ -30,6 +30,7 @@ import {
 
 interface SidebarProps {
   className?: string
+  inSheet?: boolean
 }
 
 const mainNav = [
@@ -66,7 +67,7 @@ const mainNav = [
   },
 ]
 
-export function Sidebar({ className }: SidebarProps) {
+export function Sidebar({ className, inSheet = false }: SidebarProps) {
   const pathname = usePathname()
   const { user } = useAuth()
   const { stats, folders, isLoading } = useSidebarData()
@@ -92,9 +93,9 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <TooltipProvider>
       <div className={cn(
-        'fixed left-0 top-16 bottom-0 z-40 bg-background border-r flex flex-col',
-        'w-64 min-w-[240px] max-w-[320px]', // Responsive width with min/max constraints
-        'sm:w-64 md:w-72 lg:w-80', // Adaptive width based on screen size
+        inSheet
+          ? 'relative inset-0 z-40 bg-background border-r flex flex-col h-full w-full'
+          : 'fixed left-0 top-16 bottom-0 z-40 bg-background border-r flex flex-col w-64 min-w-[240px] max-w-[320px] sm:w-64 md:w-72 lg:w-80',
         className
       )}>
         <div className="flex flex-col h-full overflow-hidden">

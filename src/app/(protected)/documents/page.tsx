@@ -366,7 +366,7 @@ export default function DocumentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-8 sm:w-12"></TableHead>
                     <TableHead 
                       className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                       onClick={() => handleSort('title')}
@@ -379,7 +379,7 @@ export default function DocumentsPage() {
                       </div>
                     </TableHead>
                     <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="hidden md:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                       onClick={() => handleSort('fileSize')}
                     >
                       <div className="flex items-center gap-2">
@@ -390,7 +390,7 @@ export default function DocumentsPage() {
                       </div>
                     </TableHead>
                     <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="hidden sm:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                       onClick={() => handleSort('createdAt')}
                     >
                       <div className="flex items-center gap-2">
@@ -400,8 +400,8 @@ export default function DocumentsPage() {
                         )}
                       </div>
                     </TableHead>
-                    <TableHead>Propriétaire</TableHead>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="hidden lg:table-cell">Propriétaire</TableHead>
+                    <TableHead className="w-10 sm:w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -413,17 +413,17 @@ export default function DocumentsPage() {
                       <TableCell>
                         <div>
                           <div className="font-medium">{document.title}</div>
-                          <div className="text-sm text-gray-500">{document.currentVersion?.fileName || 'Sans fichier'}</div>
+                          <div className="text-xs sm:text-sm text-gray-500">{document.currentVersion?.fileName || 'Sans fichier'}</div>
                           {document.description && (
-                            <div className="text-xs text-gray-400 mt-1">{document.description}</div>
+                            <div className="hidden sm:block text-xs text-gray-400 mt-1">{document.description}</div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{formatFileSize(document.currentVersion?.fileSize || 0)}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">{formatFileSize(document.currentVersion?.fileSize || 0)}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         {new Date(document.createdAt).toLocaleDateString('fr-FR')}
                       </TableCell>
-                      <TableCell>{document.author?.name || 'Inconnu'}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{document.author?.name || 'Inconnu'}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

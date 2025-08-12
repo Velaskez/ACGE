@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
+    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
 
     const { searchParams } = new URL(request.url)
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
+    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const currentUserId = decoded.userId
 
     // Vérifier les permissions (seuls ADMIN et MANAGER peuvent créer des notifications pour d'autres)

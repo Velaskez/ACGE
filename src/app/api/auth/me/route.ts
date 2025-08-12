@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Vérifier le token
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
+    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
 
     return NextResponse.json({
       user: {

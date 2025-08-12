@@ -31,23 +31,23 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b">
-      <div className="flex h-16 items-center px-4">
+      <div className="flex h-16 items-center px-2 sm:px-4">
         {/* Logo */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex items-center space-x-3">
             <Image
               src="/TrésorPublicGabon.jpg"
               alt="Trésor Public Gabon"
-              width={48}
-              height={48}
-              className="rounded-lg object-contain shadow-sm"
+              width={40}
+              height={40}
+              className="rounded-lg object-contain shadow-sm sm:w-12 sm:h-12"
             />
-            <h1 className="text-xl font-semibold text-[#134074]">ACGE</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-[#134074]">ACGE</h1>
           </div>
         </div>
 
         {/* Barre de recherche */}
-        <div className="flex-1 max-w-sm mx-4">
+        <div className="hidden sm:block flex-1 max-w-sm mx-4">
           <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -59,9 +59,20 @@ export function Header() {
             />
           </form>
         </div>
+        {/* Bouton recherche compact sur mobile */}
+        <div className="sm:hidden px-2">
+          <Button variant="ghost" size="icon" onClick={() => {
+            const q = prompt('Rechercher...') || ''
+            if (q.trim()) {
+              window.location.href = `/documents?search=${encodeURIComponent(q.trim())}`
+            }
+          }}>
+            <Search className="h-5 w-5" />
+          </Button>
+        </div>
 
         {/* Actions */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Notifications */}
           <NotificationDropdown />
 

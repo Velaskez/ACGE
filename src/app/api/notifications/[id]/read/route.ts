@@ -15,7 +15,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
+    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
 
     const body = await request.json()

@@ -25,16 +25,16 @@ export function MainLayout({ children }: MainLayoutProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden fixed top-20 left-4 z-50 bg-background/80 backdrop-blur-sm border"
+            className="md:hidden fixed top-20 left-2 z-50 bg-background/80 backdrop-blur-sm border"
           >
             <Menu className="h-4 w-4" />
           </Button>
         </SheetTrigger>
         <SheetContent 
           side="left" 
-          className="w-[280px] max-w-[85vw] p-0 sm:w-[320px]"
+          className="w-[280px] max-w-[90vw] p-0 sm:w-[320px]"
         >
-          <Sidebar className="border-r-0" />
+          <Sidebar className="border-r-0" inSheet />
         </SheetContent>
       </Sheet>
 
@@ -45,7 +45,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       {/* Main content - responsive margin */}
       <main className="pt-16 min-h-screen transition-all duration-200 md:ml-64 lg:ml-72 xl:ml-80">
-        <div className="p-4 w-full sm:p-6">
+        <div className="p-3 w-full sm:p-6">
           <div className="max-w-full overflow-x-hidden">
             {children}
           </div>

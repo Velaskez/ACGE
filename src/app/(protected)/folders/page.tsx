@@ -657,9 +657,9 @@ export default function FoldersPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nom</TableHead>
-                      <TableHead>Documents</TableHead>
-                      <TableHead>Récents</TableHead>
-                      <TableHead className="w-12">Actions</TableHead>
+                      <TableHead className="hidden sm:table-cell">Documents</TableHead>
+                      <TableHead className="hidden md:table-cell">Récents</TableHead>
+                      <TableHead className="w-10 sm:w-12">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -670,8 +670,8 @@ export default function FoldersPage() {
                         onClick={() => handleOpenFolder(folder)}
                       >
                         <TableCell className="font-medium">{folder.name}</TableCell>
-                        <TableCell>{folder.documentCount}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">{folder.documentCount}</TableCell>
+                        <TableCell className="hidden md:table-cell">
                           {folder.recentDocuments && folder.recentDocuments.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                               {folder.recentDocuments.map((doc) => (
