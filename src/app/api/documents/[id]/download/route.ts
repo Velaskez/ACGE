@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { hasSupabase, downloadFromStorage } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
@@ -37,20 +38,20 @@ export async function GET(
       )
     }
 
-    // Construire le chemin du fichier
-    const fileName = (document.currentVersion?.filePath || '').split('/').pop() || ''
-    const filePath = join(process.cwd(), 'uploads', userId, fileName)
-
-    // Vérifier que le fichier existe
-    if (!existsSync(filePath)) {
-      return NextResponse.json(
-        { error: 'Fichier non trouvé sur le serveur' },
-        { status: 404 }
-      )
+    let fileBuffer: Buffer
+    const filePathMeta = document.currentVersion?.filePath || ''
+    if (hasSupabase && filePathMeta.startsWith('documents/')) {
+      const pathOnly = filePathMeta.replace(/^documents\//, '')
+      const { buffer } = await downloadFromStorage({ bucket: 'documents', path: pathOnly })
+      fileBuffer = buffer
+    } else {
+      const fileName = filePathMeta.split('/').pop() || ''
+      const filePath = join(process.cwd(), 'uploads', userId, fileName)
+      if (!existsSync(filePath)) {
+        return NextResponse.json({ error: 'Fichier non trouvé sur le serveur' }, { status: 404 })
+      }
+      fileBuffer = await readFile(filePath)
     }
-
-    // Lire le fichier
-    const fileBuffer = await readFile(filePath)
 
     // Déterminer le type MIME
     const mimeType = document.currentVersion?.fileType || 'application/octet-stream'

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { hasSupabase, uploadToStorage } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,16 +49,12 @@ export async function POST(request: NextRequest) {
       validFolderId = folder ? folder.id : null
     }
 
-    // Créer le répertoire d'upload s'il n'existe pas
+    // Préparer fallback local si pas de Supabase
     const uploadDir = join(process.cwd(), 'uploads')
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
-
-    // Créer un sous-répertoire pour cet utilisateur
     const userUploadDir = join(uploadDir, userId)
-    if (!existsSync(userUploadDir)) {
-      await mkdir(userUploadDir, { recursive: true })
+    if (!hasSupabase) {
+      if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true })
+      if (!existsSync(userUploadDir)) await mkdir(userUploadDir, { recursive: true })
     }
 
     const uploadedFiles = []
@@ -69,12 +66,22 @@ export async function POST(request: NextRequest) {
         const timestamp = Date.now()
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const fileName = `${timestamp}-${randomSuffix}-${file.name}`
-        const filePath = join(userUploadDir, fileName)
-
-        // Convertir le fichier en buffer et l'écrire
+        // Convertir le fichier en buffer
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
-        await writeFile(filePath, buffer)
+        let storedPath = ''
+        if (hasSupabase) {
+          const now = new Date()
+          const year = now.getUTCFullYear()
+          const month = String(now.getUTCMonth() + 1).padStart(2, '0')
+          const storagePath = `${userId}/${year}/${month}/${fileName}`
+          await uploadToStorage({ bucket: 'documents', path: storagePath, fileBuffer: buffer, contentType: file.type })
+          storedPath = `documents/${storagePath}`
+        } else {
+          const filePath = join(userUploadDir, fileName)
+          await writeFile(filePath, buffer)
+          storedPath = `/uploads/${userId}/${fileName}`
+        }
 
         // Vérifier s'il s'agit d'une nouvelle version d'un document existant
         const existingDocument = metadata.documentId ? 
@@ -105,7 +112,7 @@ export async function POST(request: NextRequest) {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
-              filePath: `/uploads/${userId}/${fileName}`,
+              filePath: storedPath,
               changeLog: metadata.changeLog || `Version ${newVersionNumber}`,
               documentId: existingDocument.id,
               createdById: userId
@@ -140,7 +147,7 @@ export async function POST(request: NextRequest) {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
-              filePath: `/uploads/${userId}/${fileName}`,
+              filePath: storedPath,
               changeLog: 'Version initiale',
               documentId: document.id,
               createdById: userId
