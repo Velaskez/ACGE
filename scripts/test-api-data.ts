@@ -23,15 +23,11 @@ async function main() {
       totalUsers,
       totalFileSize
     ] = await Promise.all([
-      prisma.document.count({
-        where: { authorId: adminUser.id }
-      }),
-      prisma.folder.count({
-        where: { authorId: adminUser.id }
-      }),
+      prisma.document.count({ where: { authorId: adminUser.id } }),
+      prisma.folder.count({ where: { authorId: adminUser.id } }),
       prisma.user.count(),
-      prisma.document.aggregate({
-        where: { authorId: adminUser.id },
+      prisma.documentVersion.aggregate({
+        where: { document: { authorId: adminUser.id } },
         _sum: { fileSize: true }
       })
     ])
@@ -49,12 +45,9 @@ async function main() {
     const recentDocuments = await prisma.document.findMany({
       where: { authorId: adminUser.id },
       include: {
-        author: {
-          select: { name: true, email: true }
-        },
-        folder: {
-          select: { name: true }
-        }
+        author: { select: { name: true, email: true } },
+        folder: { select: { name: true } },
+        currentVersion: true
       },
       orderBy: { updatedAt: 'desc' },
       take: 5
@@ -62,8 +55,9 @@ async function main() {
 
     console.log(`\n📄 Documents récents (${recentDocuments.length}):`)
     recentDocuments.forEach(doc => {
-      const sizeKB = (doc.fileSize / 1024).toFixed(1)
-      console.log(`   - ${doc.title || doc.fileName} (${sizeKB} KB)`)
+      const sizeKB = ((doc.currentVersion?.fileSize || 0) / 1024).toFixed(1)
+      const name = doc.title || doc.currentVersion?.fileName || 'Sans fichier'
+      console.log(`   - ${name} (${sizeKB} KB)`)
     })
 
     // Dossiers pour sidebar

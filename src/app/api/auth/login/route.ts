@@ -5,7 +5,18 @@ import { prisma } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    // Lecture robuste du corps pour éviter les erreurs de parse JSON
+    const rawBody = await request.text()
+    let parsed: { email?: string; password?: string } = {}
+    try {
+      parsed = rawBody ? JSON.parse(rawBody) : {}
+    } catch (e) {
+      return NextResponse.json(
+        { error: 'Corps JSON invalide' },
+        { status: 400 }
+      )
+    }
+    const { email, password } = parsed
 
     if (!email || !password) {
       return NextResponse.json(
@@ -37,6 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Créer un token JWT simple
+    const secret = process.env.NEXTAUTH_SECRET || 'fallback-secret'
     const token = sign(
       { 
         userId: user.id, 
@@ -44,7 +56,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         role: user.role 
       },
-      process.env.NEXTAUTH_SECRET || 'fallback-secret',
+      secret,
       { expiresIn: '7d' }
     )
 
@@ -67,15 +79,20 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 60 * 60 * 24 * 7 // 7 jours
     })
 
     return response
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur lors de la connexion:', error)
+    const isDev = process.env.NODE_ENV !== 'production'
     return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
+      {
+        error: 'Erreur interne du serveur',
+        ...(isDev ? { details: String(error?.message || error) } : {}),
+      },
       { status: 500 }
     )
   }

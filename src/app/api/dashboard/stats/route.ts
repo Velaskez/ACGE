@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
 
+async function countFoldersByUser(userId: string): Promise<number> {
+  try {
+    // Schéma Postgres (champ authorId)
+    return await prisma.folder.count({
+      where: { authorId: userId } as any,
+    })
+  } catch {
+    // Schéma SQLite (champ userId)
+    return await prisma.folder.count({
+      where: { userId } as any,
+    })
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Vérifier l'authentification
@@ -30,69 +44,60 @@ export async function GET(request: NextRequest) {
       // Total des documents de l'utilisateur
       prisma.document.count({
         where: { authorId: userId }
-      }),
-      
-      // Total des dossiers de l'utilisateur
-      prisma.folder.count({
-        where: { authorId: userId }
-      }),
-      
+      }).catch(() => prisma.document.count({ where: { userId } as any })),
+
+      // Total des dossiers de l'utilisateur (support champs authorId|userId)
+      countFoldersByUser(userId),
+
       // Total des utilisateurs (pour les admins)
       prisma.user.count(),
-      
+
       // Documents de l'utilisateur pour calculer la croissance
       prisma.document.findMany({
         where: { authorId: userId },
-        select: {
-          createdAt: true
-        },
+        select: { createdAt: true },
         orderBy: { createdAt: 'desc' }
-      }),
-      
+      }).catch(() => prisma.document.findMany({
+        where: { userId } as any,
+        select: { createdAt: true },
+        orderBy: { createdAt: 'desc' }
+      })),
+
       // Taille totale des fichiers de l'utilisateur (via les versions)
       prisma.documentVersion.aggregate({
-        where: { 
-          document: { authorId: userId }
-        },
-        _sum: {
-          fileSize: true
-        }
-      }),
-      
+        where: { document: { authorId: userId } },
+        _sum: { fileSize: true }
+      }).catch(() => prisma.documentVersion.aggregate({
+        where: { document: { userId } as any },
+        _sum: { fileSize: true }
+      })),
+
       // Documents récents
       prisma.document.findMany({
         where: { authorId: userId },
         include: {
-          author: {
-            select: {
-              name: true,
-              email: true
-            }
-          },
-          folder: {
-            select: {
-              name: true
-            }
-          },
+          author: { select: { name: true, email: true } },
+          folder: { select: { name: true } },
           currentVersion: true,
-          _count: {
-            select: {
-              versions: true
-            }
-          }
+          _count: { select: { versions: true } }
         },
         orderBy: { updatedAt: 'desc' },
         take: 5
-      }),
-      
+      }).catch(() => prisma.document.findMany({
+        where: { userId } as any,
+        include: {
+          author: { select: { name: true, email: true } } as any,
+          folder: { select: { name: true } } as any,
+          currentVersion: true,
+          _count: { select: { versions: true } }
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 5
+      })),
+
       // Utilisateurs actifs (connectés dans les dernières 24h)
-      // Pour l'instant, on simule car nous n'avons pas de suivi des sessions
       prisma.user.count({
-        where: {
-          updatedAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Dernières 24h
-          }
-        }
+        where: { updatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }
       })
     ])
 
@@ -115,7 +120,7 @@ export async function GET(request: NextRequest) {
       : documentsThisMonth > 0 ? 100 : 0
 
     // Calculer l'espace utilisé en GB
-    const totalSizeBytes = totalFileSize._sum.fileSize || 0
+    const totalSizeBytes = (totalFileSize as any)?._sum?.fileSize || 0
     const totalSizeGB = totalSizeBytes / (1024 * 1024 * 1024)
     const maxQuotaGB = 10 // Quota par défaut de 10GB
     const usagePercentage = Math.round((totalSizeGB / maxQuotaGB) * 100)
@@ -156,8 +161,17 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Erreur lors de la récupération des statistiques:', error)
+    
+    // Fournir plus de détails sur l'erreur en développement
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? `Erreur interne du serveur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+      : 'Erreur interne du serveur'
+    
     return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      },
       { status: 500 }
     )
   }

@@ -67,10 +67,21 @@ export function useDashboardData() {
           throw new Error('Erreur lors de la récupération des données')
         }
 
-        const [statsData, activityData] = await Promise.all([
-          statsResponse.json(),
-          activityResponse.json()
-        ])
+        let statsData, activityData
+        
+        try {
+          statsData = await statsResponse.json()
+        } catch (e) {
+          console.error('Erreur parsing stats response:', e)
+          throw new Error('Erreur lors du parsing des statistiques')
+        }
+        
+        try {
+          activityData = await activityResponse.json()
+        } catch (e) {
+          console.error('Erreur parsing activity response:', e)
+          throw new Error('Erreur lors du parsing de l\'activité')
+        }
 
         setStats(statsData)
         setActivity(activityData)
@@ -98,10 +109,21 @@ export function useDashboardData() {
         throw new Error('Erreur lors de la récupération des données')
       }
 
-      const [statsData, activityData] = await Promise.all([
-        statsResponse.json(),
-        activityResponse.json()
-      ])
+      let statsData, activityData
+      
+      try {
+        statsData = await statsResponse.json()
+      } catch (e) {
+        console.error('Erreur parsing stats response:', e)
+        throw new Error('Erreur lors du parsing des statistiques')
+      }
+      
+      try {
+        activityData = await activityResponse.json()
+      } catch (e) {
+        console.error('Erreur parsing activity response:', e)
+        throw new Error('Erreur lors du parsing de l\'activité')
+      }
 
       setStats(statsData)
       setActivity(activityData)

@@ -26,8 +26,7 @@ async function main() {
       select: {
         id: true,
         title: true,
-        fileName: true,
-        filePath: true,
+        currentVersion: { select: { fileName: true, filePath: true } },
         createdAt: true
       },
       orderBy: { createdAt: 'asc' }
@@ -35,16 +34,17 @@ async function main() {
 
     console.log('\n📋 Documents actuels:')
     allDocuments.forEach((doc, index) => {
-      console.log(`  ${index + 1}. ${doc.title || doc.fileName} (${doc.filePath})`)
+      const name = doc.title || doc.currentVersion?.fileName || 'Sans fichier'
+      const path = doc.currentVersion?.filePath || ''
+      console.log(`  ${index + 1}. ${name} (${path})`)
     })
 
     // Supprimer tous les documents de test (ceux avec filePath contenant '/test/')
+    // Supprimer les documents avec une version dont le filePath contient '/test/'
     const deletedDocuments = await prisma.document.deleteMany({
       where: {
         authorId: adminUser.id,
-        filePath: {
-          contains: '/test/'
-        }
+        versions: { some: { filePath: { contains: '/test/' } } }
       }
     })
 
@@ -77,16 +77,16 @@ async function main() {
         where: { authorId: adminUser.id },
         select: {
           title: true,
-          fileName: true,
-          filePath: true,
-          fileSize: true
+          currentVersion: { select: { fileName: true, filePath: true, fileSize: true } }
         }
       })
 
       console.log('\n📄 Documents réels restants:')
       realDocuments.forEach(doc => {
-        const sizeKB = (doc.fileSize / 1024).toFixed(1)
-        console.log(`   - ${doc.title || doc.fileName} (${sizeKB} KB) - ${doc.filePath}`)
+        const sizeKB = ((doc.currentVersion?.fileSize || 0) / 1024).toFixed(1)
+        const name = doc.title || doc.currentVersion?.fileName || 'Sans fichier'
+        const path = doc.currentVersion?.filePath || ''
+        console.log(`   - ${name} (${sizeKB} KB) - ${path}`)
       })
     }
 

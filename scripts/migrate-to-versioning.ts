@@ -11,7 +11,8 @@ async function main() {
     
     const existingDocuments = await prisma.document.findMany({
       include: {
-        author: true
+        author: true,
+        currentVersion: true,
       }
     })
 
@@ -25,8 +26,10 @@ async function main() {
     // 2. Afficher les documents existants
     console.log('\n📄 Documents à migrer:')
     existingDocuments.forEach((doc, index) => {
-      console.log(`  ${index + 1}. ${doc.title || doc.fileName}`)
-      console.log(`     - Taille: ${(doc.fileSize / 1024).toFixed(1)} KB`)
+      const name = doc.title || doc.currentVersion?.fileName || 'Sans titre'
+      const sizeKB = ((doc.currentVersion?.fileSize || 0) / 1024).toFixed(1)
+      console.log(`  ${index + 1}. ${name}`)
+      console.log(`     - Taille: ${sizeKB} KB`)
       console.log(`     - Auteur: ${doc.author.email}`)
       console.log(`     - Créé: ${doc.createdAt.toLocaleDateString('fr-FR')}`)
     })

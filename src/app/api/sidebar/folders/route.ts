@@ -17,45 +17,48 @@ export async function GET(request: NextRequest) {
     const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
     const userId = decoded.userId
 
-    // Récupérer les dossiers de l'utilisateur avec quelques documents récents
+    // Récupérer les dossiers de l'utilisateur (support authorId|userId) avec quelques documents récents
     const folders = await prisma.folder.findMany({
-      where: { 
-        authorId: userId 
-      },
+      where: ({ authorId: userId } as any),
       include: {
         documents: {
           select: {
             id: true,
             title: true,
             updatedAt: true,
-            currentVersion: {
-              select: {
-                fileName: true,
-                fileType: true
-              }
-            }
+            currentVersion: { select: { fileName: true, fileType: true } }
           },
-          orderBy: {
-            updatedAt: 'desc'
-          },
-          take: 3 // Seulement les 3 documents les plus récents par dossier
+          orderBy: { updatedAt: 'desc' },
+          take: 3
         },
-        _count: {
+        _count: { select: { documents: true } }
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 6
+    }).catch(() => prisma.folder.findMany({
+      where: ({ userId } as any),
+      include: {
+        documents: {
           select: {
-            documents: true
-          }
-        }
+            id: true,
+            title: true,
+            updatedAt: true,
+            currentVersion: { select: { fileName: true, fileType: true } }
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 3
+        },
+        _count: { select: { documents: true } }
       },
-      orderBy: {
-        updatedAt: 'desc'
-      },
-      take: 6 // Limiter à 6 dossiers récents pour la sidebar
-    })
+      orderBy: { updatedAt: 'desc' },
+      take: 6
+    }))
 
     // Formater les données pour la sidebar
     const formattedFolders = folders.map(folder => ({
       id: folder.id,
       name: folder.name,
+      updatedAt: folder.updatedAt,
       documentCount: folder._count.documents,
       recentDocuments: folder.documents.map(doc => ({
         id: doc.id,
@@ -71,8 +74,17 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Erreur lors de la récupération des dossiers sidebar:', error)
+    
+    // Fournir plus de détails sur l'erreur en développement
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? `Erreur interne du serveur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+      : 'Erreur interne du serveur'
+    
     return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      },
       { status: 500 }
     )
   }

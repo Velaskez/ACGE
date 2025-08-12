@@ -19,52 +19,77 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
-  documents     Document[]
-  folders       Folder[]
-  sharedDocs    DocumentShare[]
-  comments      Comment[]
+  // Relations
+  documents         Document[]
+  documentVersions  DocumentVersion[]
+  folders           Folder[]
+  sharedWith        DocumentShare[]
+  comments          Comment[]
 }
 
 model Document {
+  id                String    @id @default(cuid())
+  title             String
+  description       String?
+  isPublic          Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Version actuelle (pour accès rapide)
+  currentVersionId  String?  @unique
+  currentVersion    DocumentVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  
+  // Relations
+  authorId          String
+  author            User      @relation(fields: [authorId], references: [id])
+  folderId          String?
+  folder            Folder?   @relation(fields: [folderId], references: [id])
+  
+  // Toutes les versions de ce document
+  versions          DocumentVersion[] @relation("DocumentVersions")
+  
+  shares            DocumentShare[]
+  comments          Comment[]
+}
+
+model DocumentVersion {
   id            String    @id @default(cuid())
-  name          String
-  description   String?
-  mimeType      String
-  size          Int
-  url           String
-  version       Int       @default(1)
-  tags          String    @default("[]") // JSON array stored as string
-  metadata      String?   // JSON stored as string
-  
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  
-  folderId      String?
-  folder        Folder?   @relation(fields: [folderId], references: [id])
-  
-  shares        DocumentShare[]
-  comments      Comment[]
-  
+  versionNumber Int       @default(1)
+  fileName      String
+  fileSize      Int
+  fileType      String
+  filePath      String
+  changeLog     String?   // Description des changements
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  documentId    String
+  document      Document  @relation("DocumentVersions", fields: [documentId], references: [id])
+  
+  // Qui a créé cette version
+  createdById   String
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  
+  // Version actuelle (relation inverse)
+  isCurrentFor  Document? @relation("CurrentVersion")
+  
+  @@unique([documentId, versionNumber])
 }
 
 model Folder {
-  id            String    @id @default(cuid())
-  name          String
-  description   String?
-  
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  
-  parentId      String?
-  parent        Folder?   @relation("FolderToFolder", fields: [parentId], references: [id])
-  children      Folder[]  @relation("FolderToFolder")
-  
-  documents     Document[]
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  parentId    String?
+  parent      Folder?   @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children    Folder[]  @relation("FolderHierarchy")
+  documents   Document[]
 }
 
 model Tag {
@@ -92,15 +117,14 @@ model DocumentShare {
 }
 
 model Comment {
-  id            String    @id @default(cuid())
-  content       String
-  
-  documentId    String
-  document      Document  @relation(fields: [documentId], references: [id])
-  
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id          String   @id @default(cuid())
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id])
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
 }

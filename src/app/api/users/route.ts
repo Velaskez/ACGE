@@ -1,15 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { auth } from '@/lib/auth'
+
+interface DecodedToken {
+  userId: string
+  email: string
+  name?: string
+  role: 'ADMIN' | 'MANAGER' | 'USER'
+}
+
+const allowedRoles = new Set(['ADMIN', 'MANAGER', 'USER'])
+
+function getDecodedTokenOrNull(request: NextRequest): DecodedToken | null {
+  const token = request.cookies.get('auth-token')?.value
+  if (!token) return null
+  try {
+    const decoded = verify(
+      token,
+      process.env.NEXTAUTH_SECRET || 'fallback-secret'
+    ) as DecodedToken
+    return decoded
+  } catch {
+    return null
+  }
+}
 
 // GET - Récupérer tous les utilisateurs
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
+    const decoded = getDecodedTokenOrNull(request)
     // Vérifier l'authentification
-    if (!session) {
+    if (!decoded) {
       return NextResponse.json(
         { error: 'Non authentifié' },
         { status: 401 }
@@ -17,7 +39,7 @@ export async function GET() {
     }
 
     // Vérifier les permissions (seuls les admins peuvent voir tous les utilisateurs)
-    if (session.user.role !== 'ADMIN') {
+    if (decoded.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Permissions insuffisantes' },
         { status: 403 }
@@ -52,10 +74,9 @@ export async function GET() {
 // POST - Créer un nouvel utilisateur
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-
+    const decoded = getDecodedTokenOrNull(request)
     // Vérifier l'authentification
-    if (!session) {
+    if (!decoded) {
       return NextResponse.json(
         { error: 'Non authentifié' },
         { status: 401 }
@@ -63,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier les permissions (seuls les admins peuvent créer des utilisateurs)
-    if (session.user.role !== 'ADMIN') {
+    if (decoded.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Permissions insuffisantes' },
         { status: 403 }
@@ -76,6 +97,13 @@ export async function POST(request: NextRequest) {
     if (!name || !email || !password || !role) {
       return NextResponse.json(
         { error: 'Tous les champs sont requis' },
+        { status: 400 }
+      )
+    }
+
+    if (!allowedRoles.has(role)) {
+      return NextResponse.json(
+        { error: 'Rôle invalide' },
         { status: 400 }
       )
     }

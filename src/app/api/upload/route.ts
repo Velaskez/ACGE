@@ -32,11 +32,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let metadata
+    let metadata: any
     try {
       metadata = JSON.parse(metadataStr)
     } catch {
       metadata = {}
+    }
+
+    // Valider le dossier cible si fourni (éviter violation de FK)
+    let validFolderId: string | null = null
+    if (metadata?.folderId) {
+      const folder = await prisma.folder.findFirst({
+        where: { id: String(metadata.folderId), authorId: userId }
+      })
+      validFolderId = folder ? folder.id : null
     }
 
     // Créer le répertoire d'upload s'il n'existe pas
@@ -120,7 +129,7 @@ export async function POST(request: NextRequest) {
               description: metadata.description || null,
               isPublic: false,
               authorId: userId,
-              folderId: metadata.folderId || null,
+              folderId: validFolderId,
             }
           })
 
@@ -161,7 +170,10 @@ export async function POST(request: NextRequest) {
         })
 
       } catch (error) {
-        console.error(`Erreur lors de l'upload de ${file.name}:`, error)
+        console.error(`Erreur lors de l'upload de ${file.name}:`, {
+          message: error instanceof Error ? error.message : 'Erreur inconnue',
+          stack: error instanceof Error ? error.stack : undefined
+        })
         // Continuer avec les autres fichiers
       }
     }

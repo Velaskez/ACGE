@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     // Vérifier la connexion à la base de données
-    const { db } = await import('@/lib/db');
-    await db.$queryRaw`SELECT 1`;
+    const { prisma } = await import('@/lib/db');
+    await prisma.$queryRaw`SELECT 1`;
     
     return NextResponse.json({
       status: 'healthy',

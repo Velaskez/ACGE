@@ -1,3 +1,4 @@
+export {}
 console.log('🧪 Test des APIs après correction versioning...\n')
 
 async function testAPI(url: string, name: string) {

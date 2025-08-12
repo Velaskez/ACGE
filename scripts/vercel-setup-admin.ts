@@ -91,7 +91,8 @@ async function setupAdminForVercel() {
   } catch (error) {
     console.error('❌ Erreur lors de la configuration:', error)
     
-    if (error.code === 'P1001') {
+    const err: any = error as any
+    if (err?.code === 'P1001') {
       console.log('\n💡 Erreur de connexion - Vérifiez:')
       console.log('  1. La variable DATABASE_URL sur Vercel')
       console.log('  2. Que la base de données PostgreSQL est créée')

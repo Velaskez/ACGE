@@ -1,7 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
-import { auth } from '@/lib/auth'
+import { verify } from 'jsonwebtoken'
+
+interface DecodedToken {
+  userId: string
+  email: string
+  name?: string
+  role: 'ADMIN' | 'MANAGER' | 'USER'
+}
+
+const allowedRoles = new Set(['ADMIN', 'MANAGER', 'USER'])
+
+function getDecodedTokenOrNull(request: NextRequest): DecodedToken | null {
+  const token = request.cookies.get('auth-token')?.value
+  if (!token) return null
+  try {
+    const decoded = verify(
+      token,
+      process.env.NEXTAUTH_SECRET || 'fallback-secret'
+    ) as DecodedToken
+    return decoded
+  } catch {
+    return null
+  }
+}
 
 // PUT - Modifier un utilisateur
 export async function PUT(
@@ -10,10 +33,10 @@ export async function PUT(
 ) {
   try {
     const resolvedParams = await params
-    const session = await auth()
+    const decoded = getDecodedTokenOrNull(request)
 
     // Vérifier l'authentification
-    if (!session) {
+    if (!decoded) {
       return NextResponse.json(
         { error: 'Non authentifié' },
         { status: 401 }
@@ -21,7 +44,7 @@ export async function PUT(
     }
 
     // Vérifier les permissions (seuls les admins peuvent modifier des utilisateurs)
-    if (session.user.role !== 'ADMIN') {
+    if (decoded.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Permissions insuffisantes' },
         { status: 403 }
@@ -61,6 +84,13 @@ export async function PUT(
     if (emailExists) {
       return NextResponse.json(
         { error: 'Un utilisateur avec cet email existe déjà' },
+        { status: 400 }
+      )
+    }
+
+    if (role && !allowedRoles.has(role)) {
+      return NextResponse.json(
+        { error: 'Rôle invalide' },
         { status: 400 }
       )
     }
@@ -114,10 +144,10 @@ export async function DELETE(
 ) {
   try {
     const resolvedParams = await params
-    const session = await auth()
+    const decoded = getDecodedTokenOrNull(request)
 
     // Vérifier l'authentification
-    if (!session) {
+    if (!decoded) {
       return NextResponse.json(
         { error: 'Non authentifié' },
         { status: 401 }
@@ -125,7 +155,7 @@ export async function DELETE(
     }
 
     // Vérifier les permissions (seuls les admins peuvent supprimer des utilisateurs)
-    if (session.user.role !== 'ADMIN') {
+    if (decoded.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Permissions insuffisantes' },
         { status: 403 }
@@ -133,7 +163,7 @@ export async function DELETE(
     }
 
     // Empêcher l'administrateur de se supprimer lui-même
-    if (session.user.id === resolvedParams.id) {
+    if (decoded.userId === resolvedParams.id) {
       return NextResponse.json(
         { error: 'Vous ne pouvez pas supprimer votre propre compte' },
         { status: 400 }

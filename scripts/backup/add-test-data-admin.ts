@@ -54,86 +54,162 @@ async function main() {
 
     console.log('✅ Dossiers créés:', folders.length)
 
-    // Créer quelques documents de test
+    // Créer quelques documents de test avec leur première version
     const documents = await Promise.all([
-      prisma.document.create({
-        data: {
-          title: 'Rapport Financier 2024',
-          description: 'Rapport financier annuel',
-          fileName: 'rapport_financier_2024.pdf',
-          fileSize: 2457600, // 2.4 MB
-          fileType: 'application/pdf',
-          filePath: '/uploads/test/rapport_financier_2024.pdf',
-          authorId: adminUser.id,
-          folderId: folders[0].id // Comptabilité
-        }
-      }),
-      prisma.document.create({
-        data: {
-          title: 'Présentation Q1 2024',
-          description: 'Présentation des résultats du premier trimestre',
-          fileName: 'presentation_q1_2024.pptx',
-          fileSize: 16777216, // 16 MB
-          fileType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          filePath: '/uploads/test/presentation_q1_2024.pptx',
-          authorId: adminUser.id,
-          folderId: folders[3].id // Rapports
-        }
-      }),
-      prisma.document.create({
-        data: {
-          title: 'Budget Prévisionnel',
-          description: 'Budget prévisionnel pour l\'année 2024',
-          fileName: 'budget_2024.xlsx',
-          fileSize: 1258291, // 1.2 MB
-          fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          filePath: '/uploads/test/budget_2024.xlsx',
-          authorId: adminUser.id,
-          folderId: folders[0].id // Comptabilité
-        }
-      }),
-      prisma.document.create({
-        data: {
-          title: 'Facture Client ABC',
-          description: 'Facture pour le client ABC Corp',
-          fileName: 'facture_abc_001.pdf',
-          fileSize: 524288, // 512 KB
-          fileType: 'application/pdf',
-          filePath: '/uploads/test/facture_abc_001.pdf',
-          authorId: adminUser.id,
-          folderId: folders[1].id // Factures
-        }
-      }),
-      prisma.document.create({
-        data: {
-          title: 'Contrat Prestataire',
-          description: 'Contrat avec prestataire externe',
-          fileName: 'contrat_prestataire.docx',
-          fileSize: 3145728, // 3 MB
-          fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          filePath: '/uploads/test/contrat_prestataire.docx',
-          authorId: adminUser.id,
-          folderId: folders[2].id // Contrats
-        }
-      }),
-      prisma.document.create({
-        data: {
-          title: 'Analyse Mensuelle',
-          description: 'Analyse des performances mensuelles',
-          fileName: 'analyse_janvier_2024.xlsx',
-          fileSize: 987654, // ~1 MB
-          fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          filePath: '/uploads/test/analyse_janvier_2024.xlsx',
-          authorId: adminUser.id,
-          folderId: folders[3].id // Rapports
-        }
-      })
+      (async () => {
+        const doc = await prisma.document.create({
+          data: {
+            title: 'Rapport Financier 2024',
+            description: 'Rapport financier annuel',
+            authorId: adminUser.id,
+            folderId: folders[0].id // Comptabilité
+          }
+        })
+        const ver = await prisma.documentVersion.create({
+          data: {
+            versionNumber: 1,
+            fileName: 'rapport_financier_2024.pdf',
+            fileSize: 2457600,
+            fileType: 'application/pdf',
+            filePath: '/uploads/test/rapport_financier_2024.pdf',
+            documentId: doc.id,
+            createdById: adminUser.id
+          }
+        })
+        await prisma.document.update({ where: { id: doc.id }, data: { currentVersionId: ver.id } })
+        return { ...doc, currentVersionId: ver.id }
+      })(),
+      (async () => {
+        const doc = await prisma.document.create({
+          data: {
+            title: 'Présentation Q1 2024',
+            description: 'Présentation des résultats du premier trimestre',
+            authorId: adminUser.id,
+            folderId: folders[3].id // Rapports
+          }
+        })
+        const ver = await prisma.documentVersion.create({
+          data: {
+            versionNumber: 1,
+            fileName: 'presentation_q1_2024.pptx',
+            fileSize: 16777216,
+            fileType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            filePath: '/uploads/test/presentation_q1_2024.pptx',
+            documentId: doc.id,
+            createdById: adminUser.id
+          }
+        })
+        await prisma.document.update({ where: { id: doc.id }, data: { currentVersionId: ver.id } })
+        return { ...doc, currentVersionId: ver.id }
+      })(),
+      (async () => {
+        const doc = await prisma.document.create({
+          data: {
+            title: 'Budget Prévisionnel',
+            description: 'Budget prévisionnel pour l\'année 2024',
+            authorId: adminUser.id,
+            folderId: folders[0].id // Comptabilité
+          }
+        })
+        const ver = await prisma.documentVersion.create({
+          data: {
+            versionNumber: 1,
+            fileName: 'budget_2024.xlsx',
+            fileSize: 1258291,
+            fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            filePath: '/uploads/test/budget_2024.xlsx',
+            documentId: doc.id,
+            createdById: adminUser.id
+          }
+        })
+        await prisma.document.update({ where: { id: doc.id }, data: { currentVersionId: ver.id } })
+        return { ...doc, currentVersionId: ver.id }
+      })(),
+      (async () => {
+        const doc = await prisma.document.create({
+          data: {
+            title: 'Facture Client ABC',
+            description: 'Facture pour le client ABC Corp',
+            authorId: adminUser.id,
+            folderId: folders[1].id // Factures
+          }
+        })
+        const ver = await prisma.documentVersion.create({
+          data: {
+            versionNumber: 1,
+            fileName: 'facture_abc_001.pdf',
+            fileSize: 524288,
+            fileType: 'application/pdf',
+            filePath: '/uploads/test/facture_abc_001.pdf',
+            documentId: doc.id,
+            createdById: adminUser.id
+          }
+        })
+        await prisma.document.update({ where: { id: doc.id }, data: { currentVersionId: ver.id } })
+        return { ...doc, currentVersionId: ver.id }
+      })(),
+      (async () => {
+        const doc = await prisma.document.create({
+          data: {
+            title: 'Contrat Prestataire',
+            description: 'Contrat avec prestataire externe',
+            authorId: adminUser.id,
+            folderId: folders[2].id // Contrats
+          }
+        })
+        const ver = await prisma.documentVersion.create({
+          data: {
+            versionNumber: 1,
+            fileName: 'contrat_prestataire.docx',
+            fileSize: 3145728,
+            fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            filePath: '/uploads/test/contrat_prestataire.docx',
+            documentId: doc.id,
+            createdById: adminUser.id
+          }
+        })
+        await prisma.document.update({ where: { id: doc.id }, data: { currentVersionId: ver.id } })
+        return { ...doc, currentVersionId: ver.id }
+      })(),
+      (async () => {
+        const doc = await prisma.document.create({
+          data: {
+            title: 'Analyse Mensuelle',
+            description: 'Analyse des performances mensuelles',
+            authorId: adminUser.id,
+            folderId: folders[3].id // Rapports
+          }
+        })
+        const ver = await prisma.documentVersion.create({
+          data: {
+            versionNumber: 1,
+            fileName: 'analyse_janvier_2024.xlsx',
+            fileSize: 987654,
+            fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            filePath: '/uploads/test/analyse_janvier_2024.xlsx',
+            documentId: doc.id,
+            createdById: adminUser.id
+          }
+        })
+        await prisma.document.update({ where: { id: doc.id }, data: { currentVersionId: ver.id } })
+        return { ...doc, currentVersionId: ver.id }
+      })()
     ])
 
     console.log('✅ Documents créés:', documents.length)
 
     // Calculer le total de l'espace utilisé
-    const totalSize = documents.reduce((sum, doc) => sum + doc.fileSize, 0)
+    // Additionner la taille des versions courantes
+    const versions = await prisma.documentVersion.findMany({
+      where: { documentId: { in: documents.map(d => d.id) } },
+      select: { documentId: true, fileSize: true, versionNumber: true }
+    })
+    const latestSizesByDoc = new Map<string, number>()
+    versions.forEach(v => {
+      // On additionne toutes les tailles car elles sont des exemples de test
+      latestSizesByDoc.set(v.documentId, (latestSizesByDoc.get(v.documentId) || 0) + v.fileSize)
+    })
+    const totalSize = Array.from(latestSizesByDoc.values()).reduce((s, n) => s + n, 0)
     const totalGB = (totalSize / (1024 * 1024 * 1024)).toFixed(2)
 
     console.log(`💾 Espace total utilisé: ${totalGB} GB`)

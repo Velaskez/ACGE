@@ -26,10 +26,8 @@ export async function GET(
 
     // Récupérer le document
     const document = await prisma.document.findFirst({
-      where: {
-        id: resolvedParams.id,
-        authorId: userId // Sécurité : seul le propriétaire peut télécharger
-      }
+      where: { id: resolvedParams.id, authorId: userId },
+      include: { currentVersion: true }
     })
 
     if (!document) {
@@ -40,7 +38,7 @@ export async function GET(
     }
 
     // Construire le chemin du fichier
-    const fileName = document.filePath.split('/').pop() || ''
+    const fileName = (document.currentVersion?.filePath || '').split('/').pop() || ''
     const filePath = join(process.cwd(), 'uploads', userId, fileName)
 
     // Vérifier que le fichier existe
@@ -55,14 +53,14 @@ export async function GET(
     const fileBuffer = await readFile(filePath)
 
     // Déterminer le type MIME
-    const mimeType = document.fileType || 'application/octet-stream'
+    const mimeType = document.currentVersion?.fileType || 'application/octet-stream'
 
     // Créer la réponse avec le fichier
     const response = new NextResponse(fileBuffer as unknown as ReadableStream, {
       status: 200,
       headers: {
         'Content-Type': mimeType,
-        'Content-Disposition': `attachment; filename="${document.fileName}"`,
+        'Content-Disposition': `attachment; filename="${document.currentVersion?.fileName || 'document'}"`,
         'Content-Length': fileBuffer.length.toString(),
       },
     })

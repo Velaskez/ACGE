@@ -51,12 +51,13 @@ export async function GET() {
   } catch (error) {
     console.error('❌ Erreur force admin:', error);
     
+    const err: any = error as any
     return NextResponse.json(
       { 
         success: false,
         error: 'Erreur lors de la création force admin',
-        details: error.message,
-        code: error.code
+        details: err?.message,
+        code: err?.code
       },
       { status: 500 }
     );

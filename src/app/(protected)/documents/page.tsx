@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
+// import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Table,
@@ -26,16 +25,12 @@ import {
 import { 
   FileText, 
   Plus, 
-  Search, 
   MoreHorizontal, 
   Download, 
   Edit, 
   Trash2, 
   Eye,
   Upload,
-  Grid,
-  List,
-  Filter,
   SortAsc,
   SortDesc,
   File,
@@ -46,6 +41,7 @@ import {
 import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentVersionHistory } from '@/components/documents/document-version-history'
+import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
 
 interface DocumentItem {
   id: string
@@ -58,15 +54,17 @@ interface DocumentItem {
     name: string
     email: string
   }
-  currentVersion: {
+  currentVersion?: {
     id: string
     versionNumber: number
     fileName: string
     fileSize: number
     fileType: string
     filePath: string
-  } | null
-  _count: {
+    changeLog?: string
+    createdAt: string
+  }
+  _count?: {
     versions: number
   }
 }
@@ -120,21 +118,30 @@ export default function DocumentsPage() {
     if (searchQuery) {
       filtered = filtered.filter(doc => 
         doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (doc.currentVersion?.fileName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         doc.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
 
     // Trier
-    filtered.sort((a, b) => {
-      let aValue: any = a[sortField]
-      let bValue: any = b[sortField]
-
-      if (sortField === 'createdAt' || sortField === 'updatedAt') {
-        aValue = new Date(aValue).getTime()
-        bValue = new Date(bValue).getTime()
+    const getSortableValue = (doc: DocumentItem, field: SortField) => {
+      switch (field) {
+        case 'title':
+          return doc.title?.toLowerCase() || ''
+        case 'createdAt':
+          return new Date(doc.createdAt).getTime()
+        case 'updatedAt':
+          return new Date(doc.updatedAt).getTime()
+        case 'fileSize':
+          return doc.currentVersion?.fileSize || 0
+        case 'fileType':
+          return doc.currentVersion?.fileType || ''
       }
+    }
 
+    filtered.sort((a, b) => {
+      const aValue = getSortableValue(a, sortField)
+      const bValue = getSortableValue(b, sortField)
       if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : -1
       } else {
@@ -252,52 +259,17 @@ export default function DocumentsPage() {
           </Button>
         </div>
 
-        {/* Barre de recherche et filtres */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Recherche */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Rechercher des fichiers..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                {/* Mode d'affichage */}
-                <div className="flex rounded-lg border">
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className="rounded-r-none"
-                  >
-                    <List className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className="rounded-l-none"
-                  >
-                    <Grid className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Filtre */}
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filtres
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Barre d'outils Documents */}
+        <DocumentsToolbar
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSortFieldChange={setSortField}
+          onSortOrderChange={setSortOrder}
+        />
 
         {/* Messages d'erreur */}
         {error && (
@@ -400,7 +372,7 @@ export default function DocumentsPage() {
                                 trigger={
                                   <div className="flex items-center w-full px-2 py-1.5 cursor-pointer">
                                     <FileText className="mr-2 h-4 w-4" />
-                                    Versions ({document._count.versions})
+                                    Versions ({document._count?.versions ?? 0})
                                   </div>
                                 }
                               />

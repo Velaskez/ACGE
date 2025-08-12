@@ -18,12 +18,7 @@ export async function GET(request: NextRequest) {
     const userId = decoded.userId
 
     // Récupérer les activités récentes
-    const [
-      recentDocuments,
-      recentFolders,
-      recentShares
-    ] = await Promise.all([
-      // Documents récemment créés ou modifiés
+    const [recentDocuments, recentFolders, recentShares] = await Promise.all([
       prisma.document.findMany({
         where: { authorId: userId },
         select: {
@@ -31,45 +26,39 @@ export async function GET(request: NextRequest) {
           title: true,
           createdAt: true,
           updatedAt: true,
-          currentVersion: {
-            select: {
-              fileName: true,
-              fileType: true
-            }
-          }
+          currentVersion: { select: { fileName: true, fileType: true } }
         },
         orderBy: { updatedAt: 'desc' },
         take: 10
-      }),
-      
-      // Dossiers récemment créés
-      prisma.folder.findMany({
-        where: { authorId: userId },
+      }).catch(() => prisma.document.findMany({
+        where: { userId } as any,
         select: {
           id: true,
-          name: true,
+          title: true,
           createdAt: true,
-          updatedAt: true
+          updatedAt: true,
+          currentVersion: { select: { fileName: true, fileType: true } }
         },
+        orderBy: { updatedAt: 'desc' },
+        take: 10
+      })),
+
+      prisma.folder.findMany({
+        where: { authorId: userId },
+        select: { id: true, name: true, createdAt: true, updatedAt: true },
         orderBy: { createdAt: 'desc' },
         take: 5
-      }),
-      
-      // Partages récents (documents partagés avec l'utilisateur)
+      }).catch(() => prisma.folder.findMany({
+        where: { userId } as any,
+        select: { id: true, name: true, createdAt: true, updatedAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      })),
+
       prisma.documentShare.findMany({
         where: { userId: userId },
         include: {
-          document: {
-            select: {
-              title: true,
-              currentVersion: {
-                select: {
-                  fileName: true,
-                  fileType: true
-                }
-              }
-            }
-          }
+          document: { select: { title: true, currentVersion: { select: { fileName: true, fileType: true } } } }
         },
         orderBy: { createdAt: 'desc' },
         take: 5
@@ -77,7 +66,15 @@ export async function GET(request: NextRequest) {
     ])
 
     // Combiner et trier toutes les activités par date
-    const activities = []
+    const activities: Array<{
+      id: string
+      type: string
+      action: string
+      target: string
+      targetId: string
+      timestamp: Date | string
+      metadata: Record<string, any>
+    }> = []
 
     // Ajouter les documents
     recentDocuments.forEach(doc => {
@@ -133,8 +130,17 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'activité:', error)
+    
+    // Fournir plus de détails sur l'erreur en développement
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? `Erreur interne du serveur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+      : 'Erreur interne du serveur'
+    
     return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      },
       { status: 500 }
     )
   }

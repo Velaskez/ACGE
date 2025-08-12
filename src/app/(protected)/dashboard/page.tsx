@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRouter } from 'next/navigation'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
+import type { DashboardStats, DashboardActivity } from '@/hooks/use-dashboard-data'
 import { formatFileSize, formatRelativeTime, getFileTypeLabel } from '@/lib/utils'
 import { 
   FileText, 
@@ -240,7 +241,7 @@ export default function DashboardPage() {
                     </div>
                   ))
                 ) : stats?.recentDocuments && stats.recentDocuments.length > 0 ? (
-                  stats.recentDocuments.map((doc) => (
+                  stats.recentDocuments.map((doc: DashboardStats['recentDocuments'][number]) => (
                     <div key={doc.id} className="flex items-center space-x-4">
                       <div className="w-8 h-8 bg-powder-blue/20 rounded flex items-center justify-center">
                         <FileText className="w-4 h-4 text-powder-blue" />
@@ -320,7 +321,7 @@ export default function DashboardPage() {
                     </div>
                   ))
                 ) : activity?.activities && activity.activities.length > 0 ? (
-                  activity.activities.map((act) => (
+                  activity.activities.map((act: DashboardActivity['activities'][number]) => (
                     <div key={act.id} className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-powder-blue rounded-full mt-2"></div>
                       <div className="flex-1 space-y-1">

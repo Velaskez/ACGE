@@ -29,8 +29,9 @@ export async function POST(request: NextRequest) {
       console.log('✅ Base de données accessible');
     } catch (error) {
       console.log('❌ Erreur base de données:', error);
+      const err: any = error as any
       return NextResponse.json(
-        { error: 'Erreur de connexion à la base de données', details: error.message },
+        { error: 'Erreur de connexion à la base de données', details: err?.message },
         { status: 500 }
       );
     }
@@ -99,11 +100,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Erreur setup admin:', error);
     
+    const err: any = error as any
     return NextResponse.json(
       { 
         error: 'Erreur lors de la configuration',
-        details: error.message,
-        code: error.code
+        details: err?.message,
+        code: err?.code
       },
       { status: 500 }
     );
