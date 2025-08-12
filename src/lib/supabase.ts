@@ -1,7 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Normalize environment variables to avoid issues with trailing spaces/newlines
+const RAW_SUPABASE_URL = process.env.SUPABASE_URL
+const RAW_SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// Trim whitespace and remove trailing slashes from the URL to prevent invalid URL errors
+const SUPABASE_URL = RAW_SUPABASE_URL
+  ? RAW_SUPABASE_URL.trim().replace(/\/+$/, '')
+  : undefined
+
+// Trim potential whitespace/newlines from the key as well
+const SUPABASE_SERVICE_ROLE_KEY = RAW_SUPABASE_SERVICE_ROLE_KEY
+  ? RAW_SUPABASE_SERVICE_ROLE_KEY.trim()
+  : undefined
 
 export const hasSupabase = Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
 
