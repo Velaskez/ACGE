@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
-import { Search, Bell, Settings, LogOut, User } from 'lucide-react'
+import { Search, Settings, LogOut, User } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { NotificationDropdown } from '@/components/notifications/notification-dropdown'
 
 export function Header() {
   const { user, logout } = useAuth()
@@ -22,8 +23,10 @@ export function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implémenter la recherche
-    console.log('Recherche:', searchQuery)
+    if (searchQuery.trim()) {
+      // Rediriger vers la page documents avec la recherche
+      window.location.href = `/documents?search=${encodeURIComponent(searchQuery.trim())}`
+    }
   }
 
   return (
@@ -60,9 +63,7 @@ export function Header() {
         {/* Actions */}
         <div className="flex items-center space-x-4">
           {/* Notifications */}
-          <Button variant="ghost" size="icon">
-            <Bell className="h-4 w-4" />
-          </Button>
+          <NotificationDropdown />
 
           {/* Menu utilisateur */}
           {user && (
@@ -87,7 +88,7 @@ export function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.location.href = '/profile'}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profil</span>
                 </DropdownMenuItem>

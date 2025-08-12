@@ -1,62 +1,48 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String
-  role          String    @default("USER")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  // Relations
-  documents         Document[]
-  documentVersions  DocumentVersion[]
-  folders           Folder[]
-  sharedWith        DocumentShare[]
-  comments          Comment[]
-  
+  id               String            @id @default(cuid())
+  name             String?
+  email            String            @unique
+  password         String
+  role             String            @default("USER")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  comments         Comment[]
+  sharedWith       DocumentShare[]
+  documentVersions DocumentVersion[]
+  documents        Document[]
+  folders          Folder[]
+  notifications    Notification[]
+
   @@map("users")
 }
 
 model Document {
-  id                String    @id @default(cuid())
-  title             String
-  description       String?
-  isPublic          Boolean   @default(false)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  // Version actuelle (pour accès rapide)
-  currentVersionId  String?  @unique
-  currentVersion    DocumentVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
-  
-  // Relations
-  authorId          String
-  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  folderId          String?
-  folder            Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  
-  // Toutes les versions de ce document
-  versions          DocumentVersion[] @relation("DocumentVersions")
-  
-  tags              Tag[]
-  shares            DocumentShare[]
-  comments          Comment[]
-  
+  id               String            @id @default(cuid())
+  title            String
+  description      String?
+  isPublic         Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  currentVersionId String?           @unique
+  authorId         String
+  folderId         String?
+  comments         Comment[]
+  shares           DocumentShare[]
+  versions         DocumentVersion[] @relation("DocumentVersions")
+  author           User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  currentVersion   DocumentVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  folder           Folder?           @relation(fields: [folderId], references: [id])
+  tags             Tag[]             @relation("DocumentToTag")
+
   @@map("documents")
 }
 
@@ -67,39 +53,31 @@ model DocumentVersion {
   fileSize      Int
   fileType      String
   filePath      String
-  changeLog     String?   // Description des changements
+  changeLog     String?
   createdAt     DateTime  @default(now())
-  
-  // Relations
   documentId    String
-  document      Document  @relation("DocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
-  
-  // Qui a créé cette version
   createdById   String
   createdBy     User      @relation(fields: [createdById], references: [id])
-  
-  // Version actuelle (relation inverse)
+  document      Document  @relation("DocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
   isCurrentFor  Document? @relation("CurrentVersion")
-  
+
   @@unique([documentId, versionNumber])
   @@map("document_versions")
 }
 
 model Folder {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   name        String
   description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relations
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   authorId    String
-  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   parentId    String?
-  parent      Folder?   @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    Folder[]  @relation("FolderHierarchy")
   documents   Document[]
-  
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent      Folder?    @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[]   @relation("FolderHierarchy")
+
   @@map("folders")
 }
 
@@ -108,10 +86,8 @@ model Tag {
   name      String     @unique
   color     String?
   createdAt DateTime   @default(now())
-  
-  // Relations
-  documents Document[]
-  
+  documents Document[] @relation("DocumentToTag")
+
   @@map("tags")
 }
 
@@ -119,33 +95,38 @@ model DocumentShare {
   id         String   @id @default(cuid())
   permission String
   createdAt  DateTime @default(now())
-  
-  // Relations
   documentId String
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   userId     String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@unique([documentId, userId])
   @@map("document_shares")
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
+  id         String   @id @default(cuid())
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   documentId String
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   authorId   String
   author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
   @@map("comments")
 }
 
-// Les enums ne sont pas supportés par SQLite
-// Utilisation de chaînes à la place
-// Valeurs possibles pour role: "ADMIN", "MANAGER", "USER"
-// Valeurs possibles pour permission: "READ", "WRITE", "ADMIN"
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // DOCUMENT_SHARED, VERSION_ADDED, DOCUMENT_RESTORED, etc.
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  data        Json?    // Données contextuelles (IDs, etc.)
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}

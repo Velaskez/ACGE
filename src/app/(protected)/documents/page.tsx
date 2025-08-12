@@ -36,12 +36,27 @@ import {
   File,
   Image,
   Video,
-  Music
+  Music,
+  Share2
 } from 'lucide-react'
 import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentVersionHistory } from '@/components/documents/document-version-history'
+import { DocumentShareModal } from '@/components/documents/document-share-modal'
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
+import { DocumentsFilters, type DocumentFilters } from '@/components/documents/documents-filters'
+import { DocumentGridItem } from '@/components/documents/document-grid-item'
+import { useFolders } from '@/hooks/use-folders'
+import { useSearchParams } from 'next/navigation'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 interface DocumentItem {
   id: string
@@ -75,6 +90,8 @@ type SortOrder = 'asc' | 'desc'
 
 export default function DocumentsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { folders } = useFolders()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [filteredDocuments, setFilteredDocuments] = useState<DocumentItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -86,10 +103,32 @@ export default function DocumentsPage() {
   const [selectedDocument, setSelectedDocument] = useState<DocumentItem | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [filters, setFilters] = useState<DocumentFilters>({
+    sortBy: 'updatedAt',
+    sortOrder: 'desc'
+    // Pas de folderId par défaut - affiche TOUS les documents
+  })
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0
+  })
+
+  // Initialiser la recherche depuis l'URL
+  useEffect(() => {
+    const urlSearch = searchParams.get('search')
+    if (urlSearch) {
+      setSearchQuery(urlSearch)
+      setFilters(prev => ({ ...prev, search: urlSearch }))
+    }
+  }, [searchParams])
 
   useEffect(() => {
     fetchDocuments()
-  }, [])
+  }, [filters, pagination.page])
 
   useEffect(() => {
     filterAndSortDocuments()
@@ -97,10 +136,30 @@ export default function DocumentsPage() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await fetch('/api/documents')
+      setIsLoading(true)
+      
+      // Construire les paramètres de requête
+      const params = new URLSearchParams()
+      
+      if (filters.search) params.append('search', filters.search)
+      if (filters.fileType) params.append('fileType', filters.fileType)
+      if (filters.minSize) params.append('minSize', filters.minSize.toString())
+      if (filters.maxSize) params.append('maxSize', filters.maxSize.toString())
+      if (filters.startDate) params.append('startDate', filters.startDate)
+      if (filters.endDate) params.append('endDate', filters.endDate)
+      if (filters.folderId) params.append('folderId', filters.folderId)
+      if (filters.tags && filters.tags.length > 0) params.append('tags', filters.tags.join(','))
+      if (filters.sortBy) params.append('sortBy', filters.sortBy)
+      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
+      
+      params.append('page', pagination.page.toString())
+      params.append('limit', pagination.limit.toString())
+      
+      const response = await fetch(`/api/documents?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
         setDocuments(data.documents)
+        setPagination(data.pagination)
       } else {
         setError('Erreur lors du chargement des fichiers')
       }
@@ -109,6 +168,21 @@ export default function DocumentsPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleApplyFilters = (newFilters: DocumentFilters) => {
+    setFilters(newFilters)
+    // Synchroniser la barre de recherche locale avec les filtres
+    if (newFilters.search !== searchQuery) {
+      setSearchQuery(newFilters.search || '')
+    }
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const handleSearchQueryChange = (query: string) => {
+    setSearchQuery(query)
+    // Mettre à jour les filtres également
+    setFilters(prev => ({ ...prev, search: query || undefined }))
   }
 
   const filterAndSortDocuments = () => {
@@ -262,13 +336,14 @@ export default function DocumentsPage() {
         {/* Barre d'outils Documents */}
         <DocumentsToolbar
           searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
+          onSearchQueryChange={handleSearchQueryChange}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           sortField={sortField}
           sortOrder={sortOrder}
           onSortFieldChange={setSortField}
           onSortOrderChange={setSortOrder}
+          onOpenFilters={() => setIsFiltersOpen(true)}
         />
 
         {/* Messages d'erreur */}
@@ -381,6 +456,13 @@ export default function DocumentsPage() {
                               <Edit className="mr-2 h-4 w-4" />
                               Modifier
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedDocument(document)
+                              setShowShareModal(true)
+                            }}>
+                              <Share2 className="mr-2 h-4 w-4" />
+                              Partager
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               onClick={() => handleDelete(document.id)}
@@ -420,9 +502,39 @@ export default function DocumentsPage() {
             </CardContent>
           </Card>
         ) : (
-          /* Vue en grille - TODO: Implémenter */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* TODO: Cartes de documents */}
+          /* Vue en grille */
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filteredDocuments.length > 0 ? (
+              filteredDocuments.map((document) => (
+                <DocumentGridItem
+                  key={document.id}
+                  document={document}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDownload={handleDownload}
+                  onShare={(doc) => {
+                    setSelectedDocument(doc)
+                    setShowShareModal(true)
+                  }}
+                  onDelete={handleDelete}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">Aucun document trouvé</h3>
+                <p className="text-muted-foreground">
+                  {searchQuery || Object.values(filters).some(v => v && v !== 'updatedAt' && v !== 'desc')
+                    ? 'Aucun document ne correspond à vos critères de recherche.'
+                    : 'Commencez par ajouter des documents à votre collection.'
+                  }
+                </p>
+                <Button className="mt-4" onClick={() => router.push('/upload')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Ajouter des fichiers
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -450,6 +562,76 @@ export default function DocumentsPage() {
           }}
         />
       )}
+
+      {/* Modal de partage */}
+      {showShareModal && selectedDocument && (
+        <DocumentShareModal
+          document={selectedDocument}
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          onShared={() => {
+            // Optionnel: rafraîchir la liste des documents
+            fetchDocuments()
+          }}
+        />
+      )}
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                  className={pagination.page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              
+              {[...Array(Math.min(5, pagination.totalPages))].map((_, i) => {
+                const pageNum = i + 1
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                      isActive={pagination.page === pageNum}
+                      className="cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              })}
+              
+              {pagination.totalPages > 5 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => setPagination(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
+                  className={pagination.page === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+          
+          <div className="text-center text-sm text-muted-foreground mt-2">
+            Page {pagination.page} sur {pagination.totalPages} • {pagination.total} documents au total
+          </div>
+        </div>
+      )}
+
+      {/* Panneau de filtres */}
+      <DocumentsFilters
+        isOpen={isFiltersOpen}
+        onClose={() => setIsFiltersOpen(false)}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
+        folders={folders}
+      />
     </MainLayout>
   )
 }

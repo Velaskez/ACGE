@@ -53,14 +53,29 @@ export default function DashboardPage() {
     router.push('/users')
   }
 
-  const handleDownloadDocument = async (documentName: string) => {
-    // TODO: Implémenter le téléchargement réel
-    console.log('Télécharger:', documentName)
+  const handleDownloadDocument = async (documentId: string, fileName: string) => {
+    try {
+      const response = await fetch(`/api/documents/${documentId}/download`)
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.style.display = 'none'
+        a.href = url
+        a.download = fileName || 'document'
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+      } else {
+        console.error('Erreur lors du téléchargement')
+      }
+    } catch (error) {
+      console.error('Erreur téléchargement:', error)
+    }
   }
 
-  const handleViewDocument = (documentName: string) => {
-    // TODO: Implémenter la visualisation
-    console.log('Voir:', documentName)
+  const handleViewDocument = (documentId: string) => {
+    router.push(`/documents?view=${documentId}`)
   }
 
   return (
@@ -256,7 +271,7 @@ export default function DashboardPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc.name)}>
+                              <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc.id)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
@@ -268,7 +283,7 @@ export default function DashboardPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => handleDownloadDocument(doc.name)}>
+                              <Button variant="ghost" size="icon" onClick={() => handleDownloadDocument(doc.id, doc.name)}>
                                 <Download className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>

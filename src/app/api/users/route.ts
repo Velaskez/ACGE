@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
+import { NotificationService } from '@/lib/notification-service'
 
 interface DecodedToken {
   userId: string
@@ -146,6 +147,9 @@ export async function POST(request: NextRequest) {
         createdAt: true
       }
     })
+
+    // Envoyer une notification de bienvenue
+    await NotificationService.notifyWelcome(user.id, user.name || 'Nouvel utilisateur')
 
     return NextResponse.json(
       { 

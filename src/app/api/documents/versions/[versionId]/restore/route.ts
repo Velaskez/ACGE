@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
+import { NotificationService } from '@/lib/notification-service'
 
 export async function POST(
   request: NextRequest,
@@ -41,10 +42,20 @@ export async function POST(
       )
     }
 
-    // Vérifier les permissions
-    if (versionToRestore.document.authorId !== userId) {
+    // Vérifier les permissions (propriétaire ou permission ADMIN/WRITE)
+    const hasPermission = 
+      versionToRestore.document.authorId === userId || 
+      await prisma.documentShare.findFirst({
+        where: {
+          documentId: versionToRestore.documentId,
+          userId: userId,
+          permission: { in: ['ADMIN', 'WRITE'] }
+        }
+      })
+
+    if (!hasPermission) {
       return NextResponse.json(
-        { error: 'Accès refusé' },
+        { error: 'Accès refusé - permissions insuffisantes' },
         { status: 403 }
       )
     }
@@ -68,6 +79,19 @@ export async function POST(
         currentVersion: true
       }
     })
+
+    // Log de l'activité de restauration (pour audit)
+    console.log(`Document ${versionToRestore.documentId}: Version ${versionToRestore.versionNumber} restaurée par utilisateur ${userId} à ${new Date().toISOString()}`)
+
+    // Envoyer des notifications aux utilisateurs ayant accès au document
+    const accessUsers = await NotificationService.getDocumentAccessUsers(versionToRestore.documentId)
+    await NotificationService.notifyVersionRestored(
+      versionToRestore.documentId,
+      versionToRestore.document.title,
+      versionToRestore.versionNumber,
+      userId,
+      accessUsers
+    )
 
     return NextResponse.json({
       success: true,

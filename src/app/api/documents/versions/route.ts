@@ -28,11 +28,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Vérifier que l'utilisateur a accès au document
+    // Vérifier que l'utilisateur a accès au document (propriétaire ou partagé)
     const document = await prisma.document.findFirst({
       where: {
         id: documentId,
-        authorId: userId
+        OR: [
+          { authorId: userId },
+          { 
+            shares: {
+              some: { 
+                userId: userId,
+                permission: { in: ['READ', 'WRITE', 'ADMIN'] }
+              }
+            }
+          }
+        ]
       }
     })
 

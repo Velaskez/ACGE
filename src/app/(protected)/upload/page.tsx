@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useFolders } from '@/hooks/use-folders'
 import {
   Select,
   SelectContent,
@@ -37,6 +38,7 @@ interface FileMetadata {
 
 export default function UploadPage() {
   const router = useRouter()
+  const { folders, isLoading: foldersLoading } = useFolders()
   const [metadata, setMetadata] = useState<FileMetadata>({
     name: '',
     description: '',
@@ -300,10 +302,16 @@ export default function UploadPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="root">Racine (aucun dossier)</SelectItem>
-                    {/* TODO: Charger les dossiers depuis l'API */}
-                    <SelectItem value="documents">Documents</SelectItem>
-                    <SelectItem value="images">Images</SelectItem>
-                    <SelectItem value="archives">Archives</SelectItem>
+                    {foldersLoading ? (
+                      <SelectItem value="loading" disabled>Chargement...</SelectItem>
+                    ) : (
+                      folders.map((folder) => (
+                        <SelectItem key={folder.id} value={folder.id}>
+                          {folder.name}
+                          {folder.documentCount !== undefined && ` (${folder.documentCount})`}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </CardContent>

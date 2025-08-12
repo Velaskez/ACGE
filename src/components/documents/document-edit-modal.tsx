@@ -1,20 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Save, AlertCircle } from 'lucide-react'
+import { Save, AlertCircle, FolderOpen, Folder } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface DocumentItem {
   id: string
   title: string
   description?: string
   isPublic: boolean
+  folderId?: string | null
   createdAt: string
   updatedAt: string
   currentVersion?: {
@@ -34,6 +42,17 @@ interface DocumentItem {
     name: string
     email: string
   }
+  folder?: {
+    id: string
+    name: string
+  }
+}
+
+interface FolderItem {
+  id: string
+  name: string
+  description?: string
+  parentId?: string | null
 }
 
 interface DocumentEditModalProps {
@@ -55,10 +74,47 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
   const [formData, setFormData] = useState({
     title: document.title,
     description: document.description || '',
-    isPublic: document.isPublic
+    isPublic: document.isPublic,
+    folderId: document.folderId || ''
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [folders, setFolders] = useState<FolderItem[]>([])
+  const [foldersLoading, setFoldersLoading] = useState(false)
+
+  // Charger les dossiers disponibles
+  useEffect(() => {
+    if (isOpen) {
+      fetchFolders()
+    }
+  }, [isOpen])
+
+  // Réinitialiser le formulaire quand le document change
+  useEffect(() => {
+    setFormData({
+      title: document.title,
+      description: document.description || '',
+      isPublic: document.isPublic,
+      folderId: document.folderId || 'root'
+    })
+  }, [document])
+
+  const fetchFolders = async () => {
+    setFoldersLoading(true)
+    try {
+      const response = await fetch('/api/sidebar/folders', {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setFolders(data.folders || [])
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des dossiers:', error)
+    } finally {
+      setFoldersLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,13 +130,23 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
-          isPublic: formData.isPublic
+          isPublic: formData.isPublic,
+          folderId: formData.folderId === 'root' ? null : formData.folderId
         }),
       })
 
       if (response.ok) {
         const updatedDocument = await response.json()
-        onSave(updatedDocument)
+        onSave(updatedDocument.document || updatedDocument)
+        
+        // Message de confirmation si le dossier a changé
+        const actualFolderId = formData.folderId === 'root' ? null : formData.folderId
+        if (actualFolderId !== document.folderId) {
+          const targetFolder = actualFolderId 
+            ? folders.find(f => f.id === actualFolderId)?.name 
+            : 'la racine'
+          console.log(`Document déplacé vers : ${targetFolder}`)
+        }
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Erreur lors de la mise à jour')
@@ -101,22 +167,37 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-full max-w-2xl mx-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Modifier le document</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl font-semibold">Modifier le document</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Informations du fichier (lecture seule) */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-            <div className="flex items-center justify-between">
+          <div className="bg-gray-50 p-3 sm:p-4 rounded-lg space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <span className="text-sm font-medium text-gray-700">Fichier</span>
-              <Badge variant="secondary">{document.currentVersion?.fileType || 'Inconnu'}</Badge>
+              <Badge variant="secondary" className="w-fit">{document.currentVersion?.fileType || 'Inconnu'}</Badge>
             </div>
-            <p className="text-sm text-gray-600">{document.currentVersion?.fileName || 'Sans nom'}</p>
-            <p className="text-xs text-gray-500">
-              {formatFileSize(document.currentVersion?.fileSize || 0)} • Version {document.currentVersion?.versionNumber || 0}
-            </p>
+            <p className="text-sm text-gray-600 break-all">{document.currentVersion?.fileName || 'Sans nom'}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+              <p className="text-xs text-gray-500">
+                {formatFileSize(document.currentVersion?.fileSize || 0)}
+              </p>
+              <span className="hidden sm:inline text-xs text-gray-500 mx-2">•</span>
+              <p className="text-xs text-gray-500">
+                Version {document.currentVersion?.versionNumber || 0}
+              </p>
+              {document.folder && (
+                <>
+                  <span className="hidden sm:inline text-xs text-gray-500 mx-2">•</span>
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <FolderOpen className="h-3 w-3" />
+                    {document.folder.name}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Formulaire d'édition */}
@@ -145,16 +226,63 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
               />
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div>
+              <Label htmlFor="folderId" className="flex items-center gap-2">
+                <FolderOpen className="h-4 w-4" />
+                Emplacement
+              </Label>
+              <Select 
+                value={formData.folderId} 
+                onValueChange={(value) => handleChange('folderId', value)}
+                disabled={isLoading || foldersLoading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={foldersLoading ? "Chargement..." : "Sélectionner un dossier"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="root">
+                    <div className="flex items-center gap-2">
+                      <Folder className="h-4 w-4 text-gray-500" />
+                      <span>Racine (aucun dossier)</span>
+                    </div>
+                  </SelectItem>
+                  {folders.map((folder) => (
+                    <SelectItem key={folder.id} value={folder.id}>
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4 text-blue-500" />
+                        <span className="truncate">{folder.name}</span>
+                        {folder.description && (
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            ({folder.description.slice(0, 20)}{folder.description.length > 20 ? '...' : ''})
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formData.folderId !== 'root' && document.folder && formData.folderId !== document.folderId && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Actuellement dans : {document.folder.name}
+                </p>
+              )}
+              {formData.folderId === 'root' && document.folder && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sera déplacé vers la racine depuis : {document.folder.name}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-start space-x-3">
               <input
                 type="checkbox"
                 id="isPublic"
                 checked={formData.isPublic}
                 onChange={(e) => handleChange('isPublic', e.target.checked)}
                 disabled={isLoading}
-                className="rounded border-gray-300"
+                className="mt-1 rounded border-gray-300"
               />
-              <Label htmlFor="isPublic" className="text-sm">
+              <Label htmlFor="isPublic" className="text-sm leading-relaxed">
                 Document public (visible par tous les utilisateurs)
               </Label>
             </div>
@@ -167,15 +295,26 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
             </Alert>
           )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+          <DialogFooter className="flex-col-reverse sm:flex-row">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose} 
+              disabled={isLoading}
+              className="w-full sm:w-auto"
+            >
               Annuler
             </Button>
-            <Button type="submit" disabled={isLoading || !formData.title.trim()}>
+            <Button 
+              type="submit" 
+              disabled={isLoading || !formData.title.trim()}
+              className="w-full sm:w-auto"
+            >
               {isLoading ? (
                 <>
                   <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
-                  Enregistrement...
+                  <span className="hidden sm:inline">Enregistrement...</span>
+                  <span className="sm:hidden">Envoi...</span>
                 </>
               ) : (
                 <>

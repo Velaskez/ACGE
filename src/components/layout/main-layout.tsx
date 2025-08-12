@@ -25,25 +25,30 @@ export function MainLayout({ children }: MainLayoutProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden fixed top-20 left-4 z-50"
+            className="md:hidden fixed top-20 left-4 z-50 bg-background/80 backdrop-blur-sm border"
           >
             <Menu className="h-4 w-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-80 p-0">
-          <Sidebar />
+        <SheetContent 
+          side="left" 
+          className="w-[280px] max-w-[85vw] p-0 sm:w-[320px]"
+        >
+          <Sidebar className="border-r-0" />
         </SheetContent>
       </Sheet>
 
-      {/* Desktop sidebar - maintenant fixe, pas dans le flex */}
+      {/* Desktop sidebar - responsive width */}
       <div className="hidden md:block">
         <Sidebar />
       </div>
 
-      {/* Main content */}
-      <main className="pt-16 md:ml-64 min-h-screen">
-        <div className="p-6 w-full">
-          {children}
+      {/* Main content - responsive margin */}
+      <main className="pt-16 min-h-screen transition-all duration-200 md:ml-64 lg:ml-72 xl:ml-80">
+        <div className="p-4 w-full sm:p-6">
+          <div className="max-w-full overflow-x-hidden">
+            {children}
+          </div>
         </div>
       </main>
     </div>

@@ -22,6 +22,14 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const category = searchParams.get('category')
     const folderId = searchParams.get('folderId')
+    const fileType = searchParams.get('fileType')
+    const minSize = searchParams.get('minSize')
+    const maxSize = searchParams.get('maxSize')
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
+    const tags = searchParams.get('tags')
+    const sortBy = searchParams.get('sortBy') || 'updatedAt'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
@@ -31,6 +39,7 @@ export async function GET(request: NextRequest) {
       authorId: userId, // Seuls les documents de l'utilisateur
     }
 
+    // Recherche textuelle
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
@@ -39,14 +48,81 @@ export async function GET(request: NextRequest) {
           currentVersion: {
             fileName: { contains: search, mode: 'insensitive' }
           }
+        },
+        {
+          tags: {
+            some: {
+              name: { contains: search, mode: 'insensitive' }
+            }
+          }
         }
       ]
     }
 
+    // Filtre par dossier
     if (folderId) {
-      where.folderId = folderId
-    } else if (folderId === null) {
-      where.folderId = null // Documents à la racine
+      if (folderId === 'root') {
+        where.folderId = null // Documents à la racine
+      } else {
+        where.folderId = folderId
+      }
+    }
+    // Si pas de folderId spécifié, on affiche TOUS les documents (pas de filtre)
+
+    // Filtre par type de fichier
+    if (fileType) {
+      where.currentVersion = {
+        ...where.currentVersion,
+        fileType: { contains: fileType, mode: 'insensitive' }
+      }
+    }
+
+    // Filtre par taille de fichier
+    if (minSize || maxSize) {
+      where.currentVersion = {
+        ...where.currentVersion,
+        fileSize: {
+          ...(minSize ? { gte: parseInt(minSize) } : {}),
+          ...(maxSize ? { lte: parseInt(maxSize) } : {})
+        }
+      }
+    }
+
+    // Filtre par date
+    if (startDate || endDate) {
+      where.createdAt = {
+        ...(startDate ? { gte: new Date(startDate) } : {}),
+        ...(endDate ? { lte: new Date(endDate) } : {})
+      }
+    }
+
+    // Filtre par tags
+    if (tags) {
+      const tagList = tags.split(',').map(t => t.trim())
+      where.tags = {
+        some: {
+          name: { in: tagList }
+        }
+      }
+    }
+
+    // Construire l'ordre de tri
+    const orderBy: any = {}
+    switch (sortBy) {
+      case 'title':
+        orderBy.title = sortOrder
+        break
+      case 'createdAt':
+        orderBy.createdAt = sortOrder
+        break
+      case 'fileSize':
+        orderBy.currentVersion = { fileSize: sortOrder }
+        break
+      case 'fileName':
+        orderBy.currentVersion = { fileName: sortOrder }
+        break
+      default:
+        orderBy.updatedAt = sortOrder
     }
 
     // Récupérer les documents
@@ -68,15 +144,16 @@ export async function GET(request: NextRequest) {
             }
           },
           currentVersion: true,
+          tags: true,
           _count: {
             select: {
-              versions: true
+              versions: true,
+              comments: true,
+              shares: true
             }
           }
         },
-        orderBy: {
-          updatedAt: 'desc'
-        },
+        orderBy,
         skip: offset,
         take: limit
       }),

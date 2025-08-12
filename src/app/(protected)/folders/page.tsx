@@ -1,13 +1,13 @@
 'use client'
 
 import React from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
-import { Search } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -18,19 +18,205 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useSidebarData } from '@/hooks/use-sidebar-data'
-import { FolderOpen, Plus, FileText, Filter, SortAsc, SortDesc, Grid, List } from 'lucide-react'
+import { FoldersToolbar } from '@/components/folders/folders-toolbar'
+import { FolderGridItem } from '@/components/folders/folder-grid-item'
+import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
+import { DocumentGridItem } from '@/components/documents/document-grid-item'
+import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
+import { DocumentEditModal } from '@/components/documents/document-edit-modal'
+import { DocumentShareModal } from '@/components/documents/document-share-modal'
+import { DocumentVersionHistory } from '@/components/documents/document-version-history'
+import { FolderOpen, Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, ArrowLeft, Download, Share2, Upload } from 'lucide-react'
+
+// Types pour les documents - compatible avec les composants existants
+interface DocumentItem {
+  id: string
+  title: string
+  description?: string
+  isPublic: boolean
+  createdAt: string
+  updatedAt: string
+  tags: Array<{ id: string; name: string }>
+  folder?: { id: string; name: string }
+  author: { id: string; name: string; email: string }
+  currentVersion?: {
+    id: string
+    versionNumber: number
+    fileName: string
+    fileSize: number
+    fileType: string
+    filePath: string
+    changeLog?: string
+    createdAt: string
+  }
+  _count?: {
+    versions?: number
+    comments?: number
+    shares?: number
+  }
+}
 
 export default function FoldersPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const { folders, stats, isLoading, error, refresh } = useSidebarData()
+  
+  // États pour la gestion des dossiers
   const [query, setQuery] = React.useState('')
   const [open, setOpen] = React.useState(false)
   const [name, setName] = React.useState('')
   const [description, setDescription] = React.useState('')
   const [creating, setCreating] = React.useState(false)
   const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list')
-  const [sortField, setSortField] = React.useState<'name' | 'updatedAt' | 'documentCount'>('updatedAt')
+  const [sortField, setSortField] = React.useState<'name' | 'createdAt' | 'updatedAt' | 'documentCount'>('updatedAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
+  const [editingFolder, setEditingFolder] = React.useState<any>(null)
+  const [deleteConfirm, setDeleteConfirm] = React.useState<string | null>(null)
+
+  // États pour la vue du contenu d'un dossier
+  const folderId = searchParams.get('folder')
+  const [currentFolder, setCurrentFolder] = React.useState<any>(null)
+  const [documents, setDocuments] = React.useState<DocumentItem[]>([])
+  const [filteredDocuments, setFilteredDocuments] = React.useState<DocumentItem[]>([])
+  const [documentsLoading, setDocumentsLoading] = React.useState(false)
+  const [documentsError, setDocumentsError] = React.useState('')
+  
+  // États pour les documents (comme dans documents/page.tsx)
+  const [documentSearchQuery, setDocumentSearchQuery] = React.useState('')
+  const [documentViewMode, setDocumentViewMode] = React.useState<'list' | 'grid'>('list')
+  const [documentSortField, setDocumentSortField] = React.useState<'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'>('updatedAt')
+  const [documentSortOrder, setDocumentSortOrder] = React.useState<'asc' | 'desc'>('desc')
+  
+  // États pour les modales de documents
+  const [selectedDocument, setSelectedDocument] = React.useState<DocumentItem | null>(null)
+  const [previewOpen, setPreviewOpen] = React.useState(false)
+  const [editModalOpen, setEditModalOpen] = React.useState(false)
+  const [shareModalOpen, setShareModalOpen] = React.useState(false)
+  const [versionHistoryOpen, setVersionHistoryOpen] = React.useState(false)
+
+  // Fonction pour charger les documents d'un dossier
+  const loadFolderDocuments = React.useCallback(async (folderId: string) => {
+    try {
+      setDocumentsLoading(true)
+      setDocumentsError('')
+      
+      // Charger les détails du dossier
+      const folderRes = await fetch(`/api/folders/${folderId}`)
+      if (folderRes.ok) {
+        const folderData = await folderRes.json()
+        setCurrentFolder(folderData)
+      }
+      
+      // Charger les documents du dossier
+      const documentsRes = await fetch(`/api/documents?folderId=${folderId}`)
+      if (documentsRes.ok) {
+        const response = await documentsRes.json()
+        
+        // L'API retourne { documents: [...], pagination: {...} }
+        const documentsArray = response.documents || []
+        
+        // Adapter les données pour correspondre à notre interface
+        const adaptedDocuments = documentsArray.map((doc: any): DocumentItem => ({
+          ...doc,
+          tags: doc.tags || [],
+          author: doc.author || { id: 'unknown', name: 'Utilisateur inconnu', email: 'unknown@example.com' },
+          currentVersion: doc.currentVersion ? {
+            ...doc.currentVersion,
+            fileType: doc.currentVersion.fileType || 'unknown',
+            filePath: doc.currentVersion.filePath || '',
+            createdAt: doc.currentVersion.createdAt || doc.createdAt
+          } : undefined
+        }))
+        setDocuments(adaptedDocuments)
+      } else {
+        const errorData = await documentsRes.text()
+        console.error('Erreur API documents:', documentsRes.status, errorData)
+        setDocumentsError(`Erreur lors du chargement des documents (${documentsRes.status})`)
+      }
+    } catch (error) {
+      setDocumentsError('Erreur lors du chargement des documents')
+    } finally {
+      setDocumentsLoading(false)
+    }
+  }, [])
+
+  // Effet pour charger les documents quand un dossier est sélectionné
+  React.useEffect(() => {
+    if (folderId) {
+      loadFolderDocuments(folderId)
+    } else {
+      setCurrentFolder(null)
+      setDocuments([])
+      setDocumentsError('')
+    }
+  }, [folderId, loadFolderDocuments])
+
+  // Filtrage et tri des documents
+  React.useEffect(() => {
+    let filtered = documents.filter(doc => 
+      !documentSearchQuery || 
+      doc.title.toLowerCase().includes(documentSearchQuery.toLowerCase()) ||
+      doc.description?.toLowerCase().includes(documentSearchQuery.toLowerCase()) ||
+      doc.currentVersion?.fileName.toLowerCase().includes(documentSearchQuery.toLowerCase())
+    )
+
+    // Tri des documents
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any
+      
+      switch (documentSortField) {
+        case 'title':
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+          break
+        case 'createdAt':
+          aValue = new Date(a.createdAt).getTime()
+          bValue = new Date(b.createdAt).getTime()
+          break
+        case 'updatedAt':
+          aValue = new Date(a.updatedAt).getTime()
+          bValue = new Date(b.updatedAt).getTime()
+          break
+        case 'fileSize':
+          aValue = a.currentVersion?.fileSize || 0
+          bValue = b.currentVersion?.fileSize || 0
+          break
+        case 'fileType':
+          aValue = a.currentVersion?.fileType?.toLowerCase() || ''
+          bValue = b.currentVersion?.fileType?.toLowerCase() || ''
+          break
+        default:
+          aValue = new Date(a.updatedAt).getTime()
+          bValue = new Date(b.updatedAt).getTime()
+      }
+
+      if (documentSortOrder === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
+      }
+    })
+
+    setFilteredDocuments(filtered)
+  }, [documents, documentSearchQuery, documentSortField, documentSortOrder])
 
   const filteredFolders = React.useMemo(() => {
     const items = (folders || []).filter(f => !query || f.name.toLowerCase().includes(query.toLowerCase()))
@@ -52,8 +238,11 @@ export default function FoldersPage() {
     if (!name.trim()) return
     try {
       setCreating(true)
-      const res = await fetch('/api/folders', {
-        method: 'POST',
+      const url = editingFolder ? `/api/folders/${editingFolder.id}` : '/api/folders'
+      const method = editingFolder ? 'PUT' : 'POST'
+      
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined })
       })
@@ -61,6 +250,7 @@ export default function FoldersPage() {
         setOpen(false)
         setName('')
         setDescription('')
+        setEditingFolder(null)
         await refresh()
       }
     } finally {
@@ -68,6 +258,298 @@ export default function FoldersPage() {
     }
   }
 
+  const handleEditFolder = (folder: any) => {
+    setEditingFolder(folder)
+    setName(folder.name)
+    setDescription(folder.description || '')
+    setOpen(true)
+  }
+
+  const handleDeleteFolder = async (folderId: string) => {
+    try {
+      const res = await fetch(`/api/folders/${folderId}`, {
+        method: 'DELETE'
+      })
+      if (res.ok) {
+        await refresh()
+        setDeleteConfirm(null)
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Erreur lors de la suppression')
+      }
+    } catch (error) {
+      alert('Erreur lors de la suppression')
+    }
+  }
+
+  const handleCloseDialog = () => {
+    setOpen(false)
+    setEditingFolder(null)
+    setName('')
+    setDescription('')
+  }
+
+  // Fonctions d'adaptation des types pour les modales
+  const adaptDocumentForModal = (doc: DocumentItem) => ({
+    ...doc,
+    _count: {
+      versions: doc._count?.versions || 0
+    },
+    author: doc.author || { id: 'unknown', name: 'Utilisateur inconnu', email: 'unknown@example.com' }
+  })
+
+  // Fonctions pour la gestion des documents
+  const handleViewDocument = (document: DocumentItem) => {
+    setSelectedDocument(document)
+    setPreviewOpen(true)
+  }
+
+  const handleEditDocument = (document: DocumentItem) => {
+    setSelectedDocument(document)
+    setEditModalOpen(true)
+  }
+
+  const handleShareDocument = (document: DocumentItem) => {
+    setSelectedDocument(document)
+    setShareModalOpen(true)
+  }
+
+  const handleVersionHistory = (document: DocumentItem) => {
+    setSelectedDocument(document)
+    setVersionHistoryOpen(true)
+  }
+
+  const handleDownloadDocument = async (document: DocumentItem) => {
+    try {
+      const response = await fetch(`/api/documents/${document.id}/download`)
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = window.document.createElement('a')
+        a.href = url
+        a.download = document.currentVersion?.fileName || 'document'
+        a.click()
+        window.URL.revokeObjectURL(url)
+      }
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error)
+    }
+  }
+
+  const handleDeleteDocument = async (documentId: string) => {
+    try {
+      const response = await fetch(`/api/documents/${documentId}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        // Recharger les documents après suppression
+        if (folderId) {
+          loadFolderDocuments(folderId)
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error)
+    }
+  }
+
+  // Fonction pour ouvrir un dossier
+  const handleOpenFolder = (folder: any) => {
+    router.push(`/folders?folder=${folder.id}`)
+  }
+
+  // Fonction pour revenir à la liste des dossiers
+  const handleBackToFolders = () => {
+    router.push('/folders')
+  }
+
+  // Rendu conditionnel : soit la liste des dossiers, soit le contenu d'un dossier
+  if (folderId && currentFolder) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          {/* Header avec breadcrumb */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" onClick={handleBackToFolders}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour aux dossiers
+              </Button>
+              <div className="border-l pl-4">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-1">
+                  <FolderOpen className="h-4 w-4" />
+                  <span>Dossiers</span>
+                  <span>/</span>
+                  <span className="font-medium text-foreground">{currentFolder.name}</span>
+                </div>
+                <h1 className="text-3xl font-bold">{currentFolder.name}</h1>
+                <p className="text-muted-foreground">
+                  {currentFolder.description || 'Documents du dossier'}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => loadFolderDocuments(folderId)}>
+                Rafraîchir
+              </Button>
+              <Button onClick={() => router.push(`/upload?folderId=${folderId}`)}>
+                <Upload className="mr-2 h-4 w-4" />
+                Ajouter des documents
+              </Button>
+            </div>
+          </div>
+
+          {/* Barre d'outils pour les documents */}
+          <DocumentsToolbar
+            searchQuery={documentSearchQuery}
+            onSearchQueryChange={setDocumentSearchQuery}
+            viewMode={documentViewMode}
+            onViewModeChange={setDocumentViewMode}
+            sortField={documentSortField}
+            sortOrder={documentSortOrder}
+            onSortFieldChange={setDocumentSortField}
+            onSortOrderChange={setDocumentSortOrder}
+            onOpenFilters={() => {
+              // TODO: Implémenter les filtres pour les documents
+              console.log('Ouvrir les filtres des documents')
+            }}
+          />
+
+          {/* Contenu des documents */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Documents du dossier</CardTitle>
+              <CardDescription>
+                {documents.length} document{documents.length > 1 ? 's' : ''} dans ce dossier
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {documentsLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : documentsError ? (
+                <div className="text-center py-8 text-red-600">
+                  {documentsError}
+                </div>
+              ) : filteredDocuments.length > 0 ? (
+                documentViewMode === 'list' ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nom</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Taille</TableHead>
+                        <TableHead>Modifié</TableHead>
+                        <TableHead className="w-12">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredDocuments.map((document) => (
+                        <TableRow key={document.id}>
+                          <TableCell className="font-medium">{document.title}</TableCell>
+                          <TableCell>{document.currentVersion?.fileType}</TableCell>
+                          <TableCell>
+                            {document.currentVersion?.fileSize ? 
+                              `${Math.round(document.currentVersion.fileSize / 1024)} KB` : 
+                              'N/A'
+                            }
+                          </TableCell>
+                          <TableCell>
+                            {new Date(document.updatedAt).toLocaleDateString('fr-FR')}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewDocument(document)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Prévisualiser
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDownloadDocument(document)}>
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Télécharger
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleShareDocument(document)}>
+                                  <Share2 className="mr-2 h-4 w-4" />
+                                  Partager
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleEditDocument(document)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Modifier
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteDocument(document.id)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Supprimer
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      Vue grille disponible prochainement. Utilisez la vue liste pour le moment.
+                    </p>
+                  </div>
+                )
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
+                  <h3 className="mt-2 text-sm font-medium">Aucun document</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Ce dossier ne contient aucun document.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Modales pour les documents */}
+          {selectedDocument && (
+            <>
+              <DocumentPreviewModal
+                document={adaptDocumentForModal(selectedDocument)}
+                isOpen={previewOpen}
+                onClose={() => setPreviewOpen(false)}
+              />
+              <DocumentEditModal
+                document={adaptDocumentForModal(selectedDocument)}
+                isOpen={editModalOpen}
+                onClose={() => setEditModalOpen(false)}
+                onSave={() => folderId && loadFolderDocuments(folderId)}
+              />
+              <DocumentShareModal
+                document={selectedDocument}
+                isOpen={shareModalOpen}
+                onClose={() => setShareModalOpen(false)}
+              />
+              {versionHistoryOpen && (
+                <DocumentVersionHistory
+                  documentId={selectedDocument.id}
+                  documentTitle={selectedDocument.title}
+                />
+              )}
+            </>
+          )}
+        </div>
+      </MainLayout>
+    )
+  }
+
+  // Vue par défaut : liste des dossiers
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -78,7 +560,7 @@ export default function FoldersPage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={refresh}>Rafraîchir</Button>
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={handleCloseDialog}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
@@ -87,7 +569,7 @@ export default function FoldersPage() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Nouveau dossier</DialogTitle>
+                  <DialogTitle>{editingFolder ? 'Modifier le dossier' : 'Nouveau dossier'}</DialogTitle>
                   <DialogDescription>Créez un dossier pour organiser vos documents.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
@@ -109,63 +591,21 @@ export default function FoldersPage() {
           </div>
         </div>
 
-        {/* Barre de recherche (identique à la page des fichiers) */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Recherche */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Rechercher des dossiers..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Mode d'affichage */}
-              <div className="flex rounded-lg border">
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="rounded-r-none"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className="rounded-l-none"
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {/* Filtres / Tri */}
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filtres
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setSortField('name')}>
-                  Nom
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setSortField('updatedAt')}>
-                  Modifié le
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setSortField('documentCount')}>
-                  Nb docs
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>
-                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Barre d'outils - Maintenant identique à la page des fichiers */}
+        <FoldersToolbar
+          searchQuery={query}
+          onSearchQueryChange={setQuery}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSortFieldChange={setSortField}
+          onSortOrderChange={setSortOrder}
+          onOpenFilters={() => {
+            // TODO: Implémenter l'ouverture des filtres
+            console.log('Ouvrir les filtres')
+          }}
+        />
 
         {/* Stats rapides */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -219,11 +659,16 @@ export default function FoldersPage() {
                       <TableHead>Nom</TableHead>
                       <TableHead>Documents</TableHead>
                       <TableHead>Récents</TableHead>
+                      <TableHead className="w-12">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredFolders.map((folder) => (
-                      <TableRow key={folder.id}>
+                      <TableRow 
+                        key={folder.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleOpenFolder(folder)}
+                      >
                         <TableCell className="font-medium">{folder.name}</TableCell>
                         <TableCell>{folder.documentCount}</TableCell>
                         <TableCell>
@@ -239,32 +684,51 @@ export default function FoldersPage() {
                             <span className="text-xs text-muted-foreground">Aucun document</span>
                           )}
                         </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenFolder(folder)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Voir les documents
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditFolder(folder)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Modifier
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => setDeleteConfirm(folder.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Supprimer
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {filteredFolders.map((folder) => (
-                    <Card key={folder.id} className="hover:bg-accent/50 transition-colors">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold">{folder.name}</CardTitle>
-                        <CardDescription>{folder.documentCount} document(s)</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {folder.recentDocuments && folder.recentDocuments.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {folder.recentDocuments.map((doc) => (
-                              <span key={doc.id} className="text-xs text-muted-foreground">
-                                {doc.title}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Aucun document récent</span>
-                        )}
-                      </CardContent>
-                    </Card>
+                    <FolderGridItem
+                      key={folder.id}
+                      folder={folder}
+                      onView={handleOpenFolder}
+                      onEdit={handleEditFolder}
+                      onDelete={(folderId) => setDeleteConfirm(folderId)}
+                    />
                   ))}
                 </div>
               )
@@ -286,6 +750,28 @@ export default function FoldersPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Dialogue de confirmation de suppression */}
+        <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action ne peut pas être annulée. Le dossier sera définitivement supprimé.
+                Assurez-vous qu'il ne contient aucun document ou sous-dossier.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteConfirm && handleDeleteFolder(deleteConfirm)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   )

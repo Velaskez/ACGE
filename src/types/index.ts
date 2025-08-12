@@ -78,6 +78,29 @@ export interface Comment {
   author: User
 }
 
+export interface Notification {
+  id: string
+  type: NotificationType
+  title: string
+  message: string
+  isRead: boolean
+  data?: any
+  createdAt: Date
+  userId: string
+  user?: User
+}
+
+export type NotificationType = 
+  | 'DOCUMENT_SHARED'
+  | 'DOCUMENT_UNSHARED'
+  | 'VERSION_ADDED'
+  | 'VERSION_RESTORED'
+  | 'DOCUMENT_DELETED'
+  | 'FOLDER_SHARED'
+  | 'COMMENT_ADDED'
+  | 'SYSTEM'
+  | 'WELCOME'
+
 // Types pour les formulaires
 export interface LoginFormData {
   email: string

@@ -6,6 +6,17 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { formatFileSize, formatRelativeTime } from '@/lib/utils'
 import {
   History,
@@ -14,7 +25,10 @@ import {
   FileText,
   Clock,
   User,
-  MessageSquare
+  MessageSquare,
+  AlertCircle,
+  CheckCircle,
+  X
 } from 'lucide-react'
 
 interface DocumentVersion {
@@ -48,7 +62,10 @@ export function DocumentVersionHistory({
   const [currentVersionId, setCurrentVersionId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [isRestoring, setIsRestoring] = useState<string | null>(null)
+  const [restoreConfirm, setRestoreConfirm] = useState<{versionId: string, versionNumber: number} | null>(null)
 
   const fetchVersions = async () => {
     try {
@@ -81,32 +98,74 @@ export function DocumentVersionHistory({
 
   const handleRestore = async (versionId: string, versionNumber: number) => {
     try {
+      setIsRestoring(versionId)
+      setError(null)
+      setSuccess(null)
+
       const response = await fetch(`/api/documents/versions/${versionId}/restore`, {
         method: 'POST'
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error('Erreur lors de la restauration')
+        throw new Error(data.error || 'Erreur lors de la restauration')
       }
 
       // Rafraîchir la liste des versions
       await fetchVersions()
       
-      // TODO: Afficher une notification de succès
-      console.log(`Version ${versionNumber} restaurée avec succès`)
+      setSuccess(`Version ${versionNumber} restaurée avec succès !`)
+      setRestoreConfirm(null)
+      
+      // Faire disparaître le message de succès après 5 secondes
+      setTimeout(() => setSuccess(null), 5000)
       
     } catch (err) {
       console.error('Erreur restauration:', err)
-      // TODO: Afficher une notification d'erreur
+      setError(err instanceof Error ? err.message : 'Erreur lors de la restauration')
+      setRestoreConfirm(null)
+    } finally {
+      setIsRestoring(null)
     }
+  }
+
+  const confirmRestore = (versionId: string, versionNumber: number) => {
+    setRestoreConfirm({ versionId, versionNumber })
   }
 
   const handleDownload = async (versionId: string, fileName: string) => {
     try {
-      // TODO: Implémenter le téléchargement de version spécifique
-      console.log(`Téléchargement de la version ${versionId}: ${fileName}`)
+      setError(null)
+      
+      const response = await fetch(`/api/documents/versions/${versionId}/download`)
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Erreur lors du téléchargement')
+      }
+
+      // Créer un blob à partir de la réponse
+      const blob = await response.blob()
+      
+      // Créer un lien de téléchargement temporaire
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = url
+      a.download = fileName
+      
+      // Déclencher le téléchargement
+      document.body.appendChild(a)
+      a.click()
+      
+      // Nettoyer
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
     } catch (err) {
       console.error('Erreur téléchargement:', err)
+      setError(err instanceof Error ? err.message : 'Erreur lors du téléchargement')
     }
   }
 
@@ -216,10 +275,11 @@ export function DocumentVersionHistory({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleRestore(version.id, version.versionNumber)}
+                          onClick={() => confirmRestore(version.id, version.versionNumber)}
+                          disabled={isRestoring === version.id}
                         >
                           <RotateCcw className="mr-1 h-3 w-3" />
-                          Restaurer
+                          {isRestoring === version.id ? 'Restauration...' : 'Restaurer'}
                         </Button>
                       )}
                     </div>
@@ -251,6 +311,47 @@ export function DocumentVersionHistory({
           )}
         </div>
       </DialogContent>
+
+      {/* Dialog de confirmation de restauration */}
+      <AlertDialog open={!!restoreConfirm} onOpenChange={() => setRestoreConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-orange-500" />
+              Confirmer la restauration
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Êtes-vous sûr de vouloir restaurer la <strong>version {restoreConfirm?.versionNumber}</strong> de ce document ?
+              </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium mb-1">Points importants :</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Cette action changera la version actuelle du document</li>
+                      <li>La version actuelle sera conservée dans l'historique</li>
+                      <li>Tous les utilisateurs verront la version restaurée</li>
+                      <li>Cette action est réversible</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => restoreConfirm && handleRestore(restoreConfirm.versionId, restoreConfirm.versionNumber)}
+              className="bg-orange-600 hover:bg-orange-700"
+              disabled={!!isRestoring}
+            >
+              {isRestoring ? 'Restauration en cours...' : 'Confirmer la restauration'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

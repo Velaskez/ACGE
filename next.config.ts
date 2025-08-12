@@ -32,6 +32,20 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   
+  // Configuration webpack
+  webpack: (config, { isServer }) => {
+    // Résoudre le problème du loader
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
+  
   // Headers de sécurité
   async headers() {
     return [

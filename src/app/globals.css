@@ -120,3 +120,65 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Classes utilitaires pour les modales responsives */
+  .modal-responsive {
+    @apply w-full max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)];
+  }
+  
+  .modal-compact-spacing {
+    @apply p-3 sm:p-4 lg:p-6;
+  }
+  
+  .modal-grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4;
+  }
+  
+  .modal-button-responsive {
+    @apply w-full sm:w-auto flex-shrink-0;
+  }
+  
+  .modal-text-responsive {
+    @apply text-sm sm:text-base;
+  }
+  
+  .modal-icon-responsive {
+    @apply h-4 w-4 sm:h-5 sm:w-5;
+  }
+  
+  /* Gestion du débordement de texte dans les modales */
+  .modal-text-ellipsis {
+    @apply truncate min-w-0;
+  }
+  
+  /* Amélioration du scroll dans les modales */
+  .modal-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+  
+  .modal-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .modal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .modal-scroll::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+  
+  .modal-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground));
+  }
+}
