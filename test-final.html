@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test ACGE Final</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Test Final ACGE</h1>
+    <div id="results"></div>
+    
+    <script>
+        const APP_URL = 'https://acge-zeta.vercel.app'
+        const results = document.getElementById('results')
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div')
+            div.className = `result ${type}`
+            div.innerHTML = message
+            results.appendChild(div)
+        }
+        
+        async function testApp() {
+            addResult('🧪 Début des tests...')
+            
+            try {
+                // Test Health
+                addResult('🏥 Test API Health...')
+                const healthRes = await fetch(`${APP_URL}/api/health`)
+                addResult(`Health Status: ${healthRes.status}`, healthRes.ok ? 'success' : 'error')
+                
+                if (healthRes.ok) {
+                    const health = await healthRes.json()
+                    addResult(`✅ Health: ${health.status}`, 'success')
+                }
+                
+                // Test Migration
+                addResult('🔧 Test Migration...')
+                const migrationRes = await fetch(`${APP_URL}/api/migrate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                
+                addResult(`Migration Status: ${migrationRes.status}`, migrationRes.ok ? 'success' : 'error')
+                
+                const migration = await migrationRes.json()
+                addResult(`📊 Migration: ${JSON.stringify(migration, null, 2)}`, migrationRes.ok ? 'success' : 'error')
+                
+                if (migrationRes.ok) {
+                    addResult('🎉 SUCCÈS! Application prête!', 'success')
+                    addResult('📧 Email: admin@acge.ga<br>🔑 Password: admin123<br>🌐 <a href="' + APP_URL + '/login" target="_blank">Se connecter</a>', 'success')
+                }
+                
+            } catch (error) {
+                addResult(`❌ Erreur: ${error.message}`, 'error')
+            }
+        }
+        
+        testApp()
+    </script>
+</body>
+</html>
