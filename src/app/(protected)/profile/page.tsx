@@ -26,6 +26,7 @@ import {
   Save,
   Key
 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface UserProfile {
   id: string
@@ -241,9 +242,103 @@ export default function ProfilePage() {
       icon={User}
     >
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Chargement du profil...</span>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Skeleton pour les informations du profil */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5" />
+                    <Skeleton className="h-6 w-40" />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-12 h-12 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                  </div>
+                  
+                  <Skeleton className="h-px w-full" />
+                  
+                  <div className="space-y-3">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Skeleton pour le formulaire de modification */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5" />
+                    <Skeleton className="h-6 w-32" />
+                  </div>
+                  <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Informations personnelles */}
+                  <div className="space-y-4">
+                    <Skeleton className="h-6 w-40" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-9 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-9 w-full" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Skeleton className="h-px w-full" />
+
+                  {/* Changement de mot de passe */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-5 w-5" />
+                      <Skeleton className="h-6 w-40" />
+                    </div>
+                    <Skeleton className="h-4 w-80" />
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-9 w-full" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-28" />
+                          <Skeleton className="h-9 w-full" />
+                        </div>
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-36" />
+                          <Skeleton className="h-9 w-full" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Boutons */}
+                  <div className="flex justify-end gap-2">
+                    <Skeleton className="h-9 w-20" />
+                    <Skeleton className="h-9 w-44" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="space-y-6">

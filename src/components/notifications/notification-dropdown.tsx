@@ -8,7 +8,6 @@ import { Separator } from '@/components/ui/separator'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuHeader,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -171,9 +170,8 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuHeader>
-          <div className="flex items-center justify-between">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+        <div className="flex items-center justify-between p-2">
+          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
             {unreadCount > 0 && (
               <Button 
                 variant="ghost" 
@@ -185,8 +183,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
                 Tout marquer comme lu
               </Button>
             )}
-          </div>
-        </DropdownMenuHeader>
+        </div>
         
         <Separator />
 
