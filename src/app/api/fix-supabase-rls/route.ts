@@ -22,7 +22,7 @@ export async function POST() {
     console.log('📋 Étape 1: Désactivation RLS sur toutes les tables...')
     for (const table of tables) {
       try {
-        await prisma.$executeRaw`ALTER TABLE ${table} DISABLE ROW LEVEL SECURITY`
+        await prisma.$executeRawUnsafe(`ALTER TABLE "${table}" DISABLE ROW LEVEL SECURITY`)
         results.push(`✅ ${table}: RLS désactivé`)
         console.log(`✅ RLS désactivé pour ${table}`)
       } catch (error) {
@@ -62,7 +62,7 @@ export async function POST() {
 
         for (const policy of policies) {
           try {
-            await prisma.$executeRaw`DROP POLICY IF EXISTS ${policy.policyname} ON ${table}`
+            await prisma.$executeRawUnsafe(`DROP POLICY IF EXISTS "${policy.policyname}" ON "${table}"`)
             results.push(`✅ Politique "${policy.policyname}" supprimée de ${table}`)
           } catch (e) {
             results.push(`⚠️ Erreur suppression politique ${policy.policyname}: ${e}`)
@@ -79,8 +79,7 @@ export async function POST() {
       SELECT 
         schemaname, 
         tablename, 
-        rowsecurity as rls_enabled,
-        hasrls as has_rls_policies
+        rowsecurity as rls_enabled
       FROM pg_tables t
       LEFT JOIN pg_class c ON c.relname = t.tablename
       WHERE schemaname = 'public'
