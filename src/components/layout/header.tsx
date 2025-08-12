@@ -2,11 +2,10 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
-import { Search, Settings, LogOut, User, Menu } from 'lucide-react'
+import { Search, Settings, LogOut, User, Menu, X } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +34,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b">
       <div className="relative flex h-16 items-center px-2 sm:px-4">
         {/* Logo */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className={`flex items-center gap-2 sm:gap-4 ${searchOpen ? 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto' : ''}` }>
           {/* Mobile menu button */}
           <Button
             variant="ghost"
@@ -74,7 +73,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
         </div>
 
         {/* Actions */}
-        <div className="ml-auto flex items-center gap-2 sm:gap-4">
+        <div className={`ml-auto flex items-center gap-2 sm:gap-4 ${searchOpen ? 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto' : ''}` }>
           {/* Recherche (mobile) alignée à droite */}
           <Button
             variant="ghost"
@@ -129,12 +128,9 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           )}
         </div>
 
-        {/* Dialog de recherche (mobile) */}
-        <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-          <DialogContent className="modal-responsive">
-            <DialogHeader>
-              <DialogTitle>Rechercher</DialogTitle>
-            </DialogHeader>
+        {/* Barre de recherche mobile intégrée au header */}
+        {searchOpen && (
+          <div className="sm:hidden absolute inset-x-2 z-10">
             <form
               onSubmit={(e) => {
                 handleSearch(e)
@@ -147,13 +143,23 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
                 autoFocus
                 type="search"
                 placeholder="Rechercher..."
-                className="pl-8"
+                className="pl-8 pr-8"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1.5 top-1.5 h-7 w-7"
+                onClick={() => setSearchOpen(false)}
+                aria-label="Fermer la recherche"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </form>
-          </DialogContent>
-        </Dialog>
+          </div>
+        )}
       </div>
     </header>
   )

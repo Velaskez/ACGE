@@ -51,3 +51,4 @@ prisma/dev.db*
 fly.toml
 render.yaml
 .vercel
+.env*.local
