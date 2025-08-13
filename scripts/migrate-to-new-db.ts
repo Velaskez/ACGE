@@ -32,12 +32,22 @@ async function migrateData() {
     
     console.log(`📊 Données récupérées : ${users.length} utilisateurs, ${folders.length} dossiers, ${documents.length} documents, ${versions.length} versions`)
     
-    // 2. Vider la nouvelle base
-    console.log('🧹 Nettoyage de la nouvelle base...')
-    await newPrisma.documentVersion.deleteMany()
-    await newPrisma.document.deleteMany()
-    await newPrisma.folder.deleteMany()
-    await newPrisma.user.deleteMany()
+    // 2. Vérifier et vider la nouvelle base si nécessaire
+    console.log('🧹 Vérification de la nouvelle base...')
+    try {
+      const userCount = await newPrisma.user.count()
+      if (userCount > 0) {
+        console.log('🗑️  Nettoyage de la nouvelle base...')
+        await newPrisma.documentVersion.deleteMany()
+        await newPrisma.document.deleteMany()
+        await newPrisma.folder.deleteMany()
+        await newPrisma.user.deleteMany()
+      } else {
+        console.log('✅ Nouvelle base vide, pas de nettoyage nécessaire')
+      }
+    } catch (error) {
+      console.log('✅ Tables non existantes, création en cours...')
+    }
     
     // 3. Migrer les utilisateurs
     console.log('👥 Migration des utilisateurs...')
