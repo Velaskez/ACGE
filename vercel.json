@@ -9,5 +9,10 @@
       "maxDuration": 30
     }
   },
-  "regions": ["fra1"]
+  "regions": ["fra1"],
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "NEXTAUTH_URL": "@nextauth_url"
+  }
 }

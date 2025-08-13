@@ -1,6 +1,11 @@
 import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Configuration pour Vercel (API)
+  // output: 'export', // Commenté pour Vercel
+  // trailingSlash: true, // Commenté pour Vercel
+  // distDir: 'out', // Commenté pour Vercel
+  
   // Exclure les scripts du linting pendant le build
   eslint: {
     ignoreDuringBuilds: false,
@@ -16,9 +21,9 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Configuration des images
+  // Configuration des images pour Vercel
   images: {
-    unoptimized: false,
+    unoptimized: false, // Optimisé pour Vercel
     remotePatterns: [
       {
         protocol: 'https',
