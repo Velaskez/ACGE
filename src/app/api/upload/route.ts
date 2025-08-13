@@ -84,13 +84,13 @@ export async function POST(request: NextRequest) {
         
         console.log('📝 Nom de fichier généré:', fileName)
         
-        // Convertir le fichier en buffer
+        // Convertir le fichier en buffer pour Vercel Blob
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
         
         console.log('📦 Buffer créé, taille:', buffer.length)
         
-        // Upload vers Vercel Blob Storage
+        // Upload vers Vercel Blob Storage avec la méthode officielle
         console.log('☁️ Upload vers Vercel Blob...')
         const blob = await put(fileName, buffer, {
           access: 'public',
