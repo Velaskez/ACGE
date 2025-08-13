@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { existsSync } from 'fs'
 import { readFile } from 'fs/promises'
 import path from 'path'
-import { hasSupabase, downloadFromStorage } from '@/lib/supabase'
+// Removed Supabase imports - using local storage only
 
 // GET - Télécharger une version spécifique d'un document
 export async function GET(
@@ -50,23 +50,16 @@ export async function GET(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Récupérer le contenu du fichier (Supabase si configuré, sinon stockage local)
+    // Récupérer le contenu du fichier (stockage local)
     let fileBuffer: Buffer
     const filePathMeta = version.filePath || ''
-    if (hasSupabase && filePathMeta.startsWith('documents/')) {
-      const pathOnly = filePathMeta.replace(/^documents\//, '')
-      const { buffer } = await downloadFromStorage({ bucket: 'documents', path: pathOnly })
-      fileBuffer = buffer
-    } else {
-      // Fallback stockage local: fichiers rangés sous uploads/<authorId>/<fileName>
-      const authorId = version.document.authorId
-      const fileName = filePathMeta.split('/').pop() || ''
-      const filePath = path.join(process.cwd(), 'uploads', authorId, fileName)
-      if (!existsSync(filePath)) {
-        return NextResponse.json({ error: 'Fichier non trouvé sur le serveur' }, { status: 404 })
-      }
-      fileBuffer = await readFile(filePath)
+    const authorId = version.document.authorId
+    const fileName = filePathMeta.split('/').pop() || ''
+    const filePath = path.join(process.cwd(), 'uploads', authorId, fileName)
+    if (!existsSync(filePath)) {
+      return NextResponse.json({ error: 'Fichier non trouvé sur le serveur' }, { status: 404 })
     }
+    fileBuffer = await readFile(filePath)
 
     // Déterminer le type MIME
     const mimeType = version.fileType || 'application/octet-stream'

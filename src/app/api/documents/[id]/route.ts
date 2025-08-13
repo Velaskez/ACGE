@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
-import { hasSupabase, deleteFromStorage } from '@/lib/supabase'
+// Removed Supabase imports - using local storage only
 
 // GET - Récupérer un document spécifique
 export async function GET(
@@ -115,19 +115,14 @@ export async function DELETE(
       )
     }
 
-    // Supprimer les fichiers stockés (Supabase si configuré, sinon local)
+    // Supprimer les fichiers stockés (local storage only)
     for (const version of document.versions) {
       const filePathMeta = version.filePath || ''
       try {
-        if (hasSupabase && filePathMeta.startsWith('documents/')) {
-          const pathOnly = filePathMeta.replace(/^documents\//, '')
-          await deleteFromStorage({ bucket: 'documents', path: pathOnly })
-        } else {
-          const localFileName = filePathMeta.split('/').pop() || ''
-          const localPath = join(process.cwd(), 'uploads', userId, localFileName)
-          if (existsSync(localPath)) {
-            await unlink(localPath)
-          }
+        const localFileName = filePathMeta.split('/').pop() || ''
+        const localPath = join(process.cwd(), 'uploads', userId, localFileName)
+        if (existsSync(localPath)) {
+          await unlink(localPath)
         }
       } catch (fileError) {
         console.error('Erreur lors de la suppression du fichier:', fileError)
