@@ -58,24 +58,24 @@ async function migrateToPlatform() {
       })
     }
     
-    // 4. Versions (avant les documents)
-    console.log('4. 📋 Migration des versions...')
-    for (const version of data.versions) {
-      await prisma.documentVersion.upsert({
-        where: { id: version.id },
-        update: version,
-        create: version
-      })
-    }
-    
-    // 5. Documents
-    console.log('5. 📄 Migration des documents...')
+    // 4. Documents (avant les versions)
+    console.log('4. 📄 Migration des documents...')
     for (const document of data.documents) {
       const { currentVersionId, ...docWithoutVersion } = document
       await prisma.document.upsert({
         where: { id: document.id },
         update: docWithoutVersion,
         create: docWithoutVersion
+      })
+    }
+    
+    // 5. Versions (après les documents)
+    console.log('5. 📋 Migration des versions...')
+    for (const version of data.versions) {
+      await prisma.documentVersion.upsert({
+        where: { id: version.id },
+        update: version,
+        create: version
       })
     }
     
