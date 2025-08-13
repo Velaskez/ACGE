@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { readFile } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
-// Removed Supabase imports - using local storage only
 
 export async function GET(
   request: NextRequest,
@@ -38,29 +34,15 @@ export async function GET(
       )
     }
 
-    let fileBuffer: Buffer
-    const filePathMeta = document.currentVersion?.filePath || ''
-    const fileName = filePathMeta.split('/').pop() || ''
-    const filePath = join(process.cwd(), 'uploads', userId, fileName)
-    if (!existsSync(filePath)) {
-      return NextResponse.json({ error: 'Fichier non trouvé sur le serveur' }, { status: 404 })
+    if (!document.currentVersion?.filePath) {
+      return NextResponse.json(
+        { error: 'Fichier non trouvé' },
+        { status: 404 }
+      )
     }
-    fileBuffer = await readFile(filePath)
 
-    // Déterminer le type MIME
-    const mimeType = document.currentVersion?.fileType || 'application/octet-stream'
-
-    // Créer la réponse avec le fichier
-    const response = new NextResponse(fileBuffer as unknown as ReadableStream, {
-      status: 200,
-      headers: {
-        'Content-Type': mimeType,
-        'Content-Disposition': `attachment; filename="${document.currentVersion?.fileName || 'document'}"`,
-        'Content-Length': fileBuffer.length.toString(),
-      },
-    })
-
-    return response
+    // Rediriger vers l'URL Vercel Blob
+    return NextResponse.redirect(document.currentVersion.filePath)
 
   } catch (error) {
     console.error('Erreur lors du téléchargement:', error)

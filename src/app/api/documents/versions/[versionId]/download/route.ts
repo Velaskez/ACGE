@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { existsSync } from 'fs'
-import { readFile } from 'fs/promises'
-import path from 'path'
-// Removed Supabase imports - using local storage only
 
 // GET - Télécharger une version spécifique d'un document
 export async function GET(
@@ -50,37 +46,12 @@ export async function GET(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Récupérer le contenu du fichier (stockage local)
-    let fileBuffer: Buffer
-    const filePathMeta = version.filePath || ''
-    const authorId = version.document.authorId
-    const fileName = filePathMeta.split('/').pop() || ''
-    const filePath = path.join(process.cwd(), 'uploads', authorId, fileName)
-    if (!existsSync(filePath)) {
-      return NextResponse.json({ error: 'Fichier non trouvé sur le serveur' }, { status: 404 })
+    if (!version.filePath) {
+      return NextResponse.json({ error: 'Fichier non trouvé' }, { status: 404 })
     }
-    fileBuffer = await readFile(filePath)
 
-    // Déterminer le type MIME
-    const mimeType = version.fileType || 'application/octet-stream'
-
-    // Créer la réponse avec les bons headers
-    const response = new NextResponse(fileBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': mimeType,
-        'Content-Length': fileBuffer.length.toString(),
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(version.fileName)}"`,
-        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    })
-
-    // Log de l'activité (pour audit)
-    console.log(`Version téléchargée: ${version.fileName} (v${version.versionNumber}) par utilisateur ${userId}`)
-
-    return response
+    // Rediriger vers l'URL Vercel Blob
+    return NextResponse.redirect(version.filePath)
 
   } catch (error) {
     console.error('Erreur lors du téléchargement de version:', error)

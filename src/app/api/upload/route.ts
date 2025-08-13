@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { writeFile, mkdir, unlink } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { put } from '@vercel/blob'
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,14 +46,6 @@ export async function POST(request: NextRequest) {
       validFolderId = folder ? folder.id : null
     }
 
-    // Configuration du stockage local
-    const uploadDir = join(process.cwd(), 'uploads')
-    const userUploadDir = join(uploadDir, userId)
-    
-    // Créer les dossiers nécessaires
-    if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true })
-    if (!existsSync(userUploadDir)) await mkdir(userUploadDir, { recursive: true })
-
     const uploadedFiles: Array<{
       id: string
       title: string
@@ -74,7 +64,6 @@ export async function POST(request: NextRequest) {
 
     // Traiter chaque fichier
     for (const file of files) {
-      let localFilePath = ''
       try {
         // Générer un nom de fichier unique
         const timestamp = Date.now()
@@ -85,10 +74,11 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
         
-        // Stockage local
-        localFilePath = join(userUploadDir, fileName)
-        await writeFile(localFilePath, buffer)
-        const storedPath = `/uploads/${userId}/${fileName}`
+        // Upload vers Vercel Blob Storage
+        const blob = await put(fileName, buffer, {
+          access: 'public',
+          addRandomSuffix: false
+        })
 
         // Vérifier s'il s'agit d'une nouvelle version d'un document existant
         const existingDocument = metadata.documentId ? 
@@ -119,7 +109,7 @@ export async function POST(request: NextRequest) {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
-              filePath: storedPath,
+              filePath: blob.url,
               changeLog: metadata.changeLog || `Version ${newVersionNumber}`,
               documentId: existingDocument.id,
               createdById: userId
@@ -154,7 +144,7 @@ export async function POST(request: NextRequest) {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
-              filePath: storedPath,
+              filePath: blob.url,
               changeLog: 'Version initiale',
               documentId: document.id,
               createdById: userId
@@ -189,15 +179,6 @@ export async function POST(request: NextRequest) {
           message,
           stack: error instanceof Error ? error.stack : undefined
         })
-        
-        // Nettoyage: supprimer le fichier local si la base échoue
-        try {
-          if (localFilePath && existsSync(localFilePath)) {
-            await unlink(localFilePath)
-          }
-        } catch (cleanupError) {
-          console.warn('Échec du nettoyage après erreur upload:', cleanupError)
-        }
         errors.push({ fileName: file.name, message })
         // Continuer avec les autres fichiers
       }
