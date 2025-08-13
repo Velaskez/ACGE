@@ -54,8 +54,11 @@
     "migrate:to-platform": "tsx scripts/migrate-to-platform.ts",
     "migrate:new-db": "tsx scripts/migrate-to-new-db.ts",
     "setup:lws": "tsx scripts/setup-lws.ts",
-    "build:lws": "tsx scripts/build-lws.ts",
-    "deploy:lws": "npm run setup:lws && npm run build:lws",
+    "fix:api-export": "tsx scripts/fix-api-routes-for-export.ts",
+    "fix:dynamic-routes": "tsx scripts/fix-dynamic-routes-for-export.ts",
+    "build:lws": "npm run fix:api-export && npm run fix:dynamic-routes && tsx scripts/build-lws.ts",
+    "prepare:lws": "tsx scripts/prepare-lws-upload.ts",
+    "deploy:lws": "npm run setup:lws && npm run build:lws && npm run prepare:lws",
     "setup:vercel": "tsx scripts/setup-vercel.ts"
   },
   "dependencies": {

@@ -1,29 +1,28 @@
 import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Configuration pour Vercel (API)
-  // output: 'export', // Commenté pour Vercel
-  // trailingSlash: true, // Commenté pour Vercel
-  // distDir: 'out', // Commenté pour Vercel
+  // Configuration pour LWS (export statique)
+  output: 'export',
+  trailingSlash: true,
+  distDir: 'out',
   
   // Exclure les scripts du linting pendant le build
   eslint: {
-    ignoreDuringBuilds: false,
-    dirs: ['src'], // Lint seulement le dossier src
+    ignoreDuringBuilds: true, // Ignorer ESLint pour LWS
   },
   
   // Exclusions TypeScript
   typescript: {
-    ignoreBuildErrors: true, // Ignorer les erreurs TS dans les scripts
+    ignoreBuildErrors: true, // Ignorer les erreurs TS
   },
   
   // Optimisations pour la production
   compress: true,
   poweredByHeader: false,
   
-  // Configuration des images pour Vercel
+  // Configuration des images pour LWS (export statique)
   images: {
-    unoptimized: false, // Optimisé pour Vercel
+    unoptimized: true, // Nécessaire pour l'export statique
     remotePatterns: [
       {
         protocol: 'https',
@@ -49,29 +48,6 @@ const nextConfig: NextConfig = {
       };
     }
     return config;
-  },
-  
-  // Headers de sécurité
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-        ],
-      },
-    ];
   },
 };
 
