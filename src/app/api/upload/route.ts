@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
 import { put } from '@vercel/blob'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -93,32 +90,14 @@ export async function POST(request: NextRequest) {
         
         console.log('📦 Buffer créé, taille:', buffer.length)
         
-        let fileUrl: string
+        // Upload vers Vercel Blob Storage
+        console.log('☁️ Upload vers Vercel Blob...')
+        const blob = await put(fileName, buffer, {
+          access: 'public',
+          addRandomSuffix: false
+        })
         
-        // Utiliser Vercel Blob en production, stockage local en développement
-        if (process.env.NODE_ENV === 'production') {
-          console.log('☁️ Upload vers Vercel Blob (production)...')
-          const blob = await put(fileName, buffer, {
-            access: 'public',
-            addRandomSuffix: false
-          })
-          fileUrl = blob.url
-          console.log('✅ Blob uploadé:', fileUrl)
-        } else {
-          console.log('💾 Stockage local (développement)...')
-          // Configuration du stockage local
-          const uploadDir = join(process.cwd(), 'uploads')
-          const userUploadDir = join(uploadDir, userId)
-          
-          // Créer les dossiers nécessaires
-          if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true })
-          if (!existsSync(userUploadDir)) await mkdir(userUploadDir, { recursive: true })
-          
-          const localFilePath = join(userUploadDir, fileName)
-          await writeFile(localFilePath, buffer)
-          fileUrl = `/uploads/${userId}/${fileName}`
-          console.log('✅ Fichier stocké localement:', fileUrl)
-        }
+        console.log('✅ Blob uploadé:', blob.url)
 
         // Vérifier s'il s'agit d'une nouvelle version d'un document existant
         const existingDocument = metadata.documentId ? 
@@ -150,7 +129,7 @@ export async function POST(request: NextRequest) {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
-              filePath: fileUrl,
+              filePath: blob.url,
               changeLog: metadata.changeLog || `Version ${newVersionNumber}`,
               documentId: existingDocument.id,
               createdById: userId
@@ -186,7 +165,7 @@ export async function POST(request: NextRequest) {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
-              filePath: fileUrl,
+              filePath: blob.url,
               changeLog: 'Version initiale',
               documentId: document.id,
               createdById: userId
