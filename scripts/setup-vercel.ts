@@ -11,11 +11,11 @@ async function setupVercel() {
 DATABASE_URL="mysql://acgeg2647579:Reviti2025%40@213.255.195.34:3306/acgeg2647579"
 
 # Configuration NextAuth pour Vercel
-NEXTAUTH_URL="https://acge-api.vercel.app"
+NEXTAUTH_URL="https://acge-gabon.com"
 NEXTAUTH_SECRET="vercel-secret-key-${Math.random().toString(36).substring(7)}"
 
 # API URL (Vercel)
-NEXT_PUBLIC_API_URL="https://acge-api.vercel.app"
+NEXT_PUBLIC_API_URL="https://acge-gabon.com"
 
 # Environment
 NODE_ENV="production"
@@ -33,8 +33,8 @@ UPLOAD_DIR="./uploads"`
     console.log('3. Importez votre repository ACGE-app')
     console.log('4. Configurez les variables d\'environnement :')
     console.log('   - DATABASE_URL: mysql://acgeg2647579:Reviti2025%40@213.255.195.34:3306/acgeg2647579')
-    console.log('   - NEXTAUTH_SECRET: [généré automatiquement]')
-    console.log('   - NEXTAUTH_URL: https://acge-api.vercel.app')
+console.log('   - NEXTAUTH_SECRET: [généré automatiquement]')
+console.log('   - NEXTAUTH_URL: https://acge-gabon.com')
 
     console.log('\n🔧 Étapes suivantes :')
     console.log('1. Déployer sur Vercel')
@@ -43,9 +43,8 @@ UPLOAD_DIR="./uploads"`
     console.log('4. Connecter le frontend LWS à l\'API Vercel')
 
     console.log('\n🌍 Configuration finale :')
-    console.log('- Frontend : acge-gabon.com (LWS)')
-    console.log('- Backend : acge-api.vercel.app (Vercel)')
-    console.log('- Base : MySQL (LWS)')
+    console.log('- Frontend + Backend : acge-gabon.com (Vercel)')
+console.log('- Base : MySQL (LWS)')
 
   } catch (error) {
     console.error('❌ Erreur lors de la configuration:', error)
