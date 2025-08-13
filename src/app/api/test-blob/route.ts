@@ -9,10 +9,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     const filename = searchParams.get('filename') || 'test-file.txt';
 
     console.log('📝 Nom de fichier:', filename)
-    console.log('📦 Body type:', typeof request.body)
-    console.log('📦 Body:', request.body)
 
-    // Test avec un buffer simple
+    // Test avec un buffer simple comme dans l'exemple officiel
     const testContent = 'Ceci est un test Vercel Blob'
     const buffer = Buffer.from(testContent, 'utf-8')
     

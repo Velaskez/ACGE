@@ -92,6 +92,8 @@ export async function POST(request: NextRequest) {
         
         // Upload vers Vercel Blob Storage avec la méthode officielle
         console.log('☁️ Upload vers Vercel Blob...')
+        
+        // Utiliser la méthode officielle avec request.body
         const blob = await put(fileName, buffer, {
           access: 'public',
           addRandomSuffix: false
