@@ -4,7 +4,6 @@ import { prisma } from '@/lib/db'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
-import { hasSupabase, uploadToStorage, deleteFromStorage } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,13 +48,13 @@ export async function POST(request: NextRequest) {
       validFolderId = folder ? folder.id : null
     }
 
-    // Préparer fallback local si pas de Supabase
+    // Configuration du stockage local
     const uploadDir = join(process.cwd(), 'uploads')
     const userUploadDir = join(uploadDir, userId)
-    if (!hasSupabase) {
-      if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true })
-      if (!existsSync(userUploadDir)) await mkdir(userUploadDir, { recursive: true })
-    }
+    
+    // Créer les dossiers nécessaires
+    if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true })
+    if (!existsSync(userUploadDir)) await mkdir(userUploadDir, { recursive: true })
 
     const uploadedFiles: Array<{
       id: string
@@ -75,31 +74,21 @@ export async function POST(request: NextRequest) {
 
     // Traiter chaque fichier
     for (const file of files) {
-      // Déclarer ici pour disponibilité dans le catch
-      let storedPath = ''
-      let storageWasSupabase = false
       let localFilePath = ''
       try {
         // Générer un nom de fichier unique
         const timestamp = Date.now()
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const fileName = `${timestamp}-${randomSuffix}-${file.name}`
+        
         // Convertir le fichier en buffer
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
-        if (hasSupabase) {
-          const now = new Date()
-          const year = now.getUTCFullYear()
-          const month = String(now.getUTCMonth() + 1).padStart(2, '0')
-          const storagePath = `${userId}/${year}/${month}/${fileName}`
-          await uploadToStorage({ bucket: 'documents', path: storagePath, fileBuffer: buffer, contentType: file.type })
-          storedPath = `documents/${storagePath}`
-          storageWasSupabase = true
-        } else {
-          localFilePath = join(userUploadDir, fileName)
-          await writeFile(localFilePath, buffer)
-          storedPath = `/uploads/${userId}/${fileName}`
-        }
+        
+        // Stockage local
+        localFilePath = join(userUploadDir, fileName)
+        await writeFile(localFilePath, buffer)
+        const storedPath = `/uploads/${userId}/${fileName}`
 
         // Vérifier s'il s'agit d'une nouvelle version d'un document existant
         const existingDocument = metadata.documentId ? 
@@ -200,12 +189,10 @@ export async function POST(request: NextRequest) {
           message,
           stack: error instanceof Error ? error.stack : undefined
         })
-        // Nettoyage: supprimer l'objet déjà uploadé si la base échoue
+        
+        // Nettoyage: supprimer le fichier local si la base échoue
         try {
-          if (storageWasSupabase && storedPath.startsWith('documents/')) {
-            const pathOnly = storedPath.replace(/^documents\//, '')
-            await deleteFromStorage({ bucket: 'documents', path: pathOnly })
-          } else if (localFilePath && existsSync(localFilePath)) {
+          if (localFilePath && existsSync(localFilePath)) {
             await unlink(localFilePath)
           }
         } catch (cleanupError) {
