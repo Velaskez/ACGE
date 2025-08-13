@@ -14,7 +14,7 @@ const oldPrisma = new PrismaClient({
 const newPrisma = new PrismaClient({
   datasources: {
     db: {
-      url: 'postgres://85ac3cefb1cfdf40c8a6405188632847e9f9d3b8196f64b3ef27df1923a492a7:sk_KxkJ0YzTBeugr0nvrYQto@db.prisma.io:5432/?sslmode=require'
+      url: 'postgres://85ac3cefb1cfdf40c8a6405188632847e9f9d3b8196f64b3ef27df1923a492a7:sk_C2QbeAAVSxoSULC_YhGiI@db.prisma.io:5432/?sslmode=require'
     }
   }
 })
