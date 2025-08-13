@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
-import { hasSupabase, uploadToStorage } from '@/lib/supabase'
+import { hasSupabase, uploadToStorage, deleteFromStorage } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,10 +57,28 @@ export async function POST(request: NextRequest) {
       if (!existsSync(userUploadDir)) await mkdir(userUploadDir, { recursive: true })
     }
 
-    const uploadedFiles = []
+    const uploadedFiles: Array<{
+      id: string
+      title: string
+      name: string
+      size: number
+      type: string
+      path: string
+      version: {
+        id: string
+        number: number
+        changeLog: string | null
+        isNewDocument: boolean
+      }
+    }> = []
+    const errors: Array<{ fileName: string; message: string }> = []
 
     // Traiter chaque fichier
     for (const file of files) {
+      // Déclarer ici pour disponibilité dans le catch
+      let storedPath = ''
+      let storageWasSupabase = false
+      let localFilePath = ''
       try {
         // Générer un nom de fichier unique
         const timestamp = Date.now()
@@ -69,7 +87,6 @@ export async function POST(request: NextRequest) {
         // Convertir le fichier en buffer
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
-        let storedPath = ''
         if (hasSupabase) {
           const now = new Date()
           const year = now.getUTCFullYear()
@@ -77,9 +94,10 @@ export async function POST(request: NextRequest) {
           const storagePath = `${userId}/${year}/${month}/${fileName}`
           await uploadToStorage({ bucket: 'documents', path: storagePath, fileBuffer: buffer, contentType: file.type })
           storedPath = `documents/${storagePath}`
+          storageWasSupabase = true
         } else {
-          const filePath = join(userUploadDir, fileName)
-          await writeFile(filePath, buffer)
+          localFilePath = join(userUploadDir, fileName)
+          await writeFile(localFilePath, buffer)
           storedPath = `/uploads/${userId}/${fileName}`
         }
 
@@ -177,24 +195,38 @@ export async function POST(request: NextRequest) {
         })
 
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Erreur inconnue'
         console.error(`Erreur lors de l'upload de ${file.name}:`, {
-          message: error instanceof Error ? error.message : 'Erreur inconnue',
+          message,
           stack: error instanceof Error ? error.stack : undefined
         })
+        // Nettoyage: supprimer l'objet déjà uploadé si la base échoue
+        try {
+          if (storageWasSupabase && storedPath.startsWith('documents/')) {
+            const pathOnly = storedPath.replace(/^documents\//, '')
+            await deleteFromStorage({ bucket: 'documents', path: pathOnly })
+          } else if (localFilePath && existsSync(localFilePath)) {
+            await unlink(localFilePath)
+          }
+        } catch (cleanupError) {
+          console.warn('Échec du nettoyage après erreur upload:', cleanupError)
+        }
+        errors.push({ fileName: file.name, message })
         // Continuer avec les autres fichiers
       }
     }
 
     if (uploadedFiles.length === 0) {
       return NextResponse.json(
-        { error: 'Aucun fichier n\'a pu être uploadé' },
+        { error: 'Aucun fichier n\'a pu être uploadé', errors },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
-      message: `${uploadedFiles.length} fichier(s) uploadé(s) avec succès`,
-      files: uploadedFiles
+      message: `${uploadedFiles.length} fichier(s) uploadé(s) avec succès` + (errors.length ? `, ${errors.length} échec(s)` : ''),
+      files: uploadedFiles,
+      ...(errors.length ? { errors } : {})
     })
 
   } catch (error) {

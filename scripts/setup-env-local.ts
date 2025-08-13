@@ -7,7 +7,7 @@ async function setupEnvLocal() {
   
   const envContent = `# Configuration ACGE - Environnement de développement
 # Base de données PostgreSQL Docker
-DATABASE_URL="postgresql://acge_user:acge_password_dev@localhost:5432/acge_database"
+DATABASE_URL="postgresql://acge_user:acge_password_dev@localhost:5433/acge_database"
 
 # NextAuth.js - Authentication
 NEXTAUTH_SECRET="acge-dev-secret-key-change-in-production-2024"
@@ -50,7 +50,7 @@ NEXT_PUBLIC_API_URL="http://localhost:3000"
     try {
       execSync('npx prisma db push --accept-data-loss', { 
         stdio: 'pipe',
-        env: { ...process.env, DATABASE_URL: "postgresql://acge_user:acge_password_dev@localhost:5432/acge_database" }
+        env: { ...process.env, DATABASE_URL: "postgresql://acge_user:acge_password_dev@localhost:5433/acge_database" }
       })
       console.log('✅ Connexion à la base de données OK !')
     } catch (error) {

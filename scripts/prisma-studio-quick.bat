@@ -3,7 +3,7 @@ echo 🚀 Lancement rapide de Prisma Studio
 echo.
 
 echo 📋 Configuration des variables d'environnement...
-set DATABASE_URL=postgresql://acge_user:acge_password_dev@localhost:5432/acge_database
+set DATABASE_URL=postgresql://acge_user:acge_password_dev@localhost:5433/acge_database
 set NEXTAUTH_SECRET=unified-jwt-secret-for-development
 set NEXTAUTH_URL=http://localhost:3000
 

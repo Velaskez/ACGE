@@ -31,75 +31,33 @@ export async function GET(request: NextRequest) {
     const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
 
-    // Récupérer les statistiques en parallèle
-    const [
-      totalDocuments,
-      totalFolders,
-      totalUsers,
-      userDocuments,
-      totalFileSize,
-      recentDocuments,
-      activeUsers
-    ] = await Promise.all([
-      // Total des documents de l'utilisateur
-      prisma.document.count({
-        where: { authorId: userId }
-      }).catch(() => prisma.document.count({ where: { userId } as any })),
-
-      // Total des dossiers de l'utilisateur (support champs authorId|userId)
-      countFoldersByUser(userId),
-
-      // Total des utilisateurs (pour les admins)
-      prisma.user.count(),
-
-      // Documents de l'utilisateur pour calculer la croissance
-      prisma.document.findMany({
-        where: { authorId: userId },
-        select: { createdAt: true },
-        orderBy: { createdAt: 'desc' }
-      }).catch(() => prisma.document.findMany({
-        where: { userId } as any,
-        select: { createdAt: true },
-        orderBy: { createdAt: 'desc' }
-      })),
-
-      // Taille totale des fichiers de l'utilisateur (via les versions)
-      prisma.documentVersion.aggregate({
-        where: { document: { authorId: userId } },
-        _sum: { fileSize: true }
-      }).catch(() => prisma.documentVersion.aggregate({
-        where: { document: { userId } as any },
-        _sum: { fileSize: true }
-      })),
-
-      // Documents récents
-      prisma.document.findMany({
-        where: { authorId: userId },
-        include: {
-          author: { select: { name: true, email: true } },
-          folder: { select: { name: true } },
-          currentVersion: true,
-          _count: { select: { versions: true } }
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 5
-      }).catch(() => prisma.document.findMany({
-        where: { userId } as any,
-        include: {
-          author: { select: { name: true, email: true } } as any,
-          folder: { select: { name: true } } as any,
-          currentVersion: true,
-          _count: { select: { versions: true } }
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 5
-      })),
-
-      // Utilisateurs actifs (connectés dans les dernières 24h)
-      prisma.user.count({
-        where: { updatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }
-      })
-    ])
+    // Séquence contrôlée pour éviter les problèmes de statements côté pooler
+    const totalDocuments = await prisma.document.count({ where: { authorId: userId } })
+    const totalFolders = await countFoldersByUser(userId)
+    const totalUsers = await prisma.user.count()
+    const userDocuments = await prisma.document.findMany({
+      where: { authorId: userId },
+      select: { createdAt: true },
+      orderBy: { createdAt: 'desc' }
+    })
+    const totalFileSize = await prisma.documentVersion.aggregate({
+      where: { document: { authorId: userId } },
+      _sum: { fileSize: true }
+    })
+    const recentDocuments = await prisma.document.findMany({
+      where: { authorId: userId },
+      include: {
+        author: { select: { name: true, email: true } },
+        folder: { select: { name: true } },
+        currentVersion: true,
+        _count: { select: { versions: true } }
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 5
+    })
+    const activeUsers = await prisma.user.count({
+      where: { updatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }
+    })
 
     // Calculer la croissance mensuelle des documents
     const oneMonthAgo = new Date()

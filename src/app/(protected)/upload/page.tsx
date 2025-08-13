@@ -80,14 +80,23 @@ export default function UploadPage() {
         body: formData,
       })
 
+      const text = await response.text()
+      let result: any = {}
+      try { result = text ? JSON.parse(text) : {} } catch {}
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Erreur lors de l\'upload')
+        const serverError = result?.error || 'Erreur lors de l\'upload'
+        const details = Array.isArray(result?.errors) && result.errors.length
+          ? ` (${result.errors.length} fichier(s) en erreur)`
+          : ''
+        throw new Error(`${serverError}${details}`)
       }
 
-      const result = await response.json()
-      console.log('Upload réussi:', result)
-      
+      // Cas de succès avec erreurs partielles côté serveur
+      if (Array.isArray(result?.errors) && result.errors.length) {
+        setError(`Upload partiel: ${result.errors.length} échec(s).`)
+      }
+
       setIsSuccess(true)
       
       // Redirection après succès

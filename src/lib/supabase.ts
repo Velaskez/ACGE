@@ -63,4 +63,16 @@ export async function downloadFromStorage(options: {
   return { buffer }
 }
 
+export async function deleteFromStorage(options: {
+  bucket: 'documents' | 'previews'
+  path: string
+}): Promise<void> {
+  if (!supabaseServer) {
+    throw new Error('Supabase non configuré')
+  }
+  const { bucket, path } = options
+  const { error } = await supabaseServer.storage.from(bucket).remove([path])
+  if (error) throw error
+}
+
 

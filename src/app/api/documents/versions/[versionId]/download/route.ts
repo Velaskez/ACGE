@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { createReadStream, existsSync } from 'fs'
+import { existsSync } from 'fs'
+import { readFile } from 'fs/promises'
 import path from 'path'
+import { hasSupabase, downloadFromStorage } from '@/lib/supabase'
 
 // GET - Télécharger une version spécifique d'un document
 export async function GET(
@@ -48,25 +50,23 @@ export async function GET(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Construire le chemin du fichier
-    const filePath = path.join(process.cwd(), version.filePath)
-
-    // Vérifier que le fichier existe
-    if (!existsSync(filePath)) {
-      return NextResponse.json({ 
-        error: 'Fichier non trouvé sur le serveur' 
-      }, { status: 404 })
+    // Récupérer le contenu du fichier (Supabase si configuré, sinon stockage local)
+    let fileBuffer: Buffer
+    const filePathMeta = version.filePath || ''
+    if (hasSupabase && filePathMeta.startsWith('documents/')) {
+      const pathOnly = filePathMeta.replace(/^documents\//, '')
+      const { buffer } = await downloadFromStorage({ bucket: 'documents', path: pathOnly })
+      fileBuffer = buffer
+    } else {
+      // Fallback stockage local: fichiers rangés sous uploads/<authorId>/<fileName>
+      const authorId = version.document.authorId
+      const fileName = filePathMeta.split('/').pop() || ''
+      const filePath = path.join(process.cwd(), 'uploads', authorId, fileName)
+      if (!existsSync(filePath)) {
+        return NextResponse.json({ error: 'Fichier non trouvé sur le serveur' }, { status: 404 })
+      }
+      fileBuffer = await readFile(filePath)
     }
-
-    // Lire le fichier
-    const fileBuffer = await new Promise<Buffer>((resolve, reject) => {
-      const chunks: Buffer[] = []
-      const stream = createReadStream(filePath)
-      
-      stream.on('data', (chunk) => chunks.push(chunk))
-      stream.on('end', () => resolve(Buffer.concat(chunks)))
-      stream.on('error', reject)
-    })
 
     // Déterminer le type MIME
     const mimeType = version.fileType || 'application/octet-stream'

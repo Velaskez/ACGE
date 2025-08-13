@@ -118,15 +118,15 @@ model Comment {
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  type        String   // DOCUMENT_SHARED, VERSION_ADDED, DOCUMENT_RESTORED, etc.
-  title       String
-  message     String
-  isRead      Boolean  @default(false)
-  data        Json?    // Données contextuelles (IDs, etc.)
-  createdAt   DateTime @default(now())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }

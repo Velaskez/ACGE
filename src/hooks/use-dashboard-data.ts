@@ -59,8 +59,8 @@ export function useDashboardData() {
         
         // Récupérer les statistiques et l'activité en parallèle
         const [statsResponse, activityResponse] = await Promise.all([
-          fetch('/api/dashboard/stats'),
-          fetch('/api/dashboard/activity')
+          fetch('/api/dashboard/stats', { credentials: 'include' }),
+          fetch('/api/dashboard/activity', { credentials: 'include' })
         ])
 
         if (!statsResponse.ok || !activityResponse.ok) {
@@ -101,8 +101,8 @@ export function useDashboardData() {
     setIsLoading(true)
     try {
       const [statsResponse, activityResponse] = await Promise.all([
-        fetch('/api/dashboard/stats'),
-        fetch('/api/dashboard/activity')
+        fetch('/api/dashboard/stats', { credentials: 'include' }),
+        fetch('/api/dashboard/activity', { credentials: 'include' })
       ])
 
       if (!statsResponse.ok || !activityResponse.ok) {
