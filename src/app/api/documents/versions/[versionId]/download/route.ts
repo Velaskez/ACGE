@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
@@ -64,8 +64,15 @@ export async function GET(
 
     console.log('🔍 Chemin extrait:', filePath)
 
-    // Télécharger le fichier depuis Supabase Storage
-    const { data: fileData, error: downloadError } = await supabase.storage
+    // Télécharger le fichier depuis Supabase Storage avec le client admin
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Client Supabase admin non disponible' },
+        { status: 500 }
+      )
+    }
+
+    const { data: fileData, error: downloadError } = await supabaseAdmin.storage
       .from('documents')
       .download(filePath)
 

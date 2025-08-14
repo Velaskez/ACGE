@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -91,8 +91,12 @@ export async function POST(request: NextRequest) {
         
         console.log('📦 Buffer créé, taille:', buffer.length)
         
-        // Upload vers Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        // Upload vers Supabase Storage avec le client admin
+        if (!supabaseAdmin) {
+          throw new Error('Client Supabase admin non disponible')
+        }
+
+        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
           .from('documents')
           .upload(filePath, buffer, {
             contentType: file.type,
@@ -107,7 +111,7 @@ export async function POST(request: NextRequest) {
         console.log('✅ Fichier uploadé vers Supabase:', uploadData.path)
 
         // Générer l'URL publique
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseAdmin.storage
           .from('documents')
           .getPublicUrl(filePath)
 
