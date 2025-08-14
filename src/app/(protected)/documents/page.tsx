@@ -317,17 +317,17 @@ export default function DocumentsPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-                         <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-               <FileText className="w-8 h-8" />
-               Mes Documents
-             </h1>
-            <p className="text-primary">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center gap-2">
+              <FileText className="w-6 h-6 sm:w-8 sm:h-8" />
+              Mes Documents
+            </h1>
+            <p className="text-primary text-sm sm:text-base">
               {documents.length} fichier(s) au total
             </p>
           </div>
-          <Button onClick={() => router.push('/upload')}>
+          <Button onClick={() => router.push('/upload')} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Ajouter des fichiers
           </Button>

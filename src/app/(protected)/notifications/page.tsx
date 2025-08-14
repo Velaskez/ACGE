@@ -173,33 +173,33 @@ export default function NotificationsPage() {
       <div className="space-y-6">
         {/* En-tête avec actions */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Button
-                variant={filter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => {
-                  setFilter('all')
-                  setPagination(prev => ({ ...prev, page: 1 }))
-                }}
-              >
-                Toutes ({pagination.total})
-              </Button>
-              <Button
-                variant={filter === 'unread' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => {
-                  setFilter('unread')
-                  setPagination(prev => ({ ...prev, page: 1 }))
-                }}
-              >
-                Non lues ({unreadCount})
-              </Button>
-            </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <Button
+              variant={filter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                setFilter('all')
+                setPagination(prev => ({ ...prev, page: 1 }))
+              }}
+              className="w-full sm:w-auto"
+            >
+              Toutes ({pagination.total})
+            </Button>
+            <Button
+              variant={filter === 'unread' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                setFilter('unread')
+                setPagination(prev => ({ ...prev, page: 1 }))
+              }}
+              className="w-full sm:w-auto"
+            >
+              Non lues ({unreadCount})
+            </Button>
           </div>
 
           {unreadCount > 0 && (
-            <Button onClick={markAllAsRead} size="sm" className="self-start">
+            <Button onClick={markAllAsRead} size="sm" className="w-full sm:w-auto">
               <CheckCheck className="mr-2 h-4 w-4" />
               Marquer tout comme lu
             </Button>

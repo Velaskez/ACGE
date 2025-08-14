@@ -202,19 +202,19 @@ export default function UsersPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-                         <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-               <Users className="w-8 h-8" />
-               Gestion des Utilisateurs
-             </h1>
-            <p className="text-primary">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center gap-2">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8" />
+              Gestion des Utilisateurs
+            </h1>
+            <p className="text-primary text-sm sm:text-base">
               Gérez les utilisateurs et leurs permissions
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openCreateDialog}>
+              <Button onClick={openCreateDialog} className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Nouvel utilisateur
               </Button>

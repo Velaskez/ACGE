@@ -368,30 +368,30 @@ export default function FoldersPage() {
       <MainLayout>
         <div className="space-y-6">
           {/* Header avec breadcrumb */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm" onClick={handleBackToFolders}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Retour aux dossiers
               </Button>
-              <div className="border-l pl-4">
+              <div className="border-l pl-4 flex-1 min-w-0">
                 <div className="flex items-center space-x-2 text-sm text-primary mb-1">
                   <FolderOpen className="h-4 w-4" />
                   <span>Dossiers</span>
                   <span>/</span>
                   <span className="font-medium text-foreground">{currentFolder.name}</span>
                 </div>
-                <h1 className="text-3xl font-bold text-primary">{currentFolder.name}</h1>
-                <p className="text-primary">
+                <h1 className="text-2xl sm:text-3xl font-bold text-primary">{currentFolder.name}</h1>
+                <p className="text-primary text-sm sm:text-base">
                   {currentFolder.description || 'Documents du dossier'}
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => loadFolderDocuments(folderId)}>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={() => loadFolderDocuments(folderId)} className="w-full sm:w-auto">
                 Rafraîchir
               </Button>
-              <Button onClick={() => router.push(`/upload?folderId=${folderId}`)}>
+              <Button onClick={() => router.push(`/upload?folderId=${folderId}`)} className="w-full sm:w-auto">
                 <Upload className="mr-2 h-4 w-4" />
                 Ajouter des documents
               </Button>
@@ -553,16 +553,16 @@ export default function FoldersPage() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">Dossiers</h1>
-            <p className="text-primary">Gérez vos dossiers et accédez rapidement à vos documents</p>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Dossiers</h1>
+            <p className="text-primary text-sm sm:text-base">Gérez vos dossiers et accédez rapidement à vos documents</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={refresh}>Rafraîchir</Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={refresh} className="w-full sm:w-auto">Rafraîchir</Button>
             <Dialog open={open} onOpenChange={handleCloseDialog}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Nouveau dossier
                 </Button>

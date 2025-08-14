@@ -163,7 +163,7 @@ export default function UploadPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -172,12 +172,12 @@ export default function UploadPage() {
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <div>
-                         <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-             <Upload className="w-8 h-8" />
-             Upload de Fichiers
-           </h1>
-              <p className="text-primary">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center gap-2">
+                <Upload className="w-6 h-6 sm:w-8 sm:h-8" />
+                Upload de Fichiers
+              </h1>
+              <p className="text-primary text-sm sm:text-base">
                 Ajoutez de nouveaux fichiers à l'application
               </p>
             </div>
