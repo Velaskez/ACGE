@@ -1,0 +1,12 @@
+# Configuration de la base de données MySQL LWS
+DATABASE_URL="mysql://acgeg2647579:Reviti2025%40@213.255.195.34:3306/acgeg2647579"
+
+# Configuration NextAuth pour production
+NEXTAUTH_URL="https://acge-gabon.com"
+NEXTAUTH_SECRET="votre_secret_production_securise_changez_ceci"
+
+# Environment
+NODE_ENV="production"
+
+# URL de base pour les API
+NEXT_PUBLIC_API_URL="https://acge-gabon.com"

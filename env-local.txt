@@ -1,0 +1,13 @@
+# Base de données SQLite locale pour les tests
+DATABASE_URL="file:./prisma/dev.db"
+
+# NextAuth pour développement local
+NEXTAUTH_SECRET="dev-secret-key-for-local-testing"
+NEXTAUTH_URL="http://localhost:3000"
+
+# URL de base pour les API locales
+NEXT_PUBLIC_API_URL="http://localhost:3000"
+
+# Configuration upload locale
+UPLOAD_MAX_SIZE="10485760"
+UPLOAD_DIR="./uploads"

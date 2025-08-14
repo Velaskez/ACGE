@@ -1,6 +1,5 @@
-// Configuration pour export statique
-export const dynamic = 'force-static'
-export const revalidate = false
+// Configuration pour API dynamique
+export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'

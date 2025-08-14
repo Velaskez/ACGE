@@ -56,6 +56,10 @@
     "setup:lws": "tsx scripts/setup-lws.ts",
     "fix:api-export": "tsx scripts/fix-api-routes-for-export.ts",
     "fix:dynamic-routes": "tsx scripts/fix-dynamic-routes-for-export.ts",
+    "test:identification": "tsx scripts/test-identification.ts",
+    "test:db": "tsx scripts/test-db-connection.ts",
+    "setup:sqlite": "tsx scripts/setup-sqlite-local.ts",
+    "create:admin-sqlite": "tsx scripts/create-admin-sqlite.ts",
     "build:lws": "npm run fix:api-export && npm run fix:dynamic-routes && tsx scripts/build-lws.ts",
     "prepare:lws": "tsx scripts/prepare-lws-upload.ts",
     "deploy:lws": "npm run setup:lws && npm run build:lws && npm run prepare:lws",
@@ -77,7 +81,6 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@types/jsonwebtoken": "^9.0.10",
-
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
@@ -91,6 +94,7 @@
     "react-dom": "^18",
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.62.0",
+    "sqlite3": "^5.1.7",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.0.17"
