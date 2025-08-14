@@ -89,25 +89,25 @@ export default function LoginPage() {
       {/* Contenu principal avec animations d'entrée */}
       <div className="relative z-10 w-full max-w-md mx-auto p-8">
         {/* Logo et titre avec animation d'entrée */}
-        <div className="text-center mb-8 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
-          <div className="mb-6 group">
+        <div className="text-center mb-12 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+          <div className="mb-8 group">
             <Image
               src="/TrésorPublicGabon.jpg"
               alt="Logo ACGE"
-              width={80}
-              height={80}
+              width={150}
+              height={150}
               className="mx-auto rounded-xl shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl"
             />
           </div>
-          <h1 className="text-3xl font-bold text-primary mb-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>ACGE</h1>
-                        <p className="text-primary animate-fade-in-up" style={{animationDelay: '0.3s'}}>Agence Comptable des Grandes Écoles</p>
+          <h1 className="text-5xl font-bold text-primary mb-4 animate-fade-in-up" style={{animationDelay: '0.2s'}}>ACGE</h1>
+          <p className="text-xl text-primary animate-fade-in-up" style={{animationDelay: '0.3s'}}>Agence Comptable des Grandes Écoles</p>
         </div>
 
         {/* Formulaire avec animation d'entrée */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-          <div className="bg-primary p-6 text-white text-center">
-            <h2 className="text-2xl font-bold">Connexion</h2>
-            <p className="text-primary mt-1">Accédez à votre espace de gestion</p>
+          <div className="bg-primary p-8 text-white text-center">
+            <h2 className="text-3xl font-bold text-white">Connexion</h2>
+            <p className="text-white/90 mt-2 text-sm">Accédez à votre espace de gestion</p>
           </div>
 
           <div className="p-8">
