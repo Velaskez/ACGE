@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { storage } from '@/lib/storage-lws'
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,6 +72,10 @@ export async function POST(request: NextRequest) {
     }> = []
     const errors: Array<{ fileName: string; message: string }> = []
 
+    // Déterminer le type de stockage
+    const useLocalStorage = process.env.STORAGE_TYPE !== 'ftp'
+    console.log(`📦 Type de stockage: ${useLocalStorage ? 'Local' : 'FTP LWS'}`)
+
     // Traiter chaque fichier
     for (const file of files) {
       try {
@@ -92,34 +94,39 @@ export async function POST(request: NextRequest) {
         
         console.log('📦 Buffer créé, taille:', buffer.length)
         
-        // Configuration du stockage local
-        const uploadDir = join(process.cwd(), 'uploads')
-        const userUploadDir = join(uploadDir, userId)
+        let filePath: string
         
-        // Créer les dossiers nécessaires
-        if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true })
-        if (!existsSync(userUploadDir)) await mkdir(userUploadDir, { recursive: true })
+        if (useLocalStorage) {
+          // Stockage local (pour le développement)
+          const { writeFile, mkdir } = await import('fs/promises')
+          const { join } = await import('path')
+          const { existsSync } = await import('fs')
+          
+          const uploadDir = join(process.cwd(), 'uploads')
+          const userUploadDir = join(uploadDir, userId)
+          
+          // Créer les dossiers nécessaires
+          if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true })
+          if (!existsSync(userUploadDir)) await mkdir(userUploadDir, { recursive: true })
+          
+          // Écrire le fichier
+          filePath = join(userUploadDir, fileName)
+          await writeFile(filePath, buffer)
+          console.log('✅ Fichier sauvegardé localement:', filePath)
+        } else {
+          // Stockage FTP LWS (pour la production)
+          const subDir = `documents/${userId}`
+          filePath = await storage.upload(buffer, fileName, subDir)
+          console.log('✅ Fichier uploadé sur FTP LWS:', filePath)
+        }
         
-        const localFilePath = join(userUploadDir, fileName)
-        await writeFile(localFilePath, buffer)
-        const fileUrl = `/uploads/${userId}/${fileName}`
-        
-        console.log('✅ Fichier stocké localement:', fileUrl)
-
-        // Vérifier s'il s'agit d'une nouvelle version d'un document existant
-        const existingDocument = metadata.documentId ? 
-          await prisma.document.findFirst({
+        // Rechercher un document existant avec le même nom
+        const existingDocument = await prisma.document.findFirst({
             where: {
-              id: metadata.documentId,
+              title: file.name.split('.')[0], // Utiliser le nom du fichier comme titre
               authorId: userId
-            },
-            include: {
-              versions: {
-                orderBy: { versionNumber: 'desc' },
-                take: 1
-              }
             }
-          }) : null
+          })
 
         let document
         let documentVersion
@@ -136,7 +143,7 @@ export async function POST(request: NextRequest) {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
-              filePath: fileUrl,
+              filePath: filePath,
               changeLog: metadata.changeLog || `Version ${newVersionNumber}`,
               documentId: existingDocument.id,
               createdById: userId
@@ -172,7 +179,7 @@ export async function POST(request: NextRequest) {
               fileName: file.name,
               fileSize: file.size,
               fileType: file.type,
-              filePath: fileUrl,
+              filePath: filePath,
               changeLog: 'Version initiale',
               documentId: document.id,
               createdById: userId
