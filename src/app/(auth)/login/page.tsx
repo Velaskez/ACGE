@@ -69,13 +69,16 @@ export default function LoginPage() {
       {/* Arrière-plan avec logo en blur et particules subtiles */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative w-full h-full">
-          <Image
-            src="/TrésorPublicGabon.jpg"
-            alt="Logo ACGE Background"
-            fill
-            className="object-cover opacity-8 blur-sm"
-            priority
-          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Image
+              src="/TrésorPublicGabon.jpg"
+              alt="Logo ACGE Background"
+              width={1000}
+              height={1000}
+              className="object-contain opacity-25"
+              priority
+            />
+          </div>
           {/* Particules flottantes très discrètes */}
           <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-gray-300/20 rounded-full animate-pulse"></div>
           <div className="absolute top-3/4 right-1/3 w-0.5 h-0.5 bg-gray-300/15 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
@@ -248,6 +251,13 @@ export default function LoginPage() {
           animation: shake 0.5s ease-in-out;
         }
       `}</style>
+
+      {/* Copyright en bas de page */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+        <p className="text-gray-500 text-sm text-center">
+          © Powered by <span className="font-semibold text-gray-700">GTF</span> (Giusty Tech & Fils)
+        </p>
+      </div>
     </div>
   )
 }
