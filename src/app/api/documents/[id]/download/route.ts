@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
+import { storage } from '@/lib/storage-lws'
+import { readFile } from 'fs/promises'
+import { join } from 'path'
 
 export async function GET(
   request: NextRequest,
@@ -41,8 +44,57 @@ export async function GET(
       )
     }
 
-    // Rediriger vers l'URL Vercel Blob
-    return NextResponse.redirect(document.currentVersion.filePath)
+    const filePath = document.currentVersion.filePath
+    const fileName = document.currentVersion.fileName
+    const fileType = document.currentVersion.fileType
+
+    // Déterminer le type de stockage
+    const useLocalStorage = process.env.STORAGE_TYPE !== 'ftp'
+
+    let fileBuffer: Buffer
+
+    if (useLocalStorage) {
+      // Stockage local
+      if (filePath.startsWith('http')) {
+        // URL externe (Vercel Blob ou autre)
+        return NextResponse.redirect(filePath)
+      }
+      
+      // Fichier local
+      const fullPath = filePath.startsWith('/') 
+        ? join(process.cwd(), filePath)
+        : filePath
+      
+      try {
+        fileBuffer = await readFile(fullPath)
+      } catch (error) {
+        console.error('Erreur lecture fichier local:', error)
+        return NextResponse.json(
+          { error: 'Fichier non trouvé sur le serveur' },
+          { status: 404 }
+        )
+      }
+    } else {
+      // Stockage FTP LWS
+      try {
+        fileBuffer = await storage.download(filePath)
+      } catch (error) {
+        console.error('Erreur téléchargement FTP:', error)
+        return NextResponse.json(
+          { error: 'Impossible de télécharger le fichier depuis le serveur FTP' },
+          { status: 500 }
+        )
+      }
+    }
+
+    // Retourner le fichier avec les bons headers
+    return new NextResponse(fileBuffer, {
+      headers: {
+        'Content-Type': fileType || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': fileBuffer.length.toString(),
+      },
+    })
 
   } catch (error) {
     console.error('Erreur lors du téléchargement:', error)
