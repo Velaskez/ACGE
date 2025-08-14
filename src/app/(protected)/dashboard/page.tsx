@@ -82,21 +82,21 @@ export default function DashboardPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">Tableau de bord</h1>
-            <p className="text-primary">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Tableau de bord</h1>
+            <p className="text-primary text-sm sm:text-base">
               Vue d'ensemble de vos fichiers et activités
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {error && (
-              <Button variant="outline" size="sm" onClick={refreshData}>
+              <Button variant="outline" size="sm" onClick={refreshData} className="w-full sm:w-auto">
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Actualiser
               </Button>
             )}
-            <Button onClick={handleNewDocument}>
+            <Button onClick={handleNewDocument} className="w-full sm:w-auto">
               <Upload className="mr-2 h-4 w-4" />
               Nouveau document
             </Button>
