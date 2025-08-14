@@ -1,28 +1,28 @@
 import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Configuration pour Vercel (dynamique)
-  // output: 'export', // Commenté pour Vercel
-  // trailingSlash: true, // Commenté pour Vercel
-  // distDir: 'out', // Commenté pour Vercel
+  // Configuration pour LWS (export statique)
+  output: 'export',
+  trailingSlash: true,
+  distDir: 'out',
   
   // Exclure les scripts du linting pendant le build
   eslint: {
-    ignoreDuringBuilds: true, // Ignorer ESLint pour LWS
+    ignoreDuringBuilds: true,
   },
   
   // Exclusions TypeScript
   typescript: {
-    ignoreBuildErrors: true, // Ignorer les erreurs TS
+    ignoreBuildErrors: true,
   },
   
   // Optimisations pour la production
   compress: true,
   poweredByHeader: false,
   
-  // Configuration des images pour Vercel
+  // Configuration des images pour LWS
   images: {
-    // unoptimized: true, // Commenté pour Vercel
+    unoptimized: true, // Nécessaire pour l'export statique
     remotePatterns: [
       {
         protocol: 'https',

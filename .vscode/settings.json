@@ -1,0 +1,6 @@
+{
+    "files.autoSave": "afterDelay",
+    "cursor.cpp.enablePartialAccepts": true,
+    "problems.showCurrentInStatus": true,
+    "containers.orchestratorClient": ""
+}

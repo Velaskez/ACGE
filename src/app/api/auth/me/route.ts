@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 
+// Configuration pour l'export statique
+export const dynamic = 'force-static'
+
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('auth-token')?.value

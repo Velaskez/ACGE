@@ -8,19 +8,19 @@ const nextConfig: NextConfig = {
   
   // Exclure les scripts du linting pendant le build
   eslint: {
-    ignoreDuringBuilds: true, // Ignorer ESLint pour LWS
+    ignoreDuringBuilds: true,
   },
   
   // Exclusions TypeScript
   typescript: {
-    ignoreBuildErrors: true, // Ignorer les erreurs TS
+    ignoreBuildErrors: true,
   },
   
   // Optimisations pour la production
   compress: true,
   poweredByHeader: false,
   
-  // Configuration des images pour LWS (export statique)
+  // Configuration des images pour LWS
   images: {
     unoptimized: true, // Nécessaire pour l'export statique
     remotePatterns: [

@@ -63,6 +63,9 @@
     "build:lws": "npm run fix:api-export && npm run fix:dynamic-routes && tsx scripts/build-lws.ts",
     "prepare:lws": "tsx scripts/prepare-lws-upload.ts",
     "deploy:lws": "npm run setup:lws && npm run build:lws && npm run prepare:lws",
+    "build:lws-simple": "tsx scripts/build-lws.ts",
+    "build:lws-static": "tsx scripts/build-lws-simple.ts",
+    "build:lws-ultra": "tsx scripts/build-lws-ultra-simple.ts",
     "setup:vercel": "tsx scripts/setup-vercel.ts"
   },
   "dependencies": {
