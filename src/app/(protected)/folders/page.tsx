@@ -612,7 +612,7 @@ export default function FoldersPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total dossiers</CardTitle>
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              <FolderOpen className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -626,7 +626,7 @@ export default function FoldersPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total documents</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -675,13 +675,13 @@ export default function FoldersPage() {
                           {folder.recentDocuments && folder.recentDocuments.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                               {folder.recentDocuments.map((doc) => (
-                                <span key={doc.id} className="text-xs text-muted-foreground">
+                                <span key={doc.id} className="text-xs text-primary">
                                   {doc.title}
                                 </span>
                               ))}
                             </div>
                           ) : (
-                            <span className="text-xs text-muted-foreground">Aucun document</span>
+                            <span className="text-xs text-primary">Aucun document</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -734,9 +734,9 @@ export default function FoldersPage() {
               )
             ) : (
               <div className="text-center py-8">
-                <FolderOpen className="mx-auto h-10 w-10 text-muted-foreground" />
+                <FolderOpen className="mx-auto h-10 w-10 text-primary" />
                 <h3 className="mt-2 text-sm font-medium">Aucun dossier</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Créez votre premier dossier pour organiser vos documents.</p>
+                <p className="mt-1 text-sm text-primary">Créez votre premier dossier pour organiser vos documents.</p>
                 <div className="mt-4">
                   <Button onClick={() => setOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" />

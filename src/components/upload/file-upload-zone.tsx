@@ -241,7 +241,7 @@ export function FileUploadZone({
                                     <p className="text-sm font-medium text-primary dark:text-primary truncate">
                   {file.name}
                 </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-primary">
                       {formatFileSize(file.size)}
                     </p>
                     

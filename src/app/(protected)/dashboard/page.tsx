@@ -85,7 +85,7 @@ export default function DashboardPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-primary">Tableau de bord</h1>
-            <p className="text-muted-foreground">
+            <p className="text-primary">
               Vue d'ensemble de vos fichiers et activités
             </p>
           </div>
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-medium leading-none">{doc.title || doc.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-primary">
                           {formatRelativeTime(doc.updatedAt)} • {formatFileSize(doc.size)} • {getFileTypeLabel(doc.type)}
                         </p>
                       </div>
