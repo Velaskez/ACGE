@@ -184,9 +184,9 @@ export function FileUploadZone({
               </p>
             ) : (
               <div>
-                <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                  Glissez-déposez vos fichiers ici
-                </p>
+                              <p className="text-lg font-medium text-primary dark:text-primary mb-2">
+                Glissez-déposez vos fichiers ici
+              </p>
                 <p className="text-sm text-gray-500 mb-4">
                   ou cliquez pour sélectionner des fichiers
                 </p>
@@ -238,9 +238,9 @@ export function FileUploadZone({
 
                   {/* Informations du fichier */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {file.name}
-                    </p>
+                                    <p className="text-sm font-medium text-primary dark:text-primary truncate">
+                  {file.name}
+                </p>
                     <p className="text-xs text-gray-500">
                       {formatFileSize(file.size)}
                     </p>

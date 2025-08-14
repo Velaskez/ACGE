@@ -381,7 +381,7 @@ export default function FoldersPage() {
                   <span>/</span>
                   <span className="font-medium text-foreground">{currentFolder.name}</span>
                 </div>
-                <h1 className="text-3xl font-bold">{currentFolder.name}</h1>
+                <h1 className="text-3xl font-bold text-primary">{currentFolder.name}</h1>
                 <p className="text-muted-foreground">
                   {currentFolder.description || 'Documents du dossier'}
                 </p>
@@ -555,7 +555,7 @@ export default function FoldersPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Dossiers</h1>
+            <h1 className="text-3xl font-bold text-primary">Dossiers</h1>
             <p className="text-muted-foreground">Gérez vos dossiers et accédez rapidement à vos documents</p>
           </div>
           <div className="flex gap-2">

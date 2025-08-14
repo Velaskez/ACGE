@@ -68,13 +68,13 @@ const formatFileSize = (bytes: number) => {
 }
 
 const getFileIcon = (fileType?: string) => {
-  if (!fileType) return <FileText className="h-8 w-8 text-gray-500" />
+      if (!fileType) return <FileText className="h-8 w-8 text-primary" />
   if (fileType.startsWith('image/')) return <Image className="h-8 w-8 text-blue-500" />
   if (fileType.startsWith('video/')) return <Video className="h-8 w-8 text-purple-500" />
   if (fileType.startsWith('audio/')) return <Music className="h-8 w-8 text-green-500" />
   if (fileType.includes('zip') || fileType.includes('rar')) return <Archive className="h-8 w-8 text-orange-500" />
   if (fileType.includes('sheet') || fileType.includes('excel')) return <FileSpreadsheet className="h-8 w-8 text-green-600" />
-  return <FileText className="h-8 w-8 text-gray-500" />
+      return <FileText className="h-8 w-8 text-primary" />
 }
 
 const canPreview = (fileType?: string) => {
@@ -232,7 +232,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
       case 'video':
         return (
-          <div className="bg-black flex items-center justify-center" style={{ height: isFullscreen ? '60vh' : '400px' }}>
+          <div className="bg-primary flex items-center justify-center" style={{ height: isFullscreen ? '60vh' : '400px' }}>
             <video 
               src={previewUrl}
               controls

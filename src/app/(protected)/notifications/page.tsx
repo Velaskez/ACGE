@@ -133,9 +133,9 @@ export default function NotificationsPage() {
       case 'WELCOME':
         return <User className="h-5 w-5 text-purple-500" />
       case 'SYSTEM':
-        return <Settings className="h-5 w-5 text-gray-500" />
+        return <Settings className="h-5 w-5 text-primary" />
       default:
-        return <AlertCircle className="h-5 w-5 text-gray-500" />
+        return <AlertCircle className="h-5 w-5 text-primary" />
     }
   }
 
@@ -256,7 +256,7 @@ export default function NotificationsPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className={`font-medium ${
-                              !notification.isRead ? 'text-gray-900' : 'text-gray-700'
+                              !notification.isRead ? 'text-primary' : 'text-primary'
                             }`}>
                               {notification.title}
                             </h3>

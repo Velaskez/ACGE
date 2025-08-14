@@ -176,10 +176,10 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
           {/* Informations du fichier (lecture seule) */}
           <div className="bg-gray-50 p-3 sm:p-4 rounded-lg space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <span className="text-sm font-medium text-gray-700">Fichier</span>
+              <span className="text-sm font-medium text-primary">Fichier</span>
               <Badge variant="secondary" className="w-fit">{document.currentVersion?.fileType || 'Inconnu'}</Badge>
             </div>
-            <p className="text-sm text-gray-600 break-all">{document.currentVersion?.fileName || 'Sans nom'}</p>
+            <p className="text-sm text-primary break-all">{document.currentVersion?.fileName || 'Sans nom'}</p>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
               <p className="text-xs text-gray-500">
                 {formatFileSize(document.currentVersion?.fileSize || 0)}
@@ -242,14 +242,14 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                 <SelectContent>
                   <SelectItem value="root">
                     <div className="flex items-center gap-2">
-                      <Folder className="h-4 w-4 text-gray-500" />
+                      <Folder className="h-4 w-4 text-primary" />
                       <span>Racine (aucun dossier)</span>
                     </div>
                   </SelectItem>
                   {folders.map((folder) => (
                     <SelectItem key={folder.id} value={folder.id}>
                       <div className="flex items-center gap-2">
-                        <FolderOpen className="h-4 w-4 text-blue-500" />
+                        <FolderOpen className="h-4 w-4 text-primary" />
                         <span className="truncate">{folder.name}</span>
                         {folder.description && (
                           <span className="text-xs text-muted-foreground ml-auto">

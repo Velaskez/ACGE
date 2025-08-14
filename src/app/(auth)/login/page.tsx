@@ -99,13 +99,13 @@ export default function LoginPage() {
               className="mx-auto rounded-xl shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl"
             />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>ACGE</h1>
-          <p className="text-gray-600 animate-fade-in-up" style={{animationDelay: '0.3s'}}>Agence Comptable des Grandes Écoles</p>
+          <h1 className="text-3xl font-bold text-primary mb-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>ACGE</h1>
+                        <p className="text-primary animate-fade-in-up" style={{animationDelay: '0.3s'}}>Agence Comptable des Grandes Écoles</p>
         </div>
 
         {/* Formulaire avec animation d'entrée */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-          <div className="bg-black p-6 text-white text-center">
+          <div className="bg-primary p-6 text-white text-center">
             <h2 className="text-2xl font-bold">Connexion</h2>
             <p className="text-gray-300 mt-1">Accédez à votre espace de gestion</p>
           </div>
@@ -122,19 +122,19 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
-                  Adresse email
+                <Label htmlFor="email" className="text-sm font-semibold text-primary">
+                  Identifiant
                 </Label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors duration-200" />
+                    <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors duration-200" />
                   </div>
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     required
-                    className={`pl-10 h-12 border-gray-300 focus:border-black focus:ring-black rounded-lg transition-all duration-200 ${
+                    className={`pl-10 h-12 border-gray-300 focus:border-primary focus:ring-primary rounded-lg transition-all duration-200 ${
                       emailValid === true ? 'border-green-500 focus:border-green-500 focus:ring-green-500' :
                       emailValid === false ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
                     }`}
@@ -155,24 +155,24 @@ export default function LoginPage() {
                   )}
                 </div>
                 {emailValid === false && (
-                  <p className="text-red-500 text-xs">Veuillez entrer une adresse email valide</p>
+                  <p className="text-red-500 text-xs">Veuillez entrer votre identifiant</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-semibold text-gray-700">
+                <Label htmlFor="password" className="text-sm font-semibold text-primary">
                   Mot de passe
                 </Label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors duration-200" />
+                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors duration-200" />
                   </div>
                   <Input
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className="pl-10 pr-12 h-12 border-gray-300 focus:border-black focus:ring-black rounded-lg transition-all duration-200"
+                    className="pl-10 pr-12 h-12 border-gray-300 focus:border-primary focus:ring-primary rounded-lg transition-all duration-200"
                     placeholder="Votre mot de passe"
                     value={formData.password}
                     onChange={handleInputChange}
@@ -183,7 +183,7 @@ export default function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-primary transition-colors duration-200"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -206,7 +206,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-black hover:bg-white hover:text-black hover:border-2 hover:border-black text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                className="w-full h-12 bg-primary hover:bg-white hover:text-primary hover:border-2 hover:border-primary text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -255,7 +255,7 @@ export default function LoginPage() {
       {/* Copyright en bas de page */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
         <p className="text-gray-500 text-sm text-center">
-          © Powered by <span className="font-semibold text-gray-700">GTF</span> (Giusty Tech & Fils)
+                        © Powered by <span className="font-semibold text-primary">GTF</span>
         </p>
       </div>
     </div>

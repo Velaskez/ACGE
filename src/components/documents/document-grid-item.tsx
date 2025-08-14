@@ -82,13 +82,13 @@ export function DocumentGridItem({
   }
 
   const getFileTypeColor = (fileType?: string) => {
-    if (!fileType) return 'bg-gray-100 text-gray-600'
+    if (!fileType) return 'bg-gray-100 text-primary'
     if (fileType.startsWith('image/')) return 'bg-blue-100 text-blue-600'
     if (fileType.startsWith('video/')) return 'bg-purple-100 text-purple-600'
     if (fileType.startsWith('audio/')) return 'bg-green-100 text-green-600'
     if (fileType === 'application/pdf') return 'bg-red-100 text-red-600'
     if (fileType.startsWith('text/')) return 'bg-yellow-100 text-yellow-600'
-    return 'bg-gray-100 text-gray-600'
+    return 'bg-gray-100 text-primary'
   }
 
   const IconComponent = getFileIcon(document.currentVersion?.fileType)

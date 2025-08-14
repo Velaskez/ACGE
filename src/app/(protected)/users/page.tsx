@@ -204,10 +204,10 @@ export default function UsersPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Users className="w-8 h-8" />
-              Gestion des Utilisateurs
-            </h1>
+                         <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+               <Users className="w-8 h-8" />
+               Gestion des Utilisateurs
+             </h1>
             <p className="text-muted-foreground">
               Gérez les utilisateurs et leurs permissions
             </p>
@@ -332,7 +332,7 @@ export default function UsersPage() {
           <CardContent>
             {isLoading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-2">Chargement...</p>
               </div>
             ) : (
@@ -355,7 +355,7 @@ export default function UsersPage() {
                         <div className="flex items-center gap-2">
                           {userItem.role === 'ADMIN' && <Shield className="w-4 h-4 text-red-500" />}
                           {userItem.role === 'MANAGER' && <UserCheck className="w-4 h-4 text-blue-500" />}
-                          {userItem.role === 'USER' && <User className="w-4 h-4 text-gray-500" />}
+                          {userItem.role === 'USER' && <User className="w-4 h-4 text-primary" />}
                           {userItem.role}
                         </div>
                       </TableCell>

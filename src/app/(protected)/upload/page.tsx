@@ -146,7 +146,7 @@ export default function UploadPage() {
               <h2 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">
                 Upload réussi !
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
+              <p className="text-primary dark:text-primary mb-4">
                 Vos fichiers ont été uploadés avec succès.
               </p>
               <p className="text-sm text-gray-500">
@@ -173,10 +173,10 @@ export default function UploadPage() {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold flex items-center gap-2">
-                <Upload className="w-8 h-8" />
-                Upload de Fichiers
-              </h1>
+                         <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+             <Upload className="w-8 h-8" />
+             Upload de Fichiers
+           </h1>
               <p className="text-muted-foreground">
                 Ajoutez de nouveaux fichiers à l'application
               </p>

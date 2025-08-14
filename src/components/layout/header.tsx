@@ -54,7 +54,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
               height={40}
               className="rounded-lg object-contain shadow-sm sm:w-12 sm:h-12"
             />
-            <h1 className="text-lg sm:text-xl font-semibold text-[#134074]">ACGE</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-primary">ACGE</h1>
           </div>
         </div>
 

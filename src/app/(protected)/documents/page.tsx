@@ -239,7 +239,7 @@ export default function DocumentsPage() {
     if (fileType.startsWith('video/')) return <Video className="w-4 h-4 text-purple-500" />
     if (fileType.startsWith('audio/')) return <Music className="w-4 h-4 text-green-500" />
     if (fileType.includes('pdf')) return <FileText className="w-4 h-4 text-red-500" />
-    return <File className="w-4 h-4 text-gray-500" />
+    return <File className="w-4 h-4 text-primary" />
   }
 
   const handleSort = (field: SortField) => {
@@ -306,7 +306,7 @@ export default function DocumentsPage() {
     return (
       <MainLayout>
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2">Chargement des fichiers...</p>
         </div>
       </MainLayout>
@@ -319,10 +319,10 @@ export default function DocumentsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <FileText className="w-8 h-8" />
-              Mes Documents
-            </h1>
+                         <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+               <FileText className="w-8 h-8" />
+               Mes Documents
+             </h1>
             <p className="text-muted-foreground">
               {documents.length} fichier(s) au total
             </p>
@@ -368,7 +368,7 @@ export default function DocumentsPage() {
                   <TableRow>
                     <TableHead className="w-8 sm:w-12"></TableHead>
                     <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/10"
                       onClick={() => handleSort('title')}
                     >
                       <div className="flex items-center gap-2">
@@ -379,7 +379,7 @@ export default function DocumentsPage() {
                       </div>
                     </TableHead>
                     <TableHead 
-                      className="hidden md:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="hidden md:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/10"
                       onClick={() => handleSort('fileSize')}
                     >
                       <div className="flex items-center gap-2">
@@ -390,7 +390,7 @@ export default function DocumentsPage() {
                       </div>
                     </TableHead>
                     <TableHead 
-                      className="hidden sm:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="hidden sm:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/10"
                       onClick={() => handleSort('createdAt')}
                     >
                       <div className="flex items-center gap-2">
@@ -482,9 +482,9 @@ export default function DocumentsPage() {
               {filteredDocuments.length === 0 && (
                 <div className="text-center py-8">
                   <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {searchQuery ? 'Aucun document trouvé' : 'Aucun document'}
-                  </p>
+                                     <p className="text-lg font-medium text-primary dark:text-primary">
+                     {searchQuery ? 'Aucun document trouvé' : 'Aucun document'}
+                   </p>
                   <p className="text-gray-500 mb-4">
                     {searchQuery 
                       ? 'Essayez de modifier votre recherche'

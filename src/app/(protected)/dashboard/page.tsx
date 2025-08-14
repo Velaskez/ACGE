@@ -84,7 +84,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Tableau de bord</h1>
+            <h1 className="text-3xl font-bold text-primary">Tableau de bord</h1>
             <p className="text-muted-foreground">
               Vue d'ensemble de vos fichiers et activités
             </p>

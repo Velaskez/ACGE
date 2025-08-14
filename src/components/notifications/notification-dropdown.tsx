@@ -130,9 +130,9 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
       case 'WELCOME':
         return <User className="h-4 w-4 text-purple-500" />
       case 'SYSTEM':
-        return <Settings className="h-4 w-4 text-gray-500" />
+        return <Settings className="h-4 w-4 text-primary" />
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-500" />
+        return <AlertCircle className="h-4 w-4 text-primary" />
     }
   }
 
@@ -217,7 +217,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <h4 className={`text-sm font-medium truncate ${
-                          !notification.isRead ? 'text-gray-900' : 'text-gray-700'
+                          !notification.isRead ? 'text-primary' : 'text-primary'
                         }`}>
                           {notification.title}
                         </h4>

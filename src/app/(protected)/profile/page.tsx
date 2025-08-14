@@ -372,7 +372,7 @@ export default function ProfilePage() {
                   <>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                        <User className="h-6 w-6 text-gray-600" />
+                        <User className="h-6 w-6 text-primary" />
                       </div>
                       <div>
                         <p className="font-medium">{displayProfile.name}</p>
