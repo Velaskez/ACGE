@@ -155,7 +155,9 @@ export default function DocumentsPage() {
       params.append('page', pagination.page.toString())
       params.append('limit', pagination.limit.toString())
       
-      const response = await fetch(`/api/documents?${params.toString()}`)
+      const response = await fetch(`/api/documents?${params.toString()}`, { 
+        credentials: 'include' 
+      })
       if (response.ok) {
         const data = await response.json()
         setDocuments(data.documents)
