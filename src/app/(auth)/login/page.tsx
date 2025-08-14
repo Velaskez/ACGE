@@ -21,7 +21,6 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [capsLockOn, setCapsLockOn] = useState(false)
   const [emailValid, setEmailValid] = useState<boolean | null>(null)
-  const [passwordStrength, setPasswordStrength] = useState(0)
 
   // Validation email en temps réel
   useEffect(() => {
@@ -33,22 +32,7 @@ export default function LoginPage() {
     setEmailValid(emailRegex.test(formData.email))
   }, [formData.email])
 
-  // Calcul de la force du mot de passe
-  useEffect(() => {
-    if (formData.password === '') {
-      setPasswordStrength(0)
-      return
-    }
-    
-    let strength = 0
-    if (formData.password.length >= 8) strength++
-    if (/[a-z]/.test(formData.password)) strength++
-    if (/[A-Z]/.test(formData.password)) strength++
-    if (/[0-9]/.test(formData.password)) strength++
-    if (/[^A-Za-z0-9]/.test(formData.password)) strength++
-    
-    setPasswordStrength(strength)
-  }, [formData.password])
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,17 +62,7 @@ export default function LoginPage() {
     }))
   }
 
-  const getPasswordStrengthColor = () => {
-    if (passwordStrength <= 2) return 'bg-red-500'
-    if (passwordStrength <= 3) return 'bg-yellow-500'
-    return 'bg-green-500'
-  }
 
-  const getPasswordStrengthText = () => {
-    if (passwordStrength <= 2) return 'Faible'
-    if (passwordStrength <= 3) return 'Moyen'
-    return 'Fort'
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
@@ -217,20 +191,7 @@ export default function LoginPage() {
                   </button>
                 </div>
                 
-                {/* Indicateur de force du mot de passe */}
-                {formData.password && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
-                          style={{width: `${(passwordStrength / 5) * 100}%`}}
-                        ></div>
-                      </div>
-                      <span className="text-xs text-gray-500">{getPasswordStrengthText()}</span>
-                    </div>
-                  </div>
-                )}
+
                 
                 {capsLockOn && (
                   <div className="flex items-center gap-2 text-amber-600 text-xs">
