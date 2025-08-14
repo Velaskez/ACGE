@@ -116,7 +116,7 @@ export function FileUploadZone({
       return <FileText className="w-5 h-5 text-blue-600" />
     if (file.type.includes('excel') || file.type.includes('sheet')) 
       return <FileText className="w-5 h-5 text-green-600" />
-    return <File className="w-5 h-5 text-gray-500" />
+    return <File className="w-5 h-5 text-primary" />
   }
 
   const formatFileSize = (bytes: number) => {
@@ -175,7 +175,7 @@ export function FileUploadZone({
           >
             <input {...getInputProps()} />
             <Upload className={`mx-auto h-12 w-12 mb-4 ${
-              isDragActive ? 'text-blue-500' : 'text-gray-400'
+              isDragActive ? 'text-blue-500' : 'text-primary'
             }`} />
             
             {isDragActive ? (
@@ -187,7 +187,7 @@ export function FileUploadZone({
                               <p className="text-lg font-medium text-primary dark:text-primary mb-2">
                 Glissez-déposez vos fichiers ici
               </p>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-primary mb-4">
                   ou cliquez pour sélectionner des fichiers
                 </p>
                 <Button variant="outline">
@@ -196,9 +196,9 @@ export function FileUploadZone({
               </div>
             )}
             
-            <div className="mt-4 text-xs text-gray-500">
-              <p>Formats acceptés : PDF, Word, Excel, Images, Texte</p>
-              <p>Taille maximale : {maxSize}MB par fichier • Maximum {maxFiles} fichiers</p>
+            <div className="mt-4 text-xs text-primary">
+              <p className="text-xs text-primary">Formats acceptés : PDF, Word, Excel, Images, Texte</p>
+              <p className="text-xs text-primary">Taille maximale : {maxSize}MB par fichier • Maximum {maxFiles} fichiers</p>
             </div>
           </div>
         </CardContent>

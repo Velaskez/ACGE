@@ -107,7 +107,7 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] animate-fade-in-up" style={{animationDelay: '0.4s'}}>
           <div className="bg-primary p-6 text-white text-center">
             <h2 className="text-2xl font-bold">Connexion</h2>
-            <p className="text-gray-300 mt-1">Accédez à votre espace de gestion</p>
+            <p className="text-primary mt-1">Accédez à votre espace de gestion</p>
           </div>
 
           <div className="p-8">
@@ -127,7 +127,7 @@ export default function LoginPage() {
                 </Label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors duration-200" />
+                    <Mail className="h-5 w-5 text-primary group-focus-within:text-primary transition-colors duration-200" />
                   </div>
                   <Input
                     id="email"
@@ -165,7 +165,7 @@ export default function LoginPage() {
                 </Label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors duration-200" />
+                    <Lock className="h-5 w-5 text-primary group-focus-within:text-primary transition-colors duration-200" />
                   </div>
                   <Input
                     id="password"
@@ -183,7 +183,7 @@ export default function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-primary transition-colors duration-200"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-primary hover:text-primary transition-colors duration-200"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -254,7 +254,7 @@ export default function LoginPage() {
 
       {/* Copyright en bas de page */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-        <p className="text-gray-500 text-sm text-center">
+        <p className="text-primary text-sm text-center">
                         © Powered by <span className="font-semibold text-primary">GTF</span>
         </p>
       </div>

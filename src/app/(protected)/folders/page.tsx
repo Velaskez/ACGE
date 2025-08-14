@@ -375,14 +375,14 @@ export default function FoldersPage() {
                 Retour aux dossiers
               </Button>
               <div className="border-l pl-4">
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-1">
+                <div className="flex items-center space-x-2 text-sm text-primary mb-1">
                   <FolderOpen className="h-4 w-4" />
                   <span>Dossiers</span>
                   <span>/</span>
                   <span className="font-medium text-foreground">{currentFolder.name}</span>
                 </div>
                 <h1 className="text-3xl font-bold text-primary">{currentFolder.name}</h1>
-                <p className="text-muted-foreground">
+                <p className="text-primary">
                   {currentFolder.description || 'Documents du dossier'}
                 </p>
               </div>
@@ -500,16 +500,16 @@ export default function FoldersPage() {
                   </Table>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground">
+                    <p className="text-primary">
                       Vue grille disponible prochainement. Utilisez la vue liste pour le moment.
                     </p>
                   </div>
                 )
               ) : (
                 <div className="text-center py-8">
-                  <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
+                  <FileText className="mx-auto h-10 w-10 text-primary" />
                   <h3 className="mt-2 text-sm font-medium">Aucun document</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 text-sm text-primary">
                     Ce dossier ne contient aucun document.
                   </p>
                 </div>
@@ -556,7 +556,7 @@ export default function FoldersPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary">Dossiers</h1>
-            <p className="text-muted-foreground">Gérez vos dossiers et accédez rapidement à vos documents</p>
+            <p className="text-primary">Gérez vos dossiers et accédez rapidement à vos documents</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={refresh}>Rafraîchir</Button>

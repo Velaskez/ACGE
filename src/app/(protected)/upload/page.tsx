@@ -149,7 +149,7 @@ export default function UploadPage() {
               <p className="text-primary dark:text-primary mb-4">
                 Vos fichiers ont été uploadés avec succès.
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-primary">
                 Redirection vers la liste des documents...
               </p>
             </CardContent>
@@ -177,7 +177,7 @@ export default function UploadPage() {
              <Upload className="w-8 h-8" />
              Upload de Fichiers
            </h1>
-              <p className="text-muted-foreground">
+              <p className="text-primary">
                 Ajoutez de nouveaux fichiers à l'application
               </p>
             </div>

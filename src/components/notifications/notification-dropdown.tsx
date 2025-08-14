@@ -191,13 +191,13 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="ml-2 text-sm text-muted-foreground">Chargement...</span>
+              <span className="ml-2 text-sm text-primary">Chargement...</span>
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Bell className="h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">Aucune notification</p>
-              <p className="text-xs text-muted-foreground">Vous êtes à jour !</p>
+              <Bell className="h-8 w-8 text-primary mb-2" />
+              <p className="text-sm text-primary">Aucune notification</p>
+              <p className="text-xs text-primary">Vous êtes à jour !</p>
             </div>
           ) : (
             <div className="space-y-1 p-1">
@@ -237,11 +237,11 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
                         )}
                       </div>
                       
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      <p className="text-xs text-primary mt-1 line-clamp-2">
                         {notification.message}
                       </p>
                       
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-primary mt-1">
                         {formatRelativeTime(notification.createdAt.toString())}
                       </p>
                     </div>

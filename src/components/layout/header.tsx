@@ -61,7 +61,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
         {/* Barre de recherche centrée (desktop) */}
         <div className="pointer-events-auto hidden sm:block absolute left-1/2 -translate-x-1/2 w-full max-w-md">
           <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-primary" />
             <Input
               type="search"
               placeholder="Rechercher..."
@@ -104,7 +104,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
+                    <p className="text-xs leading-none text-primary">
                       {user.email}
                     </p>
                   </div>
@@ -138,7 +138,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
               }}
               className="relative"
             >
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-primary" />
               <Input
                 autoFocus
                 type="search"

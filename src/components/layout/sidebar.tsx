@@ -103,7 +103,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
             <div className="space-y-4 py-4">
             {/* Navigation principale */}
             <div className="px-3 py-2">
-              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight truncate">
+              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight truncate text-primary">
                 Navigation
               </h2>
               <div className="space-y-1">
@@ -135,7 +135,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
             {/* Dossiers récents */}
             <div className="px-3 py-2 flex-1 min-h-0">
               <div className="flex items-center justify-between mb-2 px-4">
-                <h2 className="text-lg font-semibold tracking-tight truncate flex-1">
+                <h2 className="text-lg font-semibold tracking-tight truncate flex-1 text-primary">
                   Dossiers récents
                 </h2>
                 <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
@@ -175,14 +175,14 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                               <span className="flex-1 text-left truncate min-w-0">
                                 {folder.name}
                               </span>
-                              <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                              <span className="text-xs text-primary flex-shrink-0 ml-2">
                                 {folder.documentCount}
                               </span>
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent side="right" className="max-w-[250px]">
                             <p className="break-words">{folder.name}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-primary mt-1">
                               {folder.documentCount} document{folder.documentCount > 1 ? 's' : ''}
                             </p>
                           </TooltipContent>
@@ -209,7 +209,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                                 </Tooltip>
                               ))
                             ) : (
-                              <div className="text-xs text-muted-foreground px-2 py-1 truncate">
+                              <div className="text-xs text-primary px-2 py-1 truncate">
                                 Aucun document
                               </div>
                             )}
@@ -220,8 +220,8 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                   ) : (
                     // État vide
                     <div className="text-center py-4 px-2">
-                      <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground mt-2 break-words">
+                      <FolderOpen className="mx-auto h-8 w-8 text-primary" />
+                      <p className="text-xs text-primary mt-2 break-words">
                         Aucun dossier
                       </p>
                     </div>
@@ -234,7 +234,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
 
             {/* Statistiques rapides */}
             <div className="px-3 py-2 flex-shrink-0">
-              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight truncate">
+              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight truncate text-primary">
                 Statistiques
               </h2>
               <div className="space-y-2 px-4">
@@ -250,20 +250,20 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                   // Affichage des vraies statistiques
                   <>
                     <div className="flex justify-between items-center text-sm min-h-[20px]">
-                      <span className="truncate flex-1 mr-2">Fichiers</span>
-                      <span className="font-medium flex-shrink-0">
+                      <span className="truncate flex-1 mr-2 text-primary">Fichiers</span>
+                      <span className="font-medium flex-shrink-0 text-primary">
                         {stats?.totalDocuments?.toLocaleString() || 0}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm min-h-[20px]">
-                      <span className="truncate flex-1 mr-2">Espace utilisé</span>
-                      <span className="font-medium flex-shrink-0">
+                      <span className="truncate flex-1 mr-2 text-primary">Espace utilisé</span>
+                      <span className="font-medium flex-shrink-0 text-primary">
                         {stats?.spaceUsed?.gb ? `${stats.spaceUsed.gb} GB` : '0 GB'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm min-h-[20px]">
-                      <span className="truncate flex-1 mr-2">Dossiers</span>
-                      <span className="font-medium flex-shrink-0">
+                      <span className="truncate flex-1 mr-2 text-primary">Dossiers</span>
+                      <span className="font-medium flex-shrink-0 text-primary">
                         {stats?.totalFolders?.toLocaleString() || 0}
                       </span>
                     </div>

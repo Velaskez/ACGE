@@ -155,7 +155,7 @@ export function DocumentGridItem({
           </h3>
           
           {document.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2" title={document.description}>
+            <p className="text-xs text-primary line-clamp-2" title={document.description}>
               {document.description}
             </p>
           )}
@@ -165,7 +165,7 @@ export function DocumentGridItem({
         <div className="space-y-2">
           {/* Taille et type de fichier */}
           {document.currentVersion && (
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center justify-between text-xs text-primary">
               <span>{formatFileSize(document.currentVersion.fileSize)}</span>
               <span>v{document.currentVersion.versionNumber}</span>
             </div>
@@ -173,19 +173,19 @@ export function DocumentGridItem({
 
           {/* Dossier */}
           {document.folder && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs text-primary">
               <FolderOpen className="w-3 h-3" />
               <span className="truncate">{document.folder.name}</span>
             </div>
           )}
 
           {/* Auteur et date */}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-primary">
             <User className="w-3 h-3" />
             <span className="truncate">{document.author.name}</span>
           </div>
           
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-primary">
             <Calendar className="w-3 h-3" />
             <span>{formatRelativeTime(document.updatedAt)}</span>
           </div>
@@ -212,7 +212,7 @@ export function DocumentGridItem({
 
           {/* Statistiques */}
           {document._count && (
-            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+            <div className="flex items-center justify-between text-xs text-primary pt-2 border-t">
               <div className="flex items-center gap-3">
                 {(document._count.versions ?? 0) > 1 && (
                   <span>{document._count.versions} versions</span>

@@ -56,24 +56,24 @@ export function FolderGridItem({
           <div className="flex-1 flex flex-col justify-end">
             {folder.recentDocuments.length > 0 ? (
               <div className="space-y-1 mb-3">
-                <p className="text-xs font-medium text-muted-foreground">Documents récents:</p>
+                <p className="text-xs font-medium text-primary">Documents récents:</p>
                 {folder.recentDocuments.slice(0, 2).map((doc) => (
                   <div key={doc.id} className="flex items-center space-x-1">
-                    <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                    <span className="text-xs text-muted-foreground truncate">
+                    <FileText className="h-3 w-3 text-primary flex-shrink-0" />
+                    <span className="text-xs text-primary truncate">
                       {doc.title}
                     </span>
                   </div>
                 ))}
                 {folder.recentDocuments.length > 2 && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-primary">
                     +{folder.recentDocuments.length - 2} autres...
                   </span>
                 )}
               </div>
             ) : (
               <div className="mb-3">
-                <p className="text-xs text-muted-foreground italic">
+                <p className="text-xs text-primary italic">
                   Aucun document
                 </p>
               </div>

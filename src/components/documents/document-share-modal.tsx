@@ -228,7 +228,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <h3 className="font-medium truncate">{document.title}</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-primary">
                   Propriétaire : {document.author?.name || 'Inconnu'}
                 </p>
               </div>
@@ -296,10 +296,10 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                           className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
                           onClick={() => selectUser(user)}
                         >
-                          <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <User className="h-4 w-4 text-primary flex-shrink-0" />
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-sm truncate">{user.name}</p>
-                            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                            <p className="text-xs text-primary truncate">{user.email}</p>
                           </div>
                         </button>
                       ))}
@@ -343,7 +343,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
 
             {isLoading ? (
               <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground">Chargement...</p>
+                <p className="text-sm text-primary">Chargement...</p>
               </div>
             ) : shares.length > 0 ? (
               <div className="border rounded-lg overflow-hidden">
@@ -370,7 +370,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <p className="font-medium truncate">{share.user.name}</p>
-                                  <p className="text-sm text-muted-foreground truncate">{share.user.email}</p>
+                                  <p className="text-sm text-primary truncate">{share.user.email}</p>
                                 </div>
                               </div>
                             </TableCell>
@@ -381,7 +381,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <span className="text-sm text-muted-foreground">
+                              <span className="text-sm text-primary">
                                 {formatDate(share.createdAt)}
                               </span>
                             </TableCell>
@@ -415,7 +415,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="font-medium text-sm truncate">{share.user.name}</p>
-                              <p className="text-xs text-muted-foreground truncate">{share.user.email}</p>
+                              <p className="text-xs text-primary truncate">{share.user.email}</p>
                             </div>
                           </div>
                           <Button
@@ -432,7 +432,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                             <permConfig.icon className="h-3 w-3 mr-1" />
                             {permConfig.label}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-primary">
                             {formatDate(share.createdAt)}
                           </span>
                         </div>
@@ -442,7 +442,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-primary">
                 <Share2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>Aucun partage pour ce document</p>
                 <p className="text-sm">Ajoutez des utilisateurs ci-dessus pour commencer à partager</p>

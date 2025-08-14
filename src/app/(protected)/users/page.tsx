@@ -208,7 +208,7 @@ export default function UsersPage() {
                <Users className="w-8 h-8" />
                Gestion des Utilisateurs
              </h1>
-            <p className="text-muted-foreground">
+            <p className="text-primary">
               Gérez les utilisateurs et leurs permissions
             </p>
           </div>

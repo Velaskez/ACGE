@@ -223,11 +223,11 @@ export default function NotificationsPage() {
         ) : notifications.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Bell className="h-12 w-12 text-muted-foreground mb-4" />
+              <Bell className="h-12 w-12 text-primary mb-4" />
               <h3 className="text-lg font-medium mb-2">
                 {filter === 'unread' ? 'Aucune notification non lue' : 'Aucune notification'}
               </h3>
-              <p className="text-muted-foreground text-center">
+              <p className="text-primary text-center">
                 {filter === 'unread' 
                   ? 'Toutes vos notifications ont été lues !'
                   : 'Vous n\'avez pas encore de notifications.'
@@ -270,11 +270,11 @@ export default function NotificationsPage() {
                             )}
                           </div>
                           
-                          <p className="text-sm text-muted-foreground mb-2">
+                          <p className="text-sm text-primary mb-2">
                             {notification.message}
                           </p>
                           
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-primary">
                             {formatRelativeTime(notification.createdAt.toString())}
                           </p>
                         </div>
@@ -316,7 +316,7 @@ export default function NotificationsPage() {
         {/* Pagination */}
         {pagination.totalPages > 1 && (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-primary">
               Page {pagination.page} sur {pagination.totalPages}
             </p>
             

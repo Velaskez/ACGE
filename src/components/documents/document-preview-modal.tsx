@@ -168,7 +168,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
       return (
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
           <Progress value={undefined} className="w-48" />
-          <p className="text-sm text-muted-foreground">Chargement de la prévisualisation...</p>
+          <p className="text-sm text-primary">Chargement de la prévisualisation...</p>
         </div>
       )
     }
@@ -184,7 +184,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
     if (!previewUrl || !canPreview(document.currentVersion?.fileType)) {
       return (
-        <div className="p-8 text-center text-gray-500">
+        <div className="p-8 text-center text-primary">
           <div className="mb-4">
             {getFileIcon(document.currentVersion?.fileType)}
           </div>
@@ -278,7 +278,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
       case 'office':
         return (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-primary">
             <FileSpreadsheet className="mx-auto h-16 w-16 mb-4" />
             <h3 className="text-lg font-medium mb-2">Document Office</h3>
             <p className="text-sm mb-4">
@@ -293,7 +293,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
       default:
         return (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-primary">
             <FileText className="mx-auto h-16 w-16 mb-4" />
             <h3 className="text-lg font-medium mb-2">Format non supporté</h3>
             <p className="text-sm">Téléchargez le fichier pour l'ouvrir.</p>
@@ -327,21 +327,21 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm p-3 sm:p-4 bg-gray-50 rounded-lg">
             <div className="min-w-0">
               <strong className="block">Fichier:</strong>
-              <p className="text-muted-foreground truncate">{document.currentVersion?.fileName}</p>
+              <p className="text-primary truncate">{document.currentVersion?.fileName}</p>
             </div>
             <div>
               <strong className="block">Taille:</strong>
-              <p className="text-muted-foreground">
+              <p className="text-primary">
                 {document.currentVersion?.fileSize ? formatFileSize(document.currentVersion.fileSize) : 'N/A'}
               </p>
             </div>
             <div>
               <strong className="block">Type:</strong>
-              <p className="text-muted-foreground">{document.currentVersion?.fileType?.split('/')[1]?.toUpperCase()}</p>
+              <p className="text-primary">{document.currentVersion?.fileType?.split('/')[1]?.toUpperCase()}</p>
             </div>
             <div>
               <strong className="block">Version:</strong>
-              <p className="text-muted-foreground">v{document.currentVersion?.versionNumber}</p>
+              <p className="text-primary">v{document.currentVersion?.versionNumber}</p>
             </div>
           </div>
 

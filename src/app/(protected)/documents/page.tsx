@@ -323,7 +323,7 @@ export default function DocumentsPage() {
                <FileText className="w-8 h-8" />
                Mes Documents
              </h1>
-            <p className="text-muted-foreground">
+            <p className="text-primary">
               {documents.length} fichier(s) au total
             </p>
           </div>
@@ -413,9 +413,9 @@ export default function DocumentsPage() {
                       <TableCell>
                         <div>
                           <div className="font-medium">{document.title}</div>
-                          <div className="text-xs sm:text-sm text-gray-500">{document.currentVersion?.fileName || 'Sans fichier'}</div>
+                          <div className="text-xs sm:text-sm text-primary">{document.currentVersion?.fileName || 'Sans fichier'}</div>
                           {document.description && (
-                            <div className="hidden sm:block text-xs text-gray-400 mt-1">{document.description}</div>
+                            <div className="hidden sm:block text-xs text-primary mt-1">{document.description}</div>
                           )}
                         </div>
                       </TableCell>
@@ -481,11 +481,11 @@ export default function DocumentsPage() {
 
               {filteredDocuments.length === 0 && (
                 <div className="text-center py-8">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <Upload className="mx-auto h-12 w-12 text-primary mb-4" />
                                      <p className="text-lg font-medium text-primary dark:text-primary">
                      {searchQuery ? 'Aucun document trouvé' : 'Aucun document'}
                    </p>
-                  <p className="text-gray-500 mb-4">
+                  <p className="text-primary mb-4">
                     {searchQuery 
                       ? 'Essayez de modifier votre recherche'
                       : 'Commencez par uploader vos premiers fichiers'
@@ -521,9 +521,9 @@ export default function DocumentsPage() {
               ))
             ) : (
               <div className="col-span-full text-center py-12">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                <FileText className="mx-auto h-12 w-12 text-primary" />
                 <h3 className="mt-4 text-lg font-semibold">Aucun document trouvé</h3>
-                <p className="text-muted-foreground">
+                <p className="text-primary">
                   {searchQuery || Object.values(filters).some(v => v && v !== 'updatedAt' && v !== 'desc')
                     ? 'Aucun document ne correspond à vos critères de recherche.'
                     : 'Commencez par ajouter des documents à votre collection.'
@@ -618,7 +618,7 @@ export default function DocumentsPage() {
             </PaginationContent>
           </Pagination>
           
-          <div className="text-center text-sm text-muted-foreground mt-2">
+          <div className="text-center text-sm text-primary mt-2">
             Page {pagination.page} sur {pagination.totalPages} • {pagination.total} documents au total
           </div>
         </div>

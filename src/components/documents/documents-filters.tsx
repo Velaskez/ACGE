@@ -174,7 +174,7 @@ export function DocumentsFilters({
             </Label>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-xs text-muted-foreground">Min (MB)</Label>
+                <Label className="text-xs text-primary">Min (MB)</Label>
                 <Input
                   type="number"
                   placeholder="0"
@@ -186,7 +186,7 @@ export function DocumentsFilters({
                 />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Max (MB)</Label>
+                <Label className="text-xs text-primary">Max (MB)</Label>
                 <Input
                   type="number"
                   placeholder="100"
@@ -210,7 +210,7 @@ export function DocumentsFilters({
             </Label>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-xs text-muted-foreground">Date début</Label>
+                <Label className="text-xs text-primary">Date début</Label>
                 <Input
                   type="date"
                   value={localFilters.startDate || ''}
@@ -221,7 +221,7 @@ export function DocumentsFilters({
                 />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Date fin</Label>
+                <Label className="text-xs text-primary">Date fin</Label>
                 <Input
                   type="date"
                   value={localFilters.endDate || ''}

@@ -376,7 +376,7 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <p className="font-medium">{displayProfile.name}</p>
-                        <p className="text-sm text-muted-foreground">{displayProfile.email}</p>
+                        <p className="text-sm text-primary">{displayProfile.email}</p>
                       </div>
                     </div>
 
@@ -391,7 +391,7 @@ export default function ProfilePage() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Documents</span>
                         <div className="flex items-center gap-1">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <FileText className="h-4 w-4 text-primary" />
                           <span className="text-sm">{displayProfile._count.documents}</span>
                         </div>
                       </div>
@@ -399,7 +399,7 @@ export default function ProfilePage() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Partages reçus</span>
                         <div className="flex items-center gap-1">
-                          <Share2 className="h-4 w-4 text-muted-foreground" />
+                          <Share2 className="h-4 w-4 text-primary" />
                           <span className="text-sm">{displayProfile._count.sharedWith}</span>
                         </div>
                       </div>
@@ -407,7 +407,7 @@ export default function ProfilePage() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Membre depuis</span>
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <Calendar className="h-4 w-4 text-primary" />
                           <span className="text-sm">{formatRelativeTime(displayProfile.createdAt)}</span>
                         </div>
                       </div>
@@ -471,7 +471,7 @@ export default function ProfilePage() {
                       <Key className="h-5 w-5" />
                       <h3 className="text-lg font-medium">Changer le mot de passe</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-primary">
                       Laissez vide si vous ne souhaitez pas changer votre mot de passe
                     </p>
 

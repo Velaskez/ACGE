@@ -122,7 +122,7 @@ export default function DashboardPage() {
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleViewAllDocuments}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Fichiers</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -133,7 +133,7 @@ export default function DashboardPage() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">{stats?.totalDocuments?.toLocaleString() || 0}</div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-primary">
                     {stats?.monthlyGrowthPercentage ? (
                       stats.monthlyGrowthPercentage > 0 ? 
                         `+${stats.monthlyGrowthPercentage}% par rapport au mois dernier` :
@@ -150,7 +150,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Dossiers</CardTitle>
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              <FolderOpen className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -161,7 +161,7 @@ export default function DashboardPage() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">{stats?.totalFolders?.toLocaleString() || 0}</div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-primary">
                     {stats?.documentsThisMonth ? 
                       `+${stats.documentsThisMonth} nouveaux ce mois` : 
                       'Aucun nouveau ce mois'}
@@ -174,7 +174,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Espace utilisé</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <TrendingUp className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                   <div className="text-2xl font-bold">
                     {stats?.spaceUsed ? `${stats.spaceUsed.gb} GB` : '0 GB'}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-primary">
                     {stats?.spaceUsed ? 
                       `${stats.spaceUsed.percentage}% de votre quota` : 
                       '0% de votre quota'}
@@ -200,7 +200,7 @@ export default function DashboardPage() {
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleViewUsers}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Utilisateurs actifs</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <Users className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -211,7 +211,7 @@ export default function DashboardPage() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">{stats?.activeUsers || 0}</div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-primary">
                     {stats?.activeUsers ? 
                       `${stats.activeUsers} en ligne récemment` : 
                       'Aucun utilisateur actif'}
@@ -297,9 +297,9 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-2 text-sm font-medium text-muted-foreground">Aucun document</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <FileText className="mx-auto h-12 w-12 text-primary" />
+                    <h3 className="mt-2 text-sm font-medium text-primary">Aucun document</h3>
+                    <p className="mt-1 text-sm text-primary">
                       Commencez par télécharger votre premier document.
                     </p>
                     <div className="mt-6">
@@ -341,16 +341,16 @@ export default function DashboardPage() {
                       <div className="w-2 h-2 bg-powder-blue rounded-full mt-2"></div>
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-medium">{act.action}</p>
-                        <p className="text-xs text-muted-foreground">{act.target}</p>
-                        <p className="text-xs text-muted-foreground">{formatRelativeTime(act.timestamp)}</p>
+                        <p className="text-xs text-primary">{act.target}</p>
+                        <p className="text-xs text-primary">{formatRelativeTime(act.timestamp)}</p>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <Clock className="mx-auto h-8 w-8 text-muted-foreground" />
-                    <h3 className="mt-2 text-sm font-medium text-muted-foreground">Aucune activité</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <Clock className="mx-auto h-8 w-8 text-primary" />
+                    <h3 className="mt-2 text-sm font-medium text-primary">Aucune activité</h3>
+                    <p className="mt-1 text-xs text-primary">
                       Vos activités récentes apparaîtront ici.
                     </p>
                   </div>

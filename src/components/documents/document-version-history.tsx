@@ -187,7 +187,7 @@ export function DocumentVersionHistory({
             <History className="h-5 w-5" />
             <span>Historique des versions</span>
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">{documentTitle}</p>
+          <p className="text-sm text-primary">{documentTitle}</p>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -225,11 +225,11 @@ export function DocumentVersionHistory({
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center py-8">
-                  <History className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-medium text-muted-foreground">
+                  <History className="mx-auto h-12 w-12 text-primary" />
+                  <h3 className="mt-2 text-sm font-medium text-primary">
                     Aucune version trouvée
                   </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 text-sm text-primary">
                     Ce document n'a pas d'historique de versions.
                   </p>
                 </div>
@@ -287,7 +287,7 @@ export function DocumentVersionHistory({
                 </CardHeader>
                 
                 <CardContent>
-                  <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="space-y-2 text-sm text-primary">
                     <div className="flex items-center space-x-2">
                       <User className="h-3 w-3" />
                       <span>{version.createdBy.name || version.createdBy.email}</span>

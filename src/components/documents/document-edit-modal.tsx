@@ -181,17 +181,17 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
             </div>
             <p className="text-sm text-primary break-all">{document.currentVersion?.fileName || 'Sans nom'}</p>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-primary">
                 {formatFileSize(document.currentVersion?.fileSize || 0)}
               </p>
-              <span className="hidden sm:inline text-xs text-gray-500 mx-2">•</span>
-              <p className="text-xs text-gray-500">
+              <span className="hidden sm:inline text-xs text-primary mx-2">•</span>
+              <p className="text-xs text-primary">
                 Version {document.currentVersion?.versionNumber || 0}
               </p>
               {document.folder && (
                 <>
-                  <span className="hidden sm:inline text-xs text-gray-500 mx-2">•</span>
-                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <span className="hidden sm:inline text-xs text-primary mx-2">•</span>
+                  <p className="text-xs text-primary flex items-center gap-1">
                     <FolderOpen className="h-3 w-3" />
                     {document.folder.name}
                   </p>
@@ -252,7 +252,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                         <FolderOpen className="h-4 w-4 text-primary" />
                         <span className="truncate">{folder.name}</span>
                         {folder.description && (
-                          <span className="text-xs text-muted-foreground ml-auto">
+                          <span className="text-xs text-primary ml-auto">
                             ({folder.description.slice(0, 20)}{folder.description.length > 20 ? '...' : ''})
                           </span>
                         )}
@@ -262,12 +262,12 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                 </SelectContent>
               </Select>
               {formData.folderId !== 'root' && document.folder && formData.folderId !== document.folderId && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-primary mt-1">
                   Actuellement dans : {document.folder.name}
                 </p>
               )}
               {formData.folderId === 'root' && document.folder && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-primary mt-1">
                   Sera déplacé vers la racine depuis : {document.folder.name}
                 </p>
               )}
