@@ -20,36 +20,30 @@ export async function GET(request: NextRequest) {
     const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
     console.log('✅ Utilisateur authentifié:', userId)
+    console.log('🔍 User ID:', userId)
 
-    // Récupérer les statistiques
-    const [
-      totalDocuments,
-      totalFolders,
-      recentDocuments,
-      totalSize
-    ] = await Promise.all([
-      // Nombre total de documents
-      prisma.document.count({
-        where: { authorId: userId }
-      }),
-      
-      // Nombre total de dossiers
-      prisma.folder.count({
-        where: { authorId: userId }
-      }),
-      
-      // Documents récents (7 derniers jours)
-      prisma.document.count({
-        where: {
-          authorId: userId,
-          createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          }
+    // Récupérer les statistiques de base d'abord
+    const totalDocuments = await prisma.document.count({
+      where: { authorId: userId }
+    })
+    
+    const totalFolders = await prisma.folder.count({
+      where: { authorId: userId }
+    })
+    
+    const recentDocuments = await prisma.document.count({
+      where: {
+        authorId: userId,
+        createdAt: {
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
         }
-      }),
-      
-      // Taille totale des fichiers
-      prisma.documentVersion.aggregate({
+      }
+    })
+
+    // Calculer la taille totale de manière plus sûre
+    let totalSize = 0
+    try {
+      const sizeResult = await prisma.documentVersion.aggregate({
         where: {
           document: {
             authorId: userId
@@ -59,17 +53,28 @@ export async function GET(request: NextRequest) {
           fileSize: true
         }
       })
-    ])
+      totalSize = sizeResult._sum.fileSize || 0
+    } catch (sizeError) {
+      console.log('⚠️ Erreur calcul taille, utilisation de 0:', sizeError)
+      totalSize = 0
+    }
 
     const stats = {
       totalDocuments,
       totalFolders,
       recentDocuments,
-      totalSize: totalSize._sum.fileSize || 0,
-      averageSize: totalDocuments > 0 ? Math.round((totalSize._sum.fileSize || 0) / totalDocuments) : 0
+      totalSize,
+      averageSize: totalDocuments > 0 ? Math.round(totalSize / totalDocuments) : 0
     }
 
     console.log('✅ Stats récupérées:', stats)
+    console.log('📊 Détails:', {
+      totalDocuments,
+      totalFolders,
+      recentDocuments,
+      totalSize,
+      averageSize: totalDocuments > 0 ? Math.round(totalSize / totalDocuments) : 0
+    })
     
     return NextResponse.json(stats)
 
