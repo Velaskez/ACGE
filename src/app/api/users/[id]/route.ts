@@ -1,7 +1,3 @@
-// Configuration pour export statique
-export const dynamic = 'force-static'
-export const revalidate = false
-
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
@@ -203,19 +199,4 @@ export async function DELETE(
     )
   }
 
-
-// Fonction requise pour l'export statique
-
-// Fonction requise pour l'export statique
-export async function generateStaticParams() {
-  return [
-    { id: '1' },
-    { id: '2' },
-    { id: '3' },
-  ]
-}
-    { id: '2' },
-    { id: '3' },
-  ]
-}
 }

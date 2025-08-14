@@ -1,7 +1,3 @@
-// Configuration pour export statique
-export const dynamic = 'force-static'
-export const revalidate = false
-
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
@@ -121,19 +117,4 @@ export async function POST(
     )
   }
 
-
-// Fonction requise pour l'export statique
-
-// Fonction requise pour l'export statique
-export async function generateStaticParams() {
-  return [
-    { id: '1' },
-    { id: '2' },
-    { id: '3' },
-  ]
-}
-    { versionId: '2' },
-    { versionId: '3' },
-  ]
-}
 }

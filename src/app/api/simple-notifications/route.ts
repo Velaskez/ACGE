@@ -1,7 +1,3 @@
-// Configuration pour export statique
-export const dynamic = 'force-static'
-export const revalidate = false
-
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'

@@ -1,7 +1,3 @@
-// Configuration pour export statique
-export const dynamic = 'force-dynamic'
-
-
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { prisma } from '@/lib/db'
@@ -88,5 +84,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Erreur interne du serveur' }, { status: 500 })
   }
 }
-
 

@@ -1,7 +1,3 @@
-// Configuration pour export statique
-export const dynamic = 'force-static'
-export const revalidate = false
-
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'

@@ -1,10 +1,10 @@
 import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Configuration pour LWS (export statique)
-  output: 'export',
-  trailingSlash: true,
-  distDir: 'out',
+  // Configuration pour Vercel (dynamique)
+  // output: 'export', // Commenté pour Vercel
+  // trailingSlash: true, // Commenté pour Vercel
+  // distDir: 'out', // Commenté pour Vercel
   
   // Exclure les scripts du linting pendant le build
   eslint: {
@@ -20,9 +20,9 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Configuration des images pour LWS (export statique)
+  // Configuration des images pour Vercel
   images: {
-    unoptimized: true, // Nécessaire pour l'export statique
+    // unoptimized: true, // Commenté pour Vercel
     remotePatterns: [
       {
         protocol: 'https',

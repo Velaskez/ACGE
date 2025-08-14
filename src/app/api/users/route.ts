@@ -1,7 +1,3 @@
-// Configuration pour export statique
-export const dynamic = 'force-dynamic'
-
-
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { verify } from 'jsonwebtoken'
