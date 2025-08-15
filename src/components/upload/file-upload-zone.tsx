@@ -77,7 +77,7 @@ export function FileUploadZone({
     // Ajouter les fichiers acceptés
     const newFiles = acceptedFiles.map(file => {
       const fileWithPreview = Object.assign(file, {
-        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        preview: file.type && file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
         uploadProgress: 0,
         uploadStatus: 'pending' as const
       })
@@ -110,13 +110,18 @@ export function FileUploadZone({
   }
 
   const getFileIcon = (file: File) => {
-    if (file.type.startsWith('image/')) return <Image className="w-5 h-5 text-blue-500" />
-    if (file.type.includes('pdf')) return <FileText className="w-5 h-5 text-red-500" />
+    // Vérification de sécurité pour file.type
+    if (!file.type) {
+      return <File className="w-5 h-5 text-muted-foreground" />
+    }
+    
+    if (file.type.startsWith('image/')) return <Image className="w-5 h-5 text-muted-foreground" />
+    if (file.type.includes('pdf')) return <FileText className="w-5 h-5 text-muted-foreground" />
     if (file.type.includes('word') || file.type.includes('document')) 
-      return <FileText className="w-5 h-5 text-blue-600" />
+      return <FileText className="w-5 h-5 text-muted-foreground" />
     if (file.type.includes('excel') || file.type.includes('sheet')) 
-      return <FileText className="w-5 h-5 text-green-600" />
-    return <File className="w-5 h-5 text-primary" />
+      return <FileText className="w-5 h-5 text-muted-foreground" />
+    return <File className="w-5 h-5 text-muted-foreground" />
   }
 
   const formatFileSize = (bytes: number) => {
@@ -175,13 +180,13 @@ export function FileUploadZone({
           >
             <input {...getInputProps()} />
             <Upload className={`mx-auto h-12 w-12 mb-4 ${
-              isDragActive ? 'text-blue-500' : 'text-primary'
+              isDragActive ? 'text-primary' : 'text-primary'
             }`} />
             
             {isDragActive ? (
-              <p className="text-lg font-medium text-blue-600">
-                Déposez les fichiers ici...
-              </p>
+                          <p className="text-lg font-medium text-primary">
+              Déposez les fichiers ici...
+            </p>
             ) : (
               <div>
                               <p className="text-lg font-medium text-primary dark:text-primary mb-2">
@@ -252,20 +257,20 @@ export function FileUploadZone({
                     
                     {/* Message d'erreur */}
                     {file.uploadStatus === 'error' && file.errorMessage && (
-                      <p className="text-xs text-red-500 mt-1">{file.errorMessage}</p>
+                      <p className="text-xs text-destructive mt-1">{file.errorMessage}</p>
                     )}
                   </div>
 
                   {/* Statut et actions */}
                   <div className="flex items-center gap-2">
                     {file.uploadStatus === 'success' && (
-                      <Check className="w-5 h-5 text-green-500" />
+                      <Check className="w-5 h-5 text-muted-foreground" />
                     )}
                     {file.uploadStatus === 'error' && (
-                      <AlertCircle className="w-5 h-5 text-red-500" />
+                      <AlertCircle className="w-5 h-5 text-destructive" />
                     )}
                     {file.uploadStatus === 'uploading' && (
-                      <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                      <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
                     )}
                     
                     {file.uploadStatus === 'pending' && (

@@ -108,8 +108,8 @@ export default function DashboardPage() {
           <Card className="border-red-200 bg-red-50">
             <CardContent className="pt-6">
               <div className="flex items-center space-x-2">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <p className="text-sm text-red-600">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <p className="text-sm text-destructive">
                   Erreur lors du chargement des données: {error}
                 </p>
               </div>
@@ -122,7 +122,9 @@ export default function DashboardPage() {
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleViewAllDocuments}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Fichiers</CardTitle>
-              <FileText className="h-4 w-4 text-primary" />
+              <div className="p-2 bg-muted rounded-lg">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -150,7 +152,9 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Dossiers</CardTitle>
-              <FolderOpen className="h-4 w-4 text-primary" />
+              <div className="p-2 bg-muted rounded-lg">
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -174,7 +178,9 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Espace utilisé</CardTitle>
-              <TrendingUp className="h-4 w-4 text-primary" />
+              <div className="p-2 bg-muted rounded-lg">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -199,8 +205,10 @@ export default function DashboardPage() {
 
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleViewUsers}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Utilisateurs actifs</CardTitle>
-              <Users className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm font-medium">Utilisateurs</CardTitle>
+              <div className="p-2 bg-muted rounded-lg">
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -210,10 +218,10 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl font-bold">{stats?.activeUsers || 0}</div>
+                  <div className="text-2xl font-bold">{stats?.totalUsers?.toLocaleString() || 0}</div>
                   <p className="text-xs text-primary">
                     {stats?.activeUsers ? 
-                      `${stats.activeUsers} en ligne récemment` : 
+                      `${stats.activeUsers} actifs ce mois` : 
                       'Aucun utilisateur actif'}
                   </p>
                 </>

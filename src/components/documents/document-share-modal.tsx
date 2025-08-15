@@ -26,7 +26,6 @@ import {
 import { 
   Share2, 
   User, 
-  Mail, 
   Shield, 
   Trash2, 
   Eye,
@@ -37,7 +36,8 @@ import {
   Check,
   X,
   Globe,
-  Lock
+  Lock,
+  Info
 } from 'lucide-react'
 
 interface DocumentItem {
@@ -80,6 +80,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showPermissions, setShowPermissions] = useState(false)
   
   // Formulaire de partage
   const [userEmail, setUserEmail] = useState('')
@@ -214,27 +215,40 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-4xl mx-auto max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <Share2 className="h-5 w-5 flex-shrink-0" />
-            <span className="truncate">Partager le document</span>
+      <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Share2 className="h-5 w-5 flex-shrink-0" />
+              <span className="truncate">Partager le document</span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowPermissions(!showPermissions)}
+                className="hidden sm:flex"
+              >
+                <Info className="h-4 w-4" />
+                <span className="ml-1">Permissions</span>
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Informations du document */}
-          <div className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+          {/* Informations du document - Version compacte */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <h3 className="font-medium truncate">{document.title}</h3>
-                <p className="text-sm text-primary">
+                <h3 className="font-medium text-blue-900 break-all">{document.title}</h3>
+                <p className="text-sm text-blue-800 break-all">
                   Propriétaire : {document.author?.name || 'Inconnu'}
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {document.isPublic ? (
-                  <Badge variant="outline" className="gap-1">
+                  <Badge variant="outline" className="gap-1 bg-green-50 text-green-800 border-green-200">
                     <Globe className="h-3 w-3" />
                     Public
                   </Badge>
@@ -246,6 +260,48 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Informations sur les permissions - Version compacte avec toggle */}
+          <div className={`transition-all duration-300 overflow-hidden ${
+            showPermissions ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <h5 className="font-medium mb-3 text-blue-900">Niveaux de permission</h5>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-start gap-2">
+                  <Eye className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <strong>Lecture :</strong> Peut voir et télécharger le document
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Edit className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <strong>Écriture :</strong> Peut modifier les métadonnées et ajouter des versions
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Crown className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <strong>Administration :</strong> Peut gérer les partages et supprimer le document
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bouton d'infos pour mobile */}
+          <div className="sm:hidden">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowPermissions(!showPermissions)}
+              className="w-full"
+            >
+              <Info className="h-4 w-4 mr-2" />
+              {showPermissions ? 'Masquer les permissions' : 'Afficher les permissions'}
+            </Button>
           </div>
 
           {/* Messages */}
@@ -299,7 +355,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                           <User className="h-4 w-4 text-primary flex-shrink-0" />
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-sm truncate">{user.name}</p>
-                            <p className="text-xs text-primary truncate">{user.email}</p>
+                            <p className="text-xs text-primary break-all">{user.email}</p>
                           </div>
                         </button>
                       ))}
@@ -370,7 +426,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <p className="font-medium truncate">{share.user.name}</p>
-                                  <p className="text-sm text-primary truncate">{share.user.email}</p>
+                                  <p className="text-sm text-primary break-all">{share.user.email}</p>
                                 </div>
                               </div>
                             </TableCell>
@@ -390,7 +446,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveShare(share.id)}
-                                className="text-red-600 hover:text-red-700"
+                                className="text-destructive hover:text-destructive/80"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -415,14 +471,14 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="font-medium text-sm truncate">{share.user.name}</p>
-                              <p className="text-xs text-primary truncate">{share.user.email}</p>
+                              <p className="text-xs text-primary break-all">{share.user.email}</p>
                             </div>
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveShare(share.id)}
-                            className="text-red-600 hover:text-red-700 flex-shrink-0"
+                            className="text-destructive hover:text-destructive/80 flex-shrink-0"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -448,31 +504,6 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                 <p className="text-sm">Ajoutez des utilisateurs ci-dessus pour commencer à partager</p>
               </div>
             )}
-          </div>
-
-          {/* Informations sur les permissions */}
-          <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
-            <h5 className="font-medium mb-3">Niveaux de permission</h5>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-start gap-2">
-                <Eye className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>Lecture :</strong> Peut voir et télécharger le document
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Edit className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>Écriture :</strong> Peut modifier les métadonnées et ajouter des versions
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Crown className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>Administration :</strong> Peut gérer les partages et supprimer le document
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </DialogContent>

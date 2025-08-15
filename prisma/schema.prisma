@@ -29,6 +29,7 @@ model Document {
   id               String            @id @default(cuid())
   title            String
   description      String?
+  category         String?
   isPublic         Boolean           @default(false)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt

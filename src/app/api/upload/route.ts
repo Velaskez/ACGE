@@ -10,6 +10,46 @@ export async function POST(request: NextRequest) {
     // Vérifier la configuration Supabase
     if (!supabaseAdmin) {
       console.error('❌ Client Supabase admin non disponible')
+      console.log('⚠️ Mode développement: upload simulé')
+      
+      // En mode développement, simuler un upload réussi
+      if (process.env.NODE_ENV === 'development') {
+        const formData = await request.formData()
+        const files = formData.getAll('files') as File[]
+        const metadataStr = formData.get('metadata') as string
+        
+        console.log('📁 Fichiers reçus (simulation):', files.length)
+        
+        if (!files || files.length === 0) {
+          return NextResponse.json(
+            { error: 'Aucun fichier fourni' },
+            { status: 400 }
+          )
+        }
+
+        // Simuler un upload réussi
+        const uploadedFiles = files.map((file, index) => ({
+          id: `simulated-${Date.now()}-${index}`,
+          title: file.name.split('.')[0],
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          path: `/uploads/simulated/${file.name}`,
+          version: {
+            id: `version-${Date.now()}-${index}`,
+            number: 1,
+            changeLog: 'Version simulée (développement)',
+            isNewDocument: true
+          }
+        }))
+
+        return NextResponse.json({
+          success: true,
+          files: uploadedFiles,
+          message: 'Upload simulé en mode développement (Supabase non configuré)'
+        })
+      }
+      
       return NextResponse.json(
         { error: 'Service d\'upload temporairement indisponible - Configuration Supabase manquante' },
         { status: 503 }
@@ -86,10 +126,17 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`📤 Traitement du fichier: ${file.name}`)
         
+        // Nettoyer le nom de fichier pour Supabase Storage
+        const cleanFileName = file.name
+          .replace(/[^a-zA-Z0-9.-]/g, '_') // Remplacer les caractères spéciaux par des underscores
+          .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
+          .replace(/_{2,}/g, '_') // Remplacer les underscores multiples par un seul
+          .replace(/^_|_$/g, '') // Supprimer les underscores en début et fin
+        
         // Générer un nom de fichier unique
         const timestamp = Date.now()
         const randomSuffix = Math.random().toString(36).substring(2, 8)
-        const fileName = `${timestamp}-${randomSuffix}-${file.name}`
+        const fileName = `${timestamp}-${randomSuffix}-${cleanFileName}`
         const filePath = `${userId}/${fileName}`
         
         console.log('📝 Chemin de fichier généré:', filePath)
@@ -176,6 +223,7 @@ export async function POST(request: NextRequest) {
             data: {
               title: metadata.name || file.name.split('.')[0],
               description: metadata.description || null,
+              category: metadata.category || null,
               isPublic: false,
               authorId: userId,
               folderId: validFolderId,

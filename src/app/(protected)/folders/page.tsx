@@ -45,6 +45,7 @@ import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
 import { DocumentVersionHistory } from '@/components/documents/document-version-history'
 import { FolderOpen, Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, ArrowLeft, Download, Share2, Upload } from 'lucide-react'
+import { SearchSuggestion } from '@/components/ui/search-suggestions'
 
 // Types pour les documents - compatible avec les composants existants
 interface DocumentItem {
@@ -98,6 +99,33 @@ export default function FoldersPage() {
   const [filteredDocuments, setFilteredDocuments] = React.useState<DocumentItem[]>([])
   const [documentsLoading, setDocumentsLoading] = React.useState(false)
   const [documentsError, setDocumentsError] = React.useState('')
+
+  // Gestion des suggestions de recherche
+  const handleSearchSelect = (suggestion: SearchSuggestion) => {
+    switch (suggestion.type) {
+      case 'document':
+        // Si on est dans un dossier, rechercher le document dans ce dossier
+        if (folderId) {
+          setQuery(suggestion.text)
+        } else {
+          // Sinon rediriger vers la page documents
+          router.push(`/documents?search=${encodeURIComponent(suggestion.text)}`)
+        }
+        break
+      case 'folder':
+        // Rediriger vers le dossier sélectionné
+        router.push(`/folders?folder=${suggestion.id.replace('folder-', '')}`)
+        break
+      case 'tag':
+        // Ajouter le tag à la recherche
+        setQuery(suggestion.text)
+        break
+      case 'user':
+        // Filtrer par auteur
+        setQuery(suggestion.text)
+        break
+    }
+  }
   
   // États pour les documents (comme dans documents/page.tsx)
   const [documentSearchQuery, setDocumentSearchQuery] = React.useState('')
@@ -430,7 +458,7 @@ export default function FoldersPage() {
                   ))}
                 </div>
               ) : documentsError ? (
-                <div className="text-center py-8 text-red-600">
+                <div className="text-center py-8 text-destructive">
                   {documentsError}
                 </div>
               ) : filteredDocuments.length > 0 ? (
@@ -486,7 +514,7 @@ export default function FoldersPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteDocument(document.id)}
-                                  className="text-red-600"
+                                  className="text-destructive"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Supprimer
@@ -595,6 +623,7 @@ export default function FoldersPage() {
         <FoldersToolbar
           searchQuery={query}
           onSearchQueryChange={setQuery}
+          onSearchSelect={handleSearchSelect}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           sortField={sortField}
@@ -699,7 +728,7 @@ export default function FoldersPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 onClick={() => setDeleteConfirm(folder.id)}
-                                className="text-red-600"
+                                className="text-destructive"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Supprimer
@@ -738,7 +767,7 @@ export default function FoldersPage() {
               </div>
             )}
             {error && (
-              <p className="text-sm text-red-600 mt-4">{error}</p>
+              <p className="text-sm text-destructive mt-4">{error}</p>
             )}
           </CardContent>
         </Card>

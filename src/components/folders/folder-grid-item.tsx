@@ -39,7 +39,9 @@ export function FolderGridItem({
         <div className="flex flex-col h-full">
           {/* Icon et badge */}
           <div className="flex items-center justify-between mb-3">
-            <FolderOpen className="h-8 w-8 text-primary" />
+            <div className="p-2 bg-muted rounded-lg">
+              <FolderOpen className="h-6 w-6 text-muted-foreground" />
+            </div>
             <Badge variant="secondary" className="text-xs">
               {folder._count?.documents || 0} {(folder._count?.documents || 0) > 1 ? 'fichiers' : 'fichier'}
             </Badge>

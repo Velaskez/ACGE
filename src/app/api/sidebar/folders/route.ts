@@ -2,57 +2,62 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
-
   try {
     console.log('📁 Sidebar folders - Début')
     
-    // Pour l'instant, retourner tous les dossiers (ADMIN)
-    // En production, vous pourriez vérifier l'authentification côté client
-    
-    // Construire les conditions de filtrage (tous les utilisateurs pour l'instant)
-    const userFilter = {} // Admin voit tout
-
-    // Récupérer les dossiers avec une requête simple
+    // Récupérer les dossiers avec les documents récents
     let folders = []
     try {
       folders = await prisma.folder.findMany({
-        where: userFilter,
         select: {
           id: true,
           name: true,
           description: true,
           createdAt: true,
-          updatedAt: true
+          updatedAt: true,
+          documents: {
+            select: {
+              id: true,
+              title: true,
+              updatedAt: true
+            },
+            orderBy: {
+              updatedAt: 'desc'
+            },
+            take: 3 // Limiter à 3 documents récents par dossier
+          }
         },
         orderBy: {
-          name: 'asc'
-        }
+          updatedAt: 'desc'
+        },
+        take: 10 // Limiter à 10 dossiers récents
       })
 
-      // Ajouter les compteurs manuellement pour éviter les problèmes de relations
-      for (const folder of folders) {
-        try {
-          const documentCount = await prisma.document.count({
-            where: { folderId: folder.id }
-          })
-          folder.documentCount = documentCount
-        } catch (countError) {
-          console.error('Erreur comptage pour dossier sidebar:', folder.id, countError)
-          folder.documentCount = 0
-        }
-      }
+      console.log('📁 Dossiers trouvés:', folders.length)
+
+      // Transformer les données pour correspondre à l'interface
+      const transformedFolders = folders.map(folder => ({
+        id: folder.id,
+        name: folder.name,
+        documentCount: folder.documents.length,
+        recentDocuments: folder.documents.map(doc => ({
+          id: doc.id,
+          title: doc.title,
+          fileName: doc.title, // Utiliser le titre comme nom de fichier pour l'instant
+          fileType: 'application/octet-stream' // Type par défaut
+        }))
+      }))
+
+      console.log('📁 Dossiers transformés:', transformedFolders.length)
+      return NextResponse.json({ folders: transformedFolders })
 
     } catch (dbError) {
       console.error('Erreur base de données sidebar dossiers:', dbError)
-      return NextResponse.json([], { status: 200 })
+      return NextResponse.json({ folders: [] }, { status: 200 })
     }
-
-    return NextResponse.json(folders)
 
   } catch (error) {
     console.error('Erreur API sidebar dossiers:', error)
-
-    // Toujours retourner du JSON valide
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json({ folders: [] }, { status: 200 })
   }
 }

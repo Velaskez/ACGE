@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Label } from '@/components/ui/label'
 import { 
   Download, 
   FileText, 
@@ -24,7 +25,12 @@ import {
   FileImage,
   AlertCircle,
   Eye,
-  X
+  X,
+  Calendar,
+  User,
+  HardDrive,
+  FolderOpen,
+  Info
 } from 'lucide-react'
 
 interface DocumentItem {
@@ -67,14 +73,24 @@ const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 const getFileIcon = (fileType?: string) => {
-      if (!fileType) return <FileText className="h-8 w-8 text-primary" />
-  if (fileType.startsWith('image/')) return <Image className="h-8 w-8 text-blue-500" />
-  if (fileType.startsWith('video/')) return <Video className="h-8 w-8 text-purple-500" />
-  if (fileType.startsWith('audio/')) return <Music className="h-8 w-8 text-green-500" />
-  if (fileType.includes('zip') || fileType.includes('rar')) return <Archive className="h-8 w-8 text-orange-500" />
-  if (fileType.includes('sheet') || fileType.includes('excel')) return <FileSpreadsheet className="h-8 w-8 text-green-600" />
-      return <FileText className="h-8 w-8 text-primary" />
+  if (!fileType) return <FileText className="h-8 w-8 text-muted-foreground" />
+  if (fileType.startsWith('image/')) return <Image className="h-8 w-8 text-muted-foreground" />
+  if (fileType.startsWith('video/')) return <Video className="h-8 w-8 text-muted-foreground" />
+  if (fileType.startsWith('audio/')) return <Music className="h-8 w-8 text-muted-foreground" />
+  if (fileType.includes('zip') || fileType.includes('rar')) return <Archive className="h-8 w-8 text-muted-foreground" />
+  if (fileType.includes('sheet') || fileType.includes('excel')) return <FileSpreadsheet className="h-8 w-8 text-muted-foreground" />
+  return <FileText className="h-8 w-8 text-muted-foreground" />
 }
 
 const canPreview = (fileType?: string) => {
@@ -109,6 +125,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [showMetadata, setShowMetadata] = useState(false)
 
   const previewType = getPreviewType(document.currentVersion?.fileType)
 
@@ -201,13 +218,13 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
   const handleDownload = async () => {
     try {
       if (previewUrl) {
-        const a = document.createElement('a')
+        const a = window.document.createElement('a')
         a.style.display = 'none'
         a.href = previewUrl
         a.download = document.currentVersion?.fileName || 'document'
-        document.body.appendChild(a)
+        window.document.body.appendChild(a)
         a.click()
-        document.body.removeChild(a)
+        window.document.body.removeChild(a)
       }
     } catch (error) {
       console.error('Erreur téléchargement:', error)
@@ -305,7 +322,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
       case 'audio':
         return (
           <div className="p-8 text-center bg-gray-50">
-            <Music className="mx-auto h-16 w-16 mb-4 text-green-500" />
+            <Music className="mx-auto h-16 w-16 mb-4 text-muted-foreground" />
             <h3 className="text-lg font-medium mb-4">{document.currentVersion?.fileName}</h3>
             <audio 
               src={previewUrl}
@@ -362,74 +379,131 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
         showCloseButton={false}
-        className={`w-full max-w-7xl mx-auto transition-all duration-300 ${
-          isFullscreen ? 'max-h-[98vh] w-[98vw]' : 'max-h-[92vh]'
+        className={`w-full max-w-5xl mx-auto transition-all duration-300 ${
+          isFullscreen ? 'max-h-[98vh] w-[98vw]' : 'max-h-[85vh]'
         } overflow-hidden flex flex-col`}>
         <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               {getFileIcon(document.currentVersion?.fileType)}
-              <span className="truncate text-base sm:text-lg">{document.title}</span>
+              <div className="min-w-0 flex-1">
+                <span className="truncate text-base sm:text-lg block">{document.title}</span>
+                <p className="text-xs text-muted-foreground break-all">
+                  {document.currentVersion?.fileName}
+                </p>
+              </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose} className="flex-shrink-0 ml-2">
-              <X className="h-4 w-4" />
-              <span className="sr-only">Fermer</span>
-            </Button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowMetadata(!showMetadata)}
+                className="hidden sm:flex"
+              >
+                <Info className="h-4 w-4" />
+                <span className="ml-1">Infos</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                <X className="h-4 w-4" />
+                <span className="sr-only">Fermer</span>
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
-          {/* Métadonnées compactes */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm p-3 sm:p-4 bg-gray-50 rounded-lg">
-            <div className="min-w-0">
-              <strong className="block">Fichier:</strong>
-              <p className="text-primary truncate">{document.currentVersion?.fileName}</p>
-            </div>
-            <div>
-              <strong className="block">Taille:</strong>
-              <p className="text-primary">
-                {document.currentVersion?.fileSize ? formatFileSize(document.currentVersion.fileSize) : 'N/A'}
-              </p>
-            </div>
-            <div>
-              <strong className="block">Type:</strong>
-              <p className="text-primary">{document.currentVersion?.fileType?.split('/')[1]?.toUpperCase()}</p>
-            </div>
-            <div>
-              <strong className="block">Version:</strong>
-              <p className="text-primary">v{document.currentVersion?.versionNumber}</p>
+          {/* Métadonnées compactes - Version compacte */}
+          <div className={`transition-all duration-300 overflow-hidden ${
+            showMetadata ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="min-w-0">
+                  <Label className="text-sm font-medium text-blue-900 block mb-1">Fichier</Label>
+                  <p className="text-sm text-blue-800 break-all">{document.currentVersion?.fileName}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-blue-900 block mb-1">Taille</Label>
+                  <div className="flex items-center gap-2">
+                    <HardDrive className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-800">
+                      {document.currentVersion?.fileSize ? formatFileSize(document.currentVersion.fileSize) : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-blue-900 block mb-1">Type</Label>
+                  <Badge variant="secondary" className="text-xs">
+                    {document.currentVersion?.fileType?.split('/')[1]?.toUpperCase() || 'N/A'}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-blue-900 block mb-1">Version</Label>
+                  <Badge variant="outline" className="text-xs">
+                    v{document.currentVersion?.versionNumber || 0}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-blue-900 block mb-1">Créé le</Label>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-800">
+                      {formatDate(document.createdAt)}
+                    </span>
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-sm font-medium text-blue-900 block mb-1">Auteur</Label>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-800 break-all">
+                      {document.author?.name || 'Inconnu'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Barre d'outils de prévisualisation */}
+          {/* Barre d'outils de prévisualisation - Version compacte */}
           {canPreview(document.currentVersion?.fileType) && (
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 p-3 bg-gray-100 rounded-lg">
               <div className="flex flex-wrap items-center gap-2">
                 {previewType === 'image' && (
-                  <div className="flex items-center gap-1 border rounded-md bg-white px-2">
-                    <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={zoom <= 25} className="p-1">
+                  <div className="flex items-center gap-1 border rounded-md bg-white px-2 py-1">
+                    <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={zoom <= 25} className="p-1 h-8 w-8">
                       <ZoomOut className="h-4 w-4" />
                     </Button>
                     <span className="text-sm font-medium min-w-12 text-center">{zoom}%</span>
-                    <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoom >= 300} className="p-1">
+                    <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoom >= 300} className="p-1 h-8 w-8">
                       <ZoomIn className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={handleRotate} className="p-1">
+                    <Button variant="ghost" size="sm" onClick={handleRotate} className="p-1 h-8 w-8">
                       <RotateCw className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
-                <Badge variant={document.isPublic ? 'default' : 'secondary'} className="flex-shrink-0">
-                  {document.isPublic ? 'Public' : 'Privé'}
-                </Badge>
-                {document._count?.versions && (
-                  <Badge variant="outline" className="flex-shrink-0">
-                    {document._count.versions} version(s)
+                <div className="flex items-center gap-2">
+                  <Badge variant={document.isPublic ? 'default' : 'secondary'} className="flex-shrink-0">
+                    {document.isPublic ? 'Public' : 'Privé'}
                   </Badge>
-                )}
+                  {document._count?.versions && (
+                    <Badge variant="outline" className="flex-shrink-0 text-xs">
+                      {document._count.versions} version(s)
+                    </Badge>
+                  )}
+                </div>
               </div>
               
               <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowMetadata(!showMetadata)}
+                  className="sm:hidden"
+                >
+                  <Info className="h-4 w-4" />
+                </Button>
                 <Button variant="outline" size="sm" onClick={handleFullscreen} className="flex-shrink-0">
                   <Maximize2 className="h-4 w-4" />
                   <span className="hidden sm:inline ml-1">{isFullscreen ? 'Réduire' : 'Plein écran'}</span>
@@ -443,7 +517,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
           )}
 
           {/* Zone de prévisualisation */}
-          <div className="flex-1 border rounded-lg overflow-hidden">
+          <div className="flex-1 border rounded-lg overflow-hidden bg-white">
             {renderPreviewContent()}
           </div>
         </div>

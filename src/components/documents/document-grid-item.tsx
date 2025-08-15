@@ -1,6 +1,4 @@
 'use client'
-
-import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -70,7 +68,6 @@ export function DocumentGridItem({
   onShare,
   onDelete
 }: DocumentGridItemProps) {
-  const [isHovered, setIsHovered] = useState(false)
 
   const getFileIcon = (fileType?: string) => {
     if (!fileType) return File
@@ -82,31 +79,26 @@ export function DocumentGridItem({
   }
 
   const getFileTypeColor = (fileType?: string) => {
-    if (!fileType) return 'bg-gray-100 text-primary'
-    if (fileType.startsWith('image/')) return 'bg-blue-100 text-blue-600'
-    if (fileType.startsWith('video/')) return 'bg-purple-100 text-purple-600'
-    if (fileType.startsWith('audio/')) return 'bg-green-100 text-green-600'
-    if (fileType === 'application/pdf') return 'bg-red-100 text-red-600'
-    if (fileType.startsWith('text/')) return 'bg-yellow-100 text-yellow-600'
-    return 'bg-gray-100 text-primary'
+    // Toutes les icônes de types de fichiers utilisent maintenant des couleurs neutres
+    return {
+      bg: 'bg-muted',
+      text: 'text-muted-foreground'
+    }
   }
 
   const IconComponent = getFileIcon(document.currentVersion?.fileType)
+  const colorClasses = getFileTypeColor(document.currentVersion?.fileType)
 
   return (
     <Card 
-      className={`group relative cursor-pointer transition-all duration-200 hover:shadow-lg ${
-        isHovered ? 'ring-2 ring-blue-500 ring-opacity-50' : ''
-      }`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="group relative cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] overflow-hidden"
       onClick={() => onView(document)}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-4 h-full flex flex-col">
         {/* Header avec icône et menu */}
         <div className="flex items-start justify-between mb-3">
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getFileTypeColor(document.currentVersion?.fileType)}`}>
-            <IconComponent className="w-6 h-6" />
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses.bg}`}>
+            <IconComponent className={`w-6 h-6 ${colorClasses.text}`} />
           </div>
           
           <DropdownMenu>
@@ -139,7 +131,7 @@ export function DocumentGridItem({
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={(e) => { e.stopPropagation(); onDelete(document.id) }}
-                className="text-red-600"
+                className="text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Supprimer
@@ -162,7 +154,7 @@ export function DocumentGridItem({
         </div>
 
         {/* Métadonnées */}
-        <div className="space-y-2">
+        <div className="space-y-2 flex-1">
           {/* Taille et type de fichier */}
           {document.currentVersion && (
             <div className="flex items-center justify-between text-xs text-primary">

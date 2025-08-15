@@ -16,10 +16,10 @@ export default function Error({
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-red-600 mb-4">
+        <h2 className="text-2xl font-bold text-destructive mb-4">
           Une erreur s'est produite
         </h2>
-        <p className="text-gray-600 mb-4">
+        <p className="text-muted-foreground mb-4">
           {error.message || 'Une erreur inattendue s\'est produite'}
         </p>
         <button

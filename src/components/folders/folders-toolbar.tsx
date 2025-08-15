@@ -1,6 +1,7 @@
 'use client'
 
 import { ContentToolbar } from '@/components/shared/content-toolbar'
+import { SearchSuggestion } from '@/components/ui/search-suggestions'
 
 type ViewMode = 'list' | 'grid'
 type SortField = 'name' | 'createdAt' | 'updatedAt' | 'documentCount'
@@ -9,6 +10,7 @@ type SortOrder = 'asc' | 'desc'
 interface FoldersToolbarProps {
   searchQuery: string
   onSearchQueryChange: (value: string) => void
+  onSearchSelect?: (suggestion: SearchSuggestion) => void
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
   sortField: SortField
@@ -17,6 +19,7 @@ interface FoldersToolbarProps {
   onSortOrderChange: (order: SortOrder) => void
   onOpenFilters?: () => void
   className?: string
+  enableSuggestions?: boolean
 }
 
 const folderSortOptions = [
@@ -29,6 +32,7 @@ const folderSortOptions = [
 export function FoldersToolbar({
   searchQuery,
   onSearchQueryChange,
+  onSearchSelect,
   viewMode,
   onViewModeChange,
   sortField,
@@ -37,11 +41,13 @@ export function FoldersToolbar({
   onSortOrderChange,
   onOpenFilters,
   className,
+  enableSuggestions = true,
 }: FoldersToolbarProps) {
   return (
     <ContentToolbar
       searchQuery={searchQuery}
       onSearchQueryChange={onSearchQueryChange}
+      onSearchSelect={onSearchSelect}
       searchPlaceholder="Rechercher des dossiers..."
       viewMode={viewMode}
       onViewModeChange={onViewModeChange}
@@ -52,6 +58,7 @@ export function FoldersToolbar({
       onSortOrderChange={onSortOrderChange}
       onOpenFilters={onOpenFilters}
       className={className}
+      enableSuggestions={enableSuggestions}
     />
   )
 }

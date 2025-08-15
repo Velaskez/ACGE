@@ -6,6 +6,8 @@ import { Search, Settings, LogOut, User, Menu, X } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SearchSuggestions, type SearchSuggestion } from '@/components/ui/search-suggestions'
+import { useSearchSuggestions } from '@/hooks/use-search-suggestions'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +25,13 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
 
+  // Hook pour les suggestions de recherche
+  const { suggestions, isLoading: suggestionsLoading } = useSearchSuggestions(searchQuery, { 
+    debounceMs: 300, 
+    minQueryLength: 2, 
+    maxSuggestions: 6 
+  })
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
@@ -31,8 +40,25 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
     }
   }
 
+  const handleSearchSelect = (suggestion: SearchSuggestion) => {
+    switch (suggestion.type) {
+      case 'document':
+        window.location.href = `/documents?search=${encodeURIComponent(suggestion.text)}`
+        break
+      case 'folder':
+        window.location.href = `/folders?folder=${suggestion.id.replace('folder-', '')}`
+        break
+      case 'tag':
+        window.location.href = `/documents?search=${encodeURIComponent(suggestion.text)}`
+        break
+      case 'user':
+        window.location.href = `/documents?search=${encodeURIComponent(suggestion.text)}`
+        break
+    }
+  }
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b">
+    <header className="fixed top-0 left-0 right-0 z-[9999] bg-background border-b">
       <div className="relative flex h-16 items-center px-2 sm:px-4">
         {/* Logo */}
         <div className={`flex items-center gap-2 sm:gap-4 ${searchOpen ? 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto' : ''}` }>
@@ -114,16 +140,22 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => window.location.href = '/profile'}>
-                  <User className="mr-2 h-4 w-4" />
+                  <div className="p-1 bg-muted rounded-md mr-2">
+                    <User className="h-3 w-3 text-muted-foreground" />
+                  </div>
                   <span>Profil</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
-                  <Settings className="mr-2 h-4 w-4" />
+                  <div className="p-1 bg-muted rounded-md mr-2">
+                    <Settings className="h-3 w-3 text-muted-foreground" />
+                  </div>
                   <span>Paramètres</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()}>
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <div className="p-1 bg-red-100 dark:bg-red-900/30 rounded-md mr-2">
+                    <LogOut className="h-3 w-3 text-red-600 dark:text-red-400" />
+                  </div>
                   <span>Se déconnecter</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -141,14 +173,14 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
               }}
               className="relative"
             >
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-primary" />
-              <Input
-                autoFocus
-                type="search"
-                placeholder="Rechercher..."
-                className="pl-8 pr-8"
+              <SearchSuggestions
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={setSearchQuery}
+                onSelect={handleSearchSelect}
+                placeholder="Rechercher..."
+                suggestions={suggestions}
+                isLoading={suggestionsLoading}
+                className="w-full"
               />
               <Button
                 type="button"

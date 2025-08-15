@@ -24,7 +24,9 @@ import {
   CheckCircle,
   Loader2,
   Save,
-  Key
+  Key,
+  Camera,
+  Edit3
 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -62,6 +64,9 @@ export default function ProfilePage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // États pour les animations
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     fetchProfile()
@@ -127,6 +132,9 @@ export default function ProfilePage() {
     // Effacer les messages d'erreur/succès quand on modifie
     if (error) setError('')
     if (success) setSuccess('')
+    
+    // Activer le mode édition
+    if (!isEditing) setIsEditing(true)
   }
 
   const validateForm = () => {
@@ -201,6 +209,7 @@ export default function ProfilePage() {
 
       if (response.ok) {
         setSuccess('Profil mis à jour avec succès !')
+        setIsEditing(false)
         
         // Réinitialiser les champs de mot de passe
         setFormData(prev => ({
@@ -225,14 +234,39 @@ export default function ProfilePage() {
     }
   }
 
+  const handleCancel = () => {
+    // Réinitialiser le formulaire avec les données originales
+    if (displayProfile) {
+      setFormData({
+        name: displayProfile.name || '',
+        email: displayProfile.email || '',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      })
+    }
+    setIsEditing(false)
+    setError('')
+    setSuccess('')
+  }
+
   const getRoleBadge = (role: string) => {
     const roleConfig = {
-      ADMIN: { label: 'Administrateur', className: 'bg-red-100 text-red-800' },
-      MANAGER: { label: 'Gestionnaire', className: 'bg-blue-100 text-blue-800' },
-      USER: { label: 'Utilisateur', className: 'bg-green-100 text-green-800' }
+      ADMIN: { label: 'Administrateur', className: 'bg-primary/10 text-primary border-primary/20' },
+      MANAGER: { label: 'Gestionnaire', className: 'bg-primary/20 text-primary border-primary/30' },
+      USER: { label: 'Utilisateur', className: 'bg-primary/10 text-primary border-primary/20' }
     }
     const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.USER
-    return <Badge className={config.className}>{config.label}</Badge>
+    return <Badge className={`${config.className} border transition-colors duration-200`}>{config.label}</Badge>
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   return (
@@ -242,33 +276,33 @@ export default function ProfilePage() {
       icon={User}
     >
       {isLoading ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-8 animate-pulse">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Skeleton pour les informations du profil */}
             <div className="lg:col-span-1">
-              <Card>
+              <Card className="transition-all duration-300 hover:shadow-lg">
                 <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-5 w-5" />
-                    <Skeleton className="h-6 w-40" />
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-6" />
+                    <Skeleton className="h-7 w-48" />
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="w-12 h-12 rounded-full" />
+                <CardContent className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="w-16 h-16 rounded-full" />
                     <div className="space-y-2">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-6 w-36" />
+                      <Skeleton className="h-4 w-52" />
                     </div>
                   </div>
                   
                   <Skeleton className="h-px w-full" />
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {Array.from({ length: 4 }).map((_, index) => (
                       <div key={index} className="flex items-center justify-between">
+                        <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-4 w-16" />
                       </div>
                     ))}
                   </div>
@@ -278,26 +312,26 @@ export default function ProfilePage() {
 
             {/* Skeleton pour le formulaire de modification */}
             <div className="lg:col-span-2">
-              <Card>
+              <Card className="transition-all duration-300 hover:shadow-lg">
                 <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-5 w-5" />
-                    <Skeleton className="h-6 w-32" />
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-6" />
+                    <Skeleton className="h-7 w-40" />
                   </div>
-                  <Skeleton className="h-4 w-64" />
+                  <Skeleton className="h-4 w-72" />
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-8">
                   {/* Informations personnelles */}
-                  <div className="space-y-4">
-                    <Skeleton className="h-6 w-40" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-9 w-full" />
+                  <div className="space-y-6">
+                    <Skeleton className="h-6 w-44" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-10 w-full" />
                       </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-9 w-full" />
+                      <div className="space-y-3">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-10 w-full" />
                       </div>
                     </div>
                   </div>
@@ -305,35 +339,35 @@ export default function ProfilePage() {
                   <Skeleton className="h-px w-full" />
 
                   {/* Changement de mot de passe */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-5 w-5" />
-                      <Skeleton className="h-6 w-40" />
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-6 w-6" />
+                      <Skeleton className="h-6 w-44" />
                     </div>
                     <Skeleton className="h-4 w-80" />
 
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-9 w-full" />
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <Skeleton className="h-4 w-36" />
+                        <Skeleton className="h-10 w-full" />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-28" />
-                          <Skeleton className="h-9 w-full" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-10 w-full" />
                         </div>
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-36" />
-                          <Skeleton className="h-9 w-full" />
+                        <div className="space-y-3">
+                          <Skeleton className="h-4 w-40" />
+                          <Skeleton className="h-10 w-full" />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Boutons */}
-                  <div className="flex justify-end gap-2">
-                    <Skeleton className="h-9 w-20" />
-                    <Skeleton className="h-9 w-44" />
+                  <div className="flex justify-end gap-3">
+                    <Skeleton className="h-10 w-24" />
+                    <Skeleton className="h-10 w-48" />
                   </div>
                 </CardContent>
               </Card>
@@ -341,238 +375,287 @@ export default function ProfilePage() {
           </div>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Messages */}
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="animate-in slide-in-from-top-2 duration-300">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           {success && (
-            <Alert className="border-green-200 bg-green-50">
+            <Alert className="border-green-200 bg-green-50 animate-in slide-in-from-top-2 duration-300">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">{success}</AlertDescription>
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Informations du profil */}
             <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Informations du compte
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {displayProfile && (
-                  <>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                        <User className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{displayProfile.name}</p>
-                        <p className="text-sm text-primary">{displayProfile.email}</p>
-                      </div>
+              <Card className="card-elevated group animate-fade-in-scale">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-xl text-primary">
+                    <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors duration-200">
+                      <Shield className="h-6 w-6 text-primary" />
                     </div>
-
-                    <Separator />
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Rôle</span>
-                        {getRoleBadge(displayProfile.role)}
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Documents</span>
-                        <div className="flex items-center gap-1">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <span className="text-sm">{displayProfile._count.documents}</span>
+                    Informations du compte
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {displayProfile && (
+                    <>
+                      <div className="flex items-center gap-4">
+                        <div className="relative group/avatar">
+                          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-lg avatar-hover">
+                            {getInitials(displayProfile.name)}
+                          </div>
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover/avatar:bg-opacity-20 rounded-full transition-all duration-200 flex items-center justify-center">
+                            <Camera className="h-5 w-5 text-white opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-lg text-primary">{displayProfile.name}</p>
+                          <p className="text-sm text-primary flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {displayProfile.email}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Partages reçus</span>
-                        <div className="flex items-center gap-1">
-                          <Share2 className="h-4 w-4 text-primary" />
-                          <span className="text-sm">{displayProfile._count.sharedWith}</span>
-                        </div>
-                      </div>
+                      <Separator className="my-6" />
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Membre depuis</span>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4 text-primary" />
-                          <span className="text-sm">{formatRelativeTime(displayProfile.createdAt)}</span>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                          <span className="text-sm font-medium text-primary">Rôle</span>
+                          <div className="badge-animated">
+                            {getRoleBadge(displayProfile.role)}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                          <span className="text-sm font-medium text-primary">Documents</span>
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium text-primary">{displayProfile._count.documents}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                          <span className="text-sm font-medium text-primary">Partages reçus</span>
+                          <div className="flex items-center gap-2">
+                            <Share2 className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium text-primary">{displayProfile._count.sharedWith}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                          <span className="text-sm font-medium text-primary">Membre depuis</span>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium text-primary">{formatRelativeTime(displayProfile.createdAt)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Formulaire de modification */}
             <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Modifier le profil
-                </CardTitle>
-                <CardDescription>
-                  Mettez à jour vos informations personnelles et votre mot de passe
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Informations personnelles */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Informations personnelles</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="name">Nom complet</Label>
-                        <Input
-                          id="name"
-                          type="text"
-                          value={formData.name}
-                          onChange={(e) => handleInputChange('name', e.target.value)}
-                          placeholder="Votre nom complet"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="email">Adresse email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => handleInputChange('email', e.target.value)}
-                          placeholder="votre@email.com"
-                          required
-                        />
-                      </div>
+              <Card className="card-elevated animate-fade-in-scale">
+                <CardHeader className="pb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-3 text-xl text-primary">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <User className="h-6 w-6 text-primary" />
+                        </div>
+                        Modifier le profil
+                      </CardTitle>
+                      <CardDescription className="mt-2 text-base text-primary">
+                        Mettez à jour vos informations personnelles et votre mot de passe
+                      </CardDescription>
                     </div>
+                    {isEditing && (
+                      <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 px-3 py-1 rounded-full animate-pulse-glow">
+                        <Edit3 className="h-4 w-4" />
+                        Mode édition
+                      </div>
+                    )}
                   </div>
-
-                  <Separator />
-
-                  {/* Changement de mot de passe */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Key className="h-5 w-5" />
-                      <h3 className="text-lg font-medium">Changer le mot de passe</h3>
-                    </div>
-                    <p className="text-sm text-primary">
-                      Laissez vide si vous ne souhaitez pas changer votre mot de passe
-                    </p>
-
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="currentPassword">Mot de passe actuel</Label>
-                        <div className="relative">
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Informations personnelles */}
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                        <div className="w-1 h-6 bg-primary rounded-full"></div>
+                        Informations personnelles
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <Label htmlFor="name" className="text-sm font-medium text-primary">
+                            Nom complet
+                          </Label>
                           <Input
-                            id="currentPassword"
-                            type={showCurrentPassword ? "text" : "password"}
-                            value={formData.currentPassword}
-                            onChange={(e) => handleInputChange('currentPassword', e.target.value)}
-                            placeholder="Votre mot de passe actuel"
+                            id="name"
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => handleInputChange('name', e.target.value)}
+                            placeholder="Votre nom complet"
+                            className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary"
+                            required
                           />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3"
-                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          >
-                            {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label htmlFor="email" className="text-sm font-medium text-primary">
+                            Adresse email
+                          </Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => handleInputChange('email', e.target.value)}
+                            placeholder="votre@email.com"
+                            className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary"
+                            required
+                          />
                         </div>
                       </div>
+                    </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+                    <Separator className="my-8" />
+
+                    {/* Changement de mot de passe */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Key className="h-5 w-5 text-primary" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-primary">Changer le mot de passe</h3>
+                      </div>
+                      <p className="text-sm text-primary bg-primary/5 p-3 rounded-lg">
+                        Laissez vide si vous ne souhaitez pas changer votre mot de passe
+                      </p>
+
+                      <div className="space-y-6">
+                        <div className="space-y-3">
+                          <Label htmlFor="currentPassword" className="text-sm font-medium text-primary">
+                            Mot de passe actuel
+                          </Label>
                           <div className="relative">
                             <Input
-                              id="newPassword"
-                              type={showNewPassword ? "text" : "password"}
-                              value={formData.newPassword}
-                              onChange={(e) => handleInputChange('newPassword', e.target.value)}
-                              placeholder="Nouveau mot de passe (min. 6 caractères)"
+                              id="currentPassword"
+                              type={showCurrentPassword ? "text" : "password"}
+                              value={formData.currentPassword}
+                              onChange={(e) => handleInputChange('currentPassword', e.target.value)}
+                              placeholder="Votre mot de passe actuel"
+                              className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary pr-10"
                             />
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="absolute right-0 top-0 h-full px-3"
-                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-gray-100"
+                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                             >
-                              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </Button>
                           </div>
                         </div>
 
-                        <div>
-                          <Label htmlFor="confirmPassword">Confirmer le nouveau mot de passe</Label>
-                          <div className="relative">
-                            <Input
-                              id="confirmPassword"
-                              type={showConfirmPassword ? "text" : "password"}
-                              value={formData.confirmPassword}
-                              onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                              placeholder="Confirmer le nouveau mot de passe"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3"
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            >
-                              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <Label htmlFor="newPassword" className="text-sm font-medium text-primary">
+                              Nouveau mot de passe
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                id="newPassword"
+                                type={showNewPassword ? "text" : "password"}
+                                value={formData.newPassword}
+                                onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                                placeholder="Nouveau mot de passe (min. 6 caractères)"
+                                className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary pr-10"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-gray-100"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                              >
+                                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <Label htmlFor="confirmPassword" className="text-sm font-medium text-primary">
+                              Confirmer le nouveau mot de passe
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                id="confirmPassword"
+                                type={showConfirmPassword ? "text" : "password"}
+                                value={formData.confirmPassword}
+                                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                                placeholder="Confirmer le nouveau mot de passe"
+                                className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary pr-10"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-gray-100"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              >
+                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Boutons */}
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={fetchProfile}
-                      disabled={isSaving}
-                    >
-                      Annuler
-                    </Button>
-                    <Button type="submit" disabled={isSaving}>
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Enregistrement...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Enregistrer les modifications
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
+                    {/* Boutons */}
+                    <div className="flex justify-end gap-3 pt-6 border-t">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCancel}
+                        disabled={isSaving}
+                        className="btn-press transition-all duration-200 hover:bg-gray-50"
+                      >
+                        Annuler
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        disabled={isSaving || !isEditing}
+                        className="btn-press transition-all duration-200 hover:scale-105 disabled:hover:scale-100"
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Enregistrement...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Enregistrer les modifications
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

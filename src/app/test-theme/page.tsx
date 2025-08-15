@@ -54,12 +54,12 @@ export default function TestThemePage() {
             <div className="flex items-center gap-2">
               <Sun className="h-4 w-4" />
               <span>Mode clair: {isLight ? 'Actif' : 'Inactif'}</span>
-              {isLight && <CheckCircle className="h-4 w-4 text-green-500" />}
+              {isLight && <CheckCircle className="h-4 w-4 text-muted-foreground" />}
             </div>
             <div className="flex items-center gap-2">
               <Moon className="h-4 w-4" />
               <span>Mode sombre: {isDark ? 'Actif' : 'Inactif'}</span>
-              {isDark && <CheckCircle className="h-4 w-4 text-green-500" />}
+              {isDark && <CheckCircle className="h-4 w-4 text-muted-foreground" />}
             </div>
             <div className="flex items-center gap-2">
               <Monitor className="h-4 w-4" />
@@ -229,15 +229,15 @@ export default function TestThemePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              <CheckCircle className="h-4 w-4 text-muted-foreground" />
               <span className="text-green-800 dark:text-green-200">Opération réussie</span>
             </div>
             <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                              <AlertCircle className="h-4 w-4 text-muted-foreground" />
               <span className="text-yellow-800 dark:text-yellow-200">Attention requise</span>
             </div>
             <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              <Info className="h-4 w-4 text-muted-foreground" />
               <span className="text-blue-800 dark:text-blue-200">Information</span>
             </div>
           </CardContent>

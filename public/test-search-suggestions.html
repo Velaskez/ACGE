@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Suggestions de Recherche - ACGE</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #374151;
+        }
+        .endpoint {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success { background: #dcfce7; color: #166534; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        .status.loading { background: #fef3c7; color: #92400e; }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .result {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        .search-test {
+            margin: 20px 0;
+        }
+        .search-test input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .suggestions {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .suggestion-item {
+            padding: 10px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+        }
+        .suggestion-item:hover {
+            background: #f9fafb;
+        }
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        .suggestion-type {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .type-document { background: #dbeafe; color: #1e40af; }
+        .type-folder { background: #e0e7ff; color: #3730a3; }
+        .type-tag { background: #fef3c7; color: #92400e; }
+        .type-user { background: #f3e8ff; color: #7c3aed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test des Suggestions de Recherche - ACGE</h1>
+        
+        <div class="test-section">
+            <h3>1. Test de l'API Suggestions</h3>
+            <div class="endpoint">
+                <strong>Endpoint:</strong> GET /api/search/suggestions?q={query}&limit=10
+            </div>
+            <button onclick="testSuggestionsAPI()">Tester l'API</button>
+            <div id="api-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test Interactif des Suggestions</h3>
+            <div class="search-test">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Tapez pour voir les suggestions (minimum 2 caractères)..."
+                    oninput="handleSearchInput(this.value)"
+                >
+                <div id="suggestions" class="suggestions" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Tests Rapides</h3>
+            <button onclick="testQuery('doc')">Test "doc"</button>
+            <button onclick="testQuery('folder')">Test "folder"</button>
+            <button onclick="testQuery('admin')">Test "admin"</button>
+            <button onclick="testQuery('pdf')">Test "pdf"</button>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Statut des Composants</h3>
+            <div id="components-status"></div>
+        </div>
+    </div>
+
+    <script>
+        let searchTimeout;
+
+        async function testSuggestionsAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="status loading">Chargement...</div>';
+
+            try {
+                const response = await fetch('/api/search/suggestions?q=test&limit=5');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="status success">✅ API fonctionnelle</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="status error">❌ Erreur API: ${response.status}</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Erreur réseau: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function handleSearchInput(query) {
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                document.getElementById('suggestions').style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}&limit=8`);
+                    const data = await response.json();
+                    
+                    displaySuggestions(data.suggestions || []);
+                } catch (error) {
+                    console.error('Erreur lors de la recherche:', error);
+                }
+            }, 300);
+        }
+
+        function displaySuggestions(suggestions) {
+            const suggestionsDiv = document.getElementById('suggestions');
+            
+            if (suggestions.length === 0) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            suggestionsDiv.innerHTML = suggestions.map(suggestion => `
+                <div class="suggestion-item" onclick="selectSuggestion('${suggestion.text}', '${suggestion.type}')">
+                    <strong>${suggestion.text}</strong>
+                    <span class="suggestion-type type-${suggestion.type}">${suggestion.type}</span>
+                    ${suggestion.metadata ? `
+                        <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                            ${suggestion.metadata.description || ''}
+                            ${suggestion.metadata.fileType ? ` • ${suggestion.metadata.fileType}` : ''}
+                            ${suggestion.metadata.documentCount ? ` • ${suggestion.metadata.documentCount} docs` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+            
+            suggestionsDiv.style.display = 'block';
+        }
+
+        function selectSuggestion(text, type) {
+            document.getElementById('searchInput').value = text;
+            document.getElementById('suggestions').style.display = 'none';
+            
+            console.log(`Suggestion sélectionnée: ${text} (${type})`);
+            alert(`Suggestion sélectionnée: ${text} (${type})`);
+        }
+
+        async function testQuery(query) {
+            document.getElementById('searchInput').value = query;
+            await handleSearchInput(query);
+        }
+
+        // Test automatique au chargement
+        window.addEventListener('load', async () => {
+            // Test de base de l'API
+            try {
+                const response = await fetch('/api/search/suggestions?q=test&limit=1');
+                const status = response.ok ? 'success' : 'error';
+                const message = response.ok ? '✅ API Suggestions OK' : '❌ API Suggestions KO';
+                
+                document.getElementById('components-status').innerHTML = `
+                    <div class="status ${status}">${message}</div>
+                `;
+            } catch (error) {
+                document.getElementById('components-status').innerHTML = `
+                    <div class="status error">❌ Erreur de connexion</div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

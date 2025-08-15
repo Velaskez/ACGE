@@ -123,20 +123,8 @@ export default function NotificationsPage() {
   }
 
   const getNotificationIcon = (type: NotificationType) => {
-    switch (type) {
-      case 'DOCUMENT_SHARED':
-        return <Share2 className="h-5 w-5 text-blue-500" />
-      case 'VERSION_ADDED':
-        return <FileText className="h-5 w-5 text-green-500" />
-      case 'VERSION_RESTORED':
-        return <RotateCcw className="h-5 w-5 text-orange-500" />
-      case 'WELCOME':
-        return <User className="h-5 w-5 text-purple-500" />
-      case 'SYSTEM':
-        return <Settings className="h-5 w-5 text-primary" />
-      default:
-        return <AlertCircle className="h-5 w-5 text-primary" />
-    }
+    // Toutes les icônes de notifications utilisent maintenant des couleurs neutres
+    return <AlertCircle className="h-5 w-5 text-muted-foreground" />
   }
 
   const getTypeLabel = (type: NotificationType) => {

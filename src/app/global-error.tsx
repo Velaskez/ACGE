@@ -18,10 +18,10 @@ export default function GlobalError({
       <body>
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-red-600 mb-4">
+            <h2 className="text-2xl font-bold text-destructive mb-4">
               Erreur Critique
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-muted-foreground mb-4">
               Une erreur critique s'est produite dans l'application
             </p>
             <button

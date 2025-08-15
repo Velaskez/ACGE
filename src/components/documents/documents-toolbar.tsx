@@ -1,6 +1,7 @@
 'use client'
 
 import { ContentToolbar } from '@/components/shared/content-toolbar'
+import { SearchSuggestion } from '@/components/ui/search-suggestions'
 
 type ViewMode = 'list' | 'grid'
 type SortField = 'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'
@@ -9,6 +10,8 @@ type SortOrder = 'asc' | 'desc'
 interface DocumentsToolbarProps {
   searchQuery: string
   onSearchQueryChange: (value: string) => void
+  onSearchSelect?: (suggestion: SearchSuggestion) => void
+  onSearchSubmit?: () => void
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
   sortField: SortField
@@ -17,6 +20,7 @@ interface DocumentsToolbarProps {
   onSortOrderChange: (order: SortOrder) => void
   onOpenFilters?: () => void
   className?: string
+  enableSuggestions?: boolean
 }
 
 const documentSortOptions = [
@@ -30,6 +34,8 @@ const documentSortOptions = [
 export function DocumentsToolbar({
   searchQuery,
   onSearchQueryChange,
+  onSearchSelect,
+  onSearchSubmit,
   viewMode,
   onViewModeChange,
   sortField,
@@ -38,11 +44,14 @@ export function DocumentsToolbar({
   onSortOrderChange,
   onOpenFilters,
   className,
+  enableSuggestions = true,
 }: DocumentsToolbarProps) {
   return (
     <ContentToolbar
       searchQuery={searchQuery}
       onSearchQueryChange={onSearchQueryChange}
+      onSearchSelect={onSearchSelect}
+      onSearchSubmit={onSearchSubmit}
       searchPlaceholder="Rechercher des fichiers..."
       viewMode={viewMode}
       onViewModeChange={onViewModeChange}
@@ -53,6 +62,7 @@ export function DocumentsToolbar({
       onSortOrderChange={onSortOrderChange}
       onOpenFilters={onOpenFilters}
       className={className}
+      enableSuggestions={enableSuggestions}
     />
   )
 }

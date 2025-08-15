@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     let totalCount = 0
 
     try {
-      // Requête simple pour éviter les erreurs
+      // Requête complète avec toutes les données nécessaires
       documents = await prisma.document.findMany({
         where,
         include: {
@@ -68,11 +68,27 @@ export async function GET(request: NextRequest) {
               name: true
             }
           },
+          tags: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
           currentVersion: {
             select: {
+              id: true,
               fileName: true,
               fileSize: true,
-              fileType: true
+              fileType: true,
+              versionNumber: true,
+              createdAt: true
+            }
+          },
+          _count: {
+            select: {
+              versions: true,
+              comments: true,
+              shares: true
             }
           }
         },

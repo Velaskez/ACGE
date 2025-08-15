@@ -7,7 +7,7 @@ export default function NotFound() {
         <h2 className="text-2xl font-bold text-gray-800 mb-4">
           Page non trouvée
         </h2>
-        <p className="text-gray-600 mb-4">
+        <p className="text-muted-foreground mb-4">
           La page que vous recherchez n'existe pas
         </p>
         <Link

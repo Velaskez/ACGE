@@ -1,6 +1,5 @@
 'use client'
 
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -9,8 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, SortAsc, SortDesc, Filter } from 'lucide-react'
+import { SortAsc, SortDesc, Filter, Search } from 'lucide-react'
 import { ViewModeToggle } from '@/components/shared/view-mode-toggle'
+import { SearchSuggestions, type SearchSuggestion } from '@/components/ui/search-suggestions'
+import { useSearchSuggestions } from '@/hooks/use-search-suggestions'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 type ViewMode = 'list' | 'grid'
@@ -24,6 +26,8 @@ interface SortOption {
 interface ContentToolbarProps {
   searchQuery: string
   onSearchQueryChange: (value: string) => void
+  onSearchSelect?: (suggestion: SearchSuggestion) => void
+  onSearchSubmit?: () => void
   searchPlaceholder?: string
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
@@ -35,11 +39,14 @@ interface ContentToolbarProps {
   onOpenFilters?: () => void
   showFilters?: boolean
   className?: string
+  enableSuggestions?: boolean
 }
 
 export function ContentToolbar({
   searchQuery,
   onSearchQueryChange,
+  onSearchSelect,
+  onSearchSubmit,
   searchPlaceholder = "Rechercher...",
   viewMode,
   onViewModeChange,
@@ -51,7 +58,13 @@ export function ContentToolbar({
   onOpenFilters,
   showFilters = true,
   className,
+  enableSuggestions = true,
 }: ContentToolbarProps) {
+  // Hook pour les suggestions si activées
+  const { suggestions, isLoading: suggestionsLoading } = enableSuggestions 
+    ? useSearchSuggestions(searchQuery, { debounceMs: 300, minQueryLength: 2, maxSuggestions: 8 })
+    : { suggestions: [], isLoading: false }
+
   return (
     <div
       className={cn(
@@ -59,15 +72,29 @@ export function ContentToolbar({
         className,
       )}
     >
-      {/* Recherche */}
+      {/* Recherche avec suggestions */}
       <div className="relative flex-1">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
-        <Input
-          value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
-          placeholder={searchPlaceholder}
-          className="pl-9"
-        />
+        {enableSuggestions ? (
+          <SearchSuggestions
+            value={searchQuery}
+            onChange={onSearchQueryChange}
+            onSelect={onSearchSelect}
+            onSubmit={onSearchSubmit}
+            placeholder={searchPlaceholder}
+            suggestions={suggestions}
+            isLoading={suggestionsLoading}
+          />
+        ) : (
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="pl-9"
+            />
+          </div>
+        )}
       </div>
 
       {/* Tri et Mode d'affichage */}

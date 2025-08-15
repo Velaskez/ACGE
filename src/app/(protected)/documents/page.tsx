@@ -48,6 +48,7 @@ import { DocumentsFilters, type DocumentFilters } from '@/components/documents/d
 import { DocumentGridItem } from '@/components/documents/document-grid-item'
 import { useFolders } from '@/hooks/use-folders'
 import { useSearchParams } from 'next/navigation'
+import { SearchSuggestion } from '@/components/ui/search-suggestions'
 import {
   Pagination,
   PaginationContent,
@@ -65,10 +66,9 @@ interface DocumentItem {
   isPublic: boolean
   createdAt: string
   updatedAt: string
-  author?: {
-    name: string
-    email: string
-  }
+  tags: Array<{ id: string; name: string }>
+  folder?: { id: string; name: string }
+  author: { id: string; name: string; email: string }
   currentVersion?: {
     id: string
     versionNumber: number
@@ -81,6 +81,8 @@ interface DocumentItem {
   }
   _count?: {
     versions: number
+    comments?: number
+    shares?: number
   }
 }
 
@@ -183,8 +185,39 @@ export default function DocumentsPage() {
 
   const handleSearchQueryChange = (query: string) => {
     setSearchQuery(query)
-    // Mettre à jour les filtres également
-    setFilters(prev => ({ ...prev, search: query || undefined }))
+    // Ne pas mettre à jour les filtres immédiatement pour éviter les appels API
+    // Les filtres seront mis à jour seulement quand l'utilisateur valide la recherche
+  }
+
+  const handleSearchSelect = (suggestion: SearchSuggestion) => {
+    // Rediriger selon le type de suggestion
+    switch (suggestion.type) {
+      case 'document':
+        // Rechercher le document et l'afficher
+        setSearchQuery(suggestion.text)
+        setFilters(prev => ({ ...prev, search: suggestion.text }))
+        break
+      case 'folder':
+        // Rediriger vers la page des dossiers avec le dossier sélectionné
+        router.push(`/folders?folder=${suggestion.id.replace('folder-', '')}`)
+        break
+      case 'tag':
+        // Ajouter le tag aux filtres
+        setSearchQuery(suggestion.text)
+        setFilters(prev => ({ ...prev, search: suggestion.text }))
+        break
+      case 'user':
+        // Filtrer par auteur
+        setSearchQuery(suggestion.text)
+        setFilters(prev => ({ ...prev, search: suggestion.text }))
+        break
+    }
+  }
+
+  const handleSearchSubmit = () => {
+    // Valider la recherche en mettant à jour les filtres
+    setFilters(prev => ({ ...prev, search: searchQuery || undefined }))
+    setPagination(prev => ({ ...prev, page: 1 }))
   }
 
   const filterAndSortDocuments = () => {
@@ -237,11 +270,11 @@ export default function DocumentsPage() {
   }
 
   const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return <Image className="w-4 h-4 text-blue-500" />
-    if (fileType.startsWith('video/')) return <Video className="w-4 h-4 text-purple-500" />
-    if (fileType.startsWith('audio/')) return <Music className="w-4 h-4 text-green-500" />
-    if (fileType.includes('pdf')) return <FileText className="w-4 h-4 text-red-500" />
-    return <File className="w-4 h-4 text-primary" />
+    if (fileType.startsWith('image/')) return <Image className="w-4 h-4 text-muted-foreground" />
+    if (fileType.startsWith('video/')) return <Video className="w-4 h-4 text-muted-foreground" />
+    if (fileType.startsWith('audio/')) return <Music className="w-4 h-4 text-muted-foreground" />
+    if (fileType.includes('pdf')) return <FileText className="w-4 h-4 text-muted-foreground" />
+    return <File className="w-4 h-4 text-muted-foreground" />
   }
 
   const handleSort = (field: SortField) => {
@@ -339,6 +372,8 @@ export default function DocumentsPage() {
         <DocumentsToolbar
           searchQuery={searchQuery}
           onSearchQueryChange={handleSearchQueryChange}
+          onSearchSelect={handleSearchSelect}
+          onSearchSubmit={handleSearchSubmit}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           sortField={sortField}
@@ -468,7 +503,7 @@ export default function DocumentsPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               onClick={() => handleDelete(document.id)}
-                              className="text-red-600"
+                              className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Supprimer
@@ -505,7 +540,7 @@ export default function DocumentsPage() {
           </Card>
         ) : (
           /* Vue en grille */
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-1">
             {filteredDocuments.length > 0 ? (
               filteredDocuments.map((document) => (
                 <DocumentGridItem

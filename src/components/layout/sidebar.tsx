@@ -38,34 +38,39 @@ const mainNav = [
     title: 'Tableau de bord',
     href: '/dashboard',
     icon: Home,
+    color: 'blue'
   },
   {
     title: 'Mes fichiers',
     href: '/documents',
     icon: FileText,
+    color: 'green'
   },
   {
     title: 'Upload',
     href: '/upload',
     icon: Upload,
+    color: 'purple'
   },
   {
     title: 'Dossiers',
     href: '/folders',
     icon: FolderOpen,
+    color: 'orange'
   },
   {
     title: 'Utilisateurs',
     href: '/users',
     icon: Users,
+    color: 'red',
     adminOnly: true,
   },
-  // Page settings supprimée temporairement
-  // {
-  //   title: 'Paramètres',
-  //   href: '/settings',
-  //   icon: Settings,
-  // },
+  {
+    title: 'Paramètres',
+    href: '/settings',
+    icon: Settings,
+    color: 'gray'
+  },
 ]
 
 export function Sidebar({ className, inSheet = false }: SidebarProps) {
@@ -91,16 +96,25 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
     return true
   })
 
+  const getIconColorClasses = (color: string) => {
+    // Toutes les icônes de navigation utilisent maintenant des couleurs neutres
+    return {
+      bg: 'bg-muted',
+      text: 'text-muted-foreground'
+    }
+  }
+
   return (
     <TooltipProvider>
       <div className={cn(
+        'sidebar',
         inSheet
           ? 'relative inset-0 z-40 bg-background border-r flex flex-col h-full w-full'
-          : 'fixed left-0 top-16 bottom-0 z-40 bg-background border-r flex flex-col w-64 min-w-[240px] max-w-[320px] sm:w-64 md:w-72 lg:w-80',
+          : 'fixed left-0 top-16 bottom-0 z-10 bg-background border-r flex flex-col w-64 min-w-[240px] max-w-[320px] sm:w-64 md:w-72 lg:w-80',
         className
       )}>
         <div className="flex flex-col h-full overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto sidebar-scroll">
             <div className="space-y-4 py-4">
             {/* Navigation principale */}
             <div className="px-3 py-2">
@@ -108,26 +122,31 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                 Navigation
               </h2>
               <div className="space-y-1">
-                {filteredNav.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={pathname === item.href ? 'secondary' : 'ghost'}
-                          className="w-full justify-start min-h-[40px]"
-                        >
-                          <item.icon className="mr-2 h-4 w-4 flex-shrink-0" />
-                          <span className="truncate text-left flex-1">
-                            {item.title}
-                          </span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-[200px]">
-                        <p>{item.title}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </Link>
-                ))}
+                {filteredNav.map((item) => {
+                  const colorClasses = getIconColorClasses(item.color)
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={pathname === item.href ? 'secondary' : 'ghost'}
+                            className="w-full justify-start min-h-[40px]"
+                          >
+                            <div className={`p-1.5 rounded-md mr-2 ${colorClasses.bg}`}>
+                              <item.icon className={`h-4 w-4 ${colorClasses.text}`} />
+                            </div>
+                            <span className="truncate text-left flex-1">
+                              {item.title}
+                            </span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-[200px]">
+                          <p>{item.title}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
 
@@ -139,11 +158,15 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                 <h2 className="text-lg font-semibold tracking-tight truncate flex-1 text-primary">
                   Dossiers récents
                 </h2>
-                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <Link href="/folders">
+                  <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
+                    <div className="p-1 rounded-md bg-orange-100 dark:bg-orange-900/30">
+                      <Plus className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+                    </div>
+                  </Button>
+                </Link>
               </div>
-              <div className="px-1 max-h-[300px] overflow-y-auto">
+              <div className="px-1 max-h-[300px] overflow-y-auto sidebar-content-scroll">
                 <div className="space-y-1">
                   {isLoading ? (
                     // Skeleton pour le chargement
@@ -167,63 +190,61 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                               className="w-full justify-start h-8 min-h-[32px]"
                               onClick={() => toggleFolder(folder.id)}
                             >
-                              {expandedFolders.includes(folder.id) ? (
-                                <ChevronDown className="mr-2 h-4 w-4 flex-shrink-0" />
-                              ) : (
-                                <ChevronRight className="mr-2 h-4 w-4 flex-shrink-0" />
-                              )}
-                              <FolderOpen className="mr-2 h-4 w-4 flex-shrink-0" />
-                              <span className="flex-1 text-left truncate min-w-0">
+                              <div className="p-1 rounded-md bg-muted mr-2">
+                                <FolderOpen className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                              <span className="truncate text-left flex-1 text-sm">
                                 {folder.name}
                               </span>
-                              <span className="text-xs text-primary flex-shrink-0 ml-2">
-                                {folder.documentCount}
-                              </span>
+                              {expandedFolders.includes(folder.id) ? (
+                                <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                              ) : (
+                                <ChevronRight className="h-3 w-3 flex-shrink-0" />
+                              )}
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="right" className="max-w-[250px]">
-                            <p className="break-words">{folder.name}</p>
-                            <p className="text-xs text-primary mt-1">
-                              {folder.documentCount} document{folder.documentCount > 1 ? 's' : ''}
-                            </p>
+                          <TooltipContent side="right" className="max-w-[200px]">
+                            <p>{folder.name}</p>
                           </TooltipContent>
                         </Tooltip>
-                        {expandedFolders.includes(folder.id) && (
-                          <div className="ml-6 space-y-1">
-                            {folder.recentDocuments.length > 0 ? (
-                              folder.recentDocuments.map((doc) => (
-                                <Tooltip key={doc.id}>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      className="w-full justify-start h-6 text-sm min-h-[24px]"
+                        
+                        {/* Documents récents */}
+                        {expandedFolders.includes(folder.id) && folder.recentDocuments && folder.recentDocuments.length > 0 && (
+                          <div className="ml-4 mt-1 space-y-1">
+                            {folder.recentDocuments.map((doc) => (
+                              <Tooltip key={doc.id}>
+                                <TooltipTrigger asChild>
+                                  <Link href={`/documents?search=${encodeURIComponent(doc.title)}`}>
+                                    <Button
+                                      variant="ghost"
+                                      className="w-full justify-start h-7 min-h-[28px] text-xs"
                                     >
-                                      <FileText className="mr-2 h-3 w-3 flex-shrink-0" />
-                                      <span className="truncate text-left flex-1 min-w-0">
+                                      <div className="p-1 rounded-md bg-muted mr-2">
+                                        <FileText className="h-2.5 w-2.5 text-muted-foreground" />
+                                      </div>
+                                      <span className="truncate text-left flex-1">
                                         {doc.title}
                                       </span>
                                     </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right" className="max-w-[250px]">
-                                    <p className="break-words">{doc.title}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              ))
-                            ) : (
-                              <div className="text-xs text-primary px-2 py-1 truncate">
-                                Aucun document
-                              </div>
-                            )}
+                                  </Link>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-[200px]">
+                                  <p>{doc.title}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ))}
                           </div>
                         )}
                       </div>
                     ))
                   ) : (
                     // État vide
-                    <div className="text-center py-4 px-2">
-                      <FolderOpen className="mx-auto h-8 w-8 text-primary" />
-                      <p className="text-xs text-primary mt-2 break-words">
-                        Aucun dossier
+                    <div className="px-4 py-8 text-center">
+                      <div className="p-2 rounded-lg bg-muted mx-auto w-fit mb-2">
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Aucun dossier récent
                       </p>
                     </div>
                   )}

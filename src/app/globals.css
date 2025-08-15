@@ -3,6 +3,95 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Animations personnalisées pour la page profile */
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px hsl(var(--primary) / 0);
+  }
+}
+
+.animate-slide-in-top {
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+.animate-fade-in-scale {
+  animation: fadeInScale 0.2s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+
+/* Styles pour l'avatar avec effet hover */
+.avatar-hover {
+  transition: all 0.3s ease;
+}
+
+.avatar-hover:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Styles pour les cartes avec effet de profondeur */
+.card-elevated {
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card-elevated:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Styles pour les inputs avec focus amélioré */
+.input-enhanced:focus {
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+  border-color: hsl(var(--primary));
+}
+
+/* Styles pour les badges avec animation */
+.badge-animated {
+  transition: all 0.2s ease;
+}
+
+.badge-animated:hover {
+  transform: scale(1.05);
+}
+
+/* Styles pour les boutons avec effet de pression */
+.btn-press {
+  transition: all 0.1s ease;
+}
+
+.btn-press:active {
+  transform: scale(0.98);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -180,6 +269,136 @@
   
   .modal-scroll::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--muted-foreground));
+  }
+
+  /* Styles personnalisés pour la barre de défilement de la sidebar */
+  .sidebar-scroll {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    /* Permet le défilement tactile même sans barre visible */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+  
+  .sidebar-scroll::-webkit-scrollbar-track {
+    display: none !important;
+  }
+  
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    display: none !important;
+  }
+
+  /* Styles pour les zones de défilement dans la sidebar */
+  .sidebar-content-scroll {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    /* Permet le défilement tactile même sans barre visible */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .sidebar-content-scroll::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+  
+  .sidebar-content-scroll::-webkit-scrollbar-track {
+    display: none !important;
+  }
+  
+  .sidebar-content-scroll::-webkit-scrollbar-thumb {
+    display: none !important;
+  }
+
+  /* Styles pour les ScrollArea dans la sidebar */
+  .sidebar [data-slot="scroll-area-scrollbar"] {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  .sidebar [data-slot="scroll-area-thumb"] {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+  }
+  
+  .sidebar [data-slot="scroll-area-corner"] {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+  }
+
+  /* Styles globaux pour masquer toutes les barres de défilement dans la sidebar */
+  .sidebar * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .sidebar *::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+  
+  .sidebar *::-webkit-scrollbar-track {
+    display: none !important;
+  }
+  
+  .sidebar *::-webkit-scrollbar-thumb {
+    display: none !important;
+  }
+
+  /* Suppression complète de tous les crochets et boutons de défilement */
+  .sidebar *::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  .sidebar *::-webkit-scrollbar-corner {
+    display: none !important;
+    background: transparent !important;
+  }
+  
+  /* Styles pour tous les éléments de défilement dans la sidebar */
+  .sidebar {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .sidebar::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+  
+  .sidebar::-webkit-scrollbar-track {
+    display: none !important;
+  }
+  
+  .sidebar::-webkit-scrollbar-thumb {
+    display: none !important;
+  }
+  
+  .sidebar::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  .sidebar::-webkit-scrollbar-corner {
+    display: none !important;
+    background: transparent !important;
   }
 
   /* Utilitaires responsive globaux */

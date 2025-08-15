@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Save, AlertCircle, FolderOpen, Folder } from 'lucide-react'
+import { Save, AlertCircle, FolderOpen, Folder, FileText, Calendar, User, HardDrive, Info, X } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
@@ -21,6 +21,7 @@ interface DocumentItem {
   id: string
   title: string
   description?: string
+  category?: string
   isPublic: boolean
   folderId?: string | null
   createdAt: string
@@ -70,17 +71,36 @@ const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 export function DocumentEditModal({ document, isOpen, onClose, onSave }: DocumentEditModalProps) {
   const [formData, setFormData] = useState({
     title: document.title,
     description: document.description || '',
+    category: document.category || '',
     isPublic: document.isPublic,
     folderId: document.folderId || ''
   })
+
+  // Définir les catégories disponibles
+  const categories = [
+    { value: 'ordre-recette', label: 'Ordre de recette' },
+    { value: 'ordre-paiement', label: 'Ordre de paiement' },
+    { value: 'courier', label: 'Courier' }
+  ]
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [foldersLoading, setFoldersLoading] = useState(false)
+  const [showFileInfo, setShowFileInfo] = useState(true)
 
   // Charger les dossiers disponibles
   useEffect(() => {
@@ -94,6 +114,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
     setFormData({
       title: document.title,
       description: document.description || '',
+      category: document.category || '',
       isPublic: document.isPublic,
       folderId: document.folderId || 'root'
     })
@@ -143,6 +164,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
+          category: formData.category || null,
           isPublic: formData.isPublic,
           folderId: formData.folderId === 'root' ? null : formData.folderId
         }),
@@ -180,43 +202,135 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-2xl mx-auto">
-        <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl font-semibold">Modifier le document</DialogTitle>
+      <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <FileText className="h-5 w-5 flex-shrink-0" />
+              <span className="truncate">Modifier le document</span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowFileInfo(!showFileInfo)}
+                className="hidden sm:flex"
+              >
+                <Info className="h-4 w-4" />
+                <span className="ml-1">Infos</span>
+              </Button>
+            </div>
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informations du fichier (lecture seule) */}
-          <div className="bg-gray-50 p-3 sm:p-4 rounded-lg space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <span className="text-sm font-medium text-primary">Fichier</span>
-              <Badge variant="secondary" className="w-fit">{document.currentVersion?.fileType || 'Inconnu'}</Badge>
-            </div>
-            <p className="text-sm text-primary break-all">{document.currentVersion?.fileName || 'Sans nom'}</p>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
-              <p className="text-xs text-primary">
-                {formatFileSize(document.currentVersion?.fileSize || 0)}
-              </p>
-              <span className="hidden sm:inline text-xs text-primary mx-2">•</span>
-              <p className="text-xs text-primary">
-                Version {document.currentVersion?.versionNumber || 0}
-              </p>
-              {document.folder && (
-                <>
-                  <span className="hidden sm:inline text-xs text-primary mx-2">•</span>
-                  <p className="text-xs text-primary flex items-center gap-1">
-                    <FolderOpen className="h-3 w-3" />
-                    {document.folder.name}
-                  </p>
-                </>
-              )}
+          {/* Informations du fichier (lecture seule) - Version compacte avec toggle */}
+          <div className={`transition-all duration-300 overflow-hidden ${
+            showFileInfo ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Nom du fichier */}
+                <div className="sm:col-span-2 lg:col-span-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FileText className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Label className="text-sm font-medium text-blue-900 mb-1 block">Nom du fichier</Label>
+                      <p className="text-sm text-blue-800 break-all leading-relaxed">
+                        {document.currentVersion?.fileName || 'Sans nom'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Type de fichier */}
+                <div>
+                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Type</Label>
+                  <Badge variant="secondary" className="w-full justify-center text-xs">
+                    {document.currentVersion?.fileType?.split('/')[1]?.toUpperCase() || 'INCONNU'}
+                  </Badge>
+                </div>
+
+                {/* Taille */}
+                <div>
+                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Taille</Label>
+                  <div className="flex items-center gap-2">
+                    <HardDrive className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-800">
+                      {formatFileSize(document.currentVersion?.fileSize || 0)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Version */}
+                <div>
+                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Version</Label>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      v{document.currentVersion?.versionNumber || 0}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Dossier actuel */}
+                <div className="sm:col-span-2">
+                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Emplacement actuel</Label>
+                  <div className="flex items-center gap-2">
+                    <FolderOpen className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-800 break-all">
+                      {document.folder ? document.folder.name : 'Racine (aucun dossier)'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Date de création */}
+                <div>
+                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Créé le</Label>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-800">
+                      {formatDate(document.createdAt)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Auteur */}
+                <div className="sm:col-span-2">
+                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Auteur</Label>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-800 break-all">
+                      {document.author?.name || 'Inconnu'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
+          {/* Bouton d'infos pour mobile */}
+          <div className="sm:hidden">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowFileInfo(!showFileInfo)}
+              className="w-full"
+            >
+              <Info className="h-4 w-4 mr-2" />
+              {showFileInfo ? 'Masquer les infos' : 'Afficher les infos'}
+            </Button>
+          </div>
+
           {/* Formulaire d'édition */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="title">Titre *</Label>
+          <div className="space-y-6">
+            {/* Titre */}
+            <div className="space-y-2">
+              <Label htmlFor="title" className="text-sm font-medium flex items-center gap-2">
+                <span>Titre *</span>
+                <Badge variant="outline" className="text-xs">Obligatoire</Badge>
+              </Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -224,11 +338,13 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                 placeholder="Titre du document"
                 required
                 disabled={isLoading}
+                className="text-base"
               />
             </div>
 
-            <div>
-              <Label htmlFor="description">Description</Label>
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-sm font-medium">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description}
@@ -236,11 +352,47 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                 placeholder="Description du document (optionnel)"
                 rows={3}
                 disabled={isLoading}
+                className="resize-none"
               />
+              <p className="text-xs text-muted-foreground">
+                {formData.description.length}/500 caractères
+              </p>
             </div>
 
-            <div>
-              <Label htmlFor="folderId" className="flex items-center gap-2">
+            {/* Catégorie */}
+            <div className="space-y-2">
+              <Label htmlFor="category" className="text-sm font-medium flex items-center gap-2">
+                <span>Catégorie</span>
+                <Badge variant="outline" className="text-xs">Optionnel</Badge>
+              </Label>
+              <Select 
+                value={formData.category} 
+                onValueChange={(value) => handleChange('category', value)}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sélectionner une catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Aucune catégorie</span>
+                    </div>
+                  </SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      <div className="flex items-center gap-2">
+                        <span>{category.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Emplacement */}
+            <div className="space-y-2">
+              <Label htmlFor="folderId" className="text-sm font-medium flex items-center gap-2">
                 <FolderOpen className="h-4 w-4" />
                 Emplacement
               </Label>
@@ -274,30 +426,47 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                   ))}
                 </SelectContent>
               </Select>
+              
+              {/* Indicateur de changement d'emplacement */}
               {formData.folderId !== 'root' && document.folder && formData.folderId !== document.folderId && (
-                <p className="text-xs text-primary mt-1">
-                  Actuellement dans : {document.folder.name}
-                </p>
+                <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <p className="text-xs text-yellow-800">
+                    Sera déplacé vers : <strong>{folders.find(f => f.id === formData.folderId)?.name}</strong>
+                  </p>
+                </div>
               )}
               {formData.folderId === 'root' && document.folder && (
-                <p className="text-xs text-primary mt-1">
-                  Sera déplacé vers la racine depuis : {document.folder.name}
-                </p>
+                <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <p className="text-xs text-yellow-800">
+                    Sera déplacé vers la racine depuis : <strong>{document.folder.name}</strong>
+                  </p>
+                </div>
               )}
             </div>
 
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                id="isPublic"
-                checked={formData.isPublic}
-                onChange={(e) => handleChange('isPublic', e.target.checked)}
-                disabled={isLoading}
-                className="mt-1 rounded border-gray-300"
-              />
-              <Label htmlFor="isPublic" className="text-sm leading-relaxed">
-                Document public (visible par tous les utilisateurs)
-              </Label>
+            {/* Visibilité */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Visibilité</Label>
+              <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="isPublic"
+                  checked={formData.isPublic}
+                  onChange={(e) => handleChange('isPublic', e.target.checked)}
+                  disabled={isLoading}
+                  className="mt-1 rounded border-gray-300"
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="isPublic" className="text-sm font-medium leading-relaxed">
+                    Document public
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Visible par tous les utilisateurs de la plateforme
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -308,7 +477,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
             </Alert>
           )}
 
-          <DialogFooter className="flex-col-reverse sm:flex-row">
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-3 pt-4 border-t">
             <Button 
               type="button" 
               variant="outline" 
@@ -332,7 +501,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  Enregistrer
+                  Enregistrer les modifications
                 </>
               )}
             </Button>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Vue Grid</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .toolbar {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .view-toggle {
+            display: flex;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .view-toggle button {
+            padding: 8px 12px;
+            border: none;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .view-toggle button.active {
+            background: #007bff;
+            color: white;
+        }
+        .view-toggle button:hover:not(.active) {
+            background: #e9ecef;
+        }
+        .grid-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .list-view {
+            display: block;
+        }
+        .list-view .item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .grid-view .item {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .grid-view .item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .item-icon {
+            width: 40px;
+            height: 40px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .list-view .item-icon {
+            margin-bottom: 0;
+            margin-right: 15px;
+        }
+        .item-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .list-view .item-title {
+            margin-bottom: 0;
+        }
+        .item-meta {
+            font-size: 12px;
+            color: #666;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Vue Grid</h1>
+        
+        <div class="toolbar">
+            <div class="view-toggle">
+                <button id="listBtn" class="active" onclick="switchView('list')">
+                    📋 Liste
+                </button>
+                <button id="gridBtn" onclick="switchView('grid')">
+                    🔲 Grille
+                </button>
+            </div>
+        </div>
+
+        <div id="listView" class="list-view">
+            <div class="item">
+                <div class="item-icon">📄</div>
+                <div>
+                    <div class="item-title">Document 1.pdf</div>
+                    <div class="item-meta">2.5 MB • Modifié il y a 2h</div>
+                </div>
+            </div>
+            <div class="item">
+                <div class="item-icon">📄</div>
+                <div>
+                    <div class="item-title">Document 2.docx</div>
+                    <div class="item-meta">1.8 MB • Modifié il y a 1j</div>
+                </div>
+            </div>
+            <div class="item">
+                <div class="item-icon">📄</div>
+                <div>
+                    <div class="item-title">Document 3.xlsx</div>
+                    <div class="item-meta">3.2 MB • Modifié il y a 3j</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="gridView" class="grid-view hidden">
+            <div class="item">
+                <div class="item-icon">📄</div>
+                <div class="item-title">Document 1.pdf</div>
+                <div class="item-meta">2.5 MB • Modifié il y a 2h</div>
+            </div>
+            <div class="item">
+                <div class="item-icon">📄</div>
+                <div class="item-title">Document 2.docx</div>
+                <div class="item-meta">1.8 MB • Modifié il y a 1j</div>
+            </div>
+            <div class="item">
+                <div class="item-icon">📄</div>
+                <div class="item-title">Document 3.xlsx</div>
+                <div class="item-meta">3.2 MB • Modifié il y a 3j</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchView(view) {
+            const listBtn = document.getElementById('listBtn');
+            const gridBtn = document.getElementById('gridBtn');
+            const listView = document.getElementById('listView');
+            const gridView = document.getElementById('gridView');
+
+            if (view === 'list') {
+                listBtn.classList.add('active');
+                gridBtn.classList.remove('active');
+                listView.classList.remove('hidden');
+                gridView.classList.add('hidden');
+            } else {
+                gridBtn.classList.add('active');
+                listBtn.classList.remove('active');
+                gridView.classList.remove('hidden');
+                listView.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

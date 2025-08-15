@@ -180,7 +180,7 @@ export default function UsersPage() {
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-orange-500" />
+                <AlertTriangle className="w-5 h-5 text-muted-foreground" />
                 Accès refusé
               </CardTitle>
               <CardDescription>
@@ -353,9 +353,9 @@ export default function UsersPage() {
                       <TableCell>{userItem.email}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {userItem.role === 'ADMIN' && <Shield className="w-4 h-4 text-red-500" />}
-                          {userItem.role === 'MANAGER' && <UserCheck className="w-4 h-4 text-blue-500" />}
-                          {userItem.role === 'USER' && <User className="w-4 h-4 text-primary" />}
+                          {userItem.role === 'ADMIN' && <Shield className="w-4 h-4 text-muted-foreground" />}
+                          {userItem.role === 'MANAGER' && <UserCheck className="w-4 h-4 text-muted-foreground" />}
+                          {userItem.role === 'USER' && <User className="w-4 h-4 text-muted-foreground" />}
                           {userItem.role}
                         </div>
                       </TableCell>

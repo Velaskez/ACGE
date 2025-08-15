@@ -43,19 +43,16 @@ export default function UploadPage() {
     name: '',
     description: '',
     tags: [],
-    category: 'document'
+    category: 'ordre-recette'
   })
   const [tagInput, setTagInput] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState('')
 
   const categories = [
-    { value: 'document', label: 'Document' },
-    { value: 'image', label: 'Image' },
-    { value: 'video', label: 'Vidéo' },
-    { value: 'audio', label: 'Audio' },
-    { value: 'archive', label: 'Archive' },
-    { value: 'other', label: 'Autre' }
+    { value: 'ordre-recette', label: 'Ordre de recette' },
+    { value: 'ordre-paiement', label: 'Ordre de paiement' },
+    { value: 'courier', label: 'Courier' }
   ]
 
   const handleUpload = async (files: File[]) => {
@@ -141,9 +138,9 @@ export default function UploadPage() {
           <Card className="text-center">
             <CardContent className="pt-6">
               <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-                <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
+                <Check className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h2 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">
+              <h2 className="text-2xl font-bold text-muted-foreground mb-2">
                 Upload réussi !
               </h2>
               <p className="text-primary dark:text-primary mb-4">

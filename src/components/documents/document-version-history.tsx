@@ -214,7 +214,7 @@ export function DocumentVersionHistory({
             // État d'erreur
             <Card className="border-red-200 bg-red-50">
               <CardContent className="pt-6">
-                <div className="flex items-center space-x-2 text-red-600">
+                <div className="flex items-center space-x-2 text-destructive">
                   <MessageSquare className="h-4 w-4" />
                   <p className="text-sm">{error}</p>
                 </div>
@@ -317,7 +317,7 @@ export function DocumentVersionHistory({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <RotateCcw className="h-5 w-5 text-orange-500" />
+              <RotateCcw className="h-5 w-5 text-muted-foreground" />
               Confirmer la restauration
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
@@ -326,7 +326,7 @@ export function DocumentVersionHistory({
               </p>
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="text-sm text-yellow-800">
                     <p className="font-medium mb-1">Points importants :</p>
                     <ul className="list-disc list-inside space-y-1">

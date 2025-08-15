@@ -178,7 +178,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Corps JSON invalide' }, { status: 400 })
     }
 
-    const { title, description, isPublic, folderId } = body
+    const { title, description, category, isPublic, folderId } = body
 
     // Validation des données
     if (!title || title.trim().length === 0) {
@@ -233,6 +233,7 @@ export async function PUT(
     const updateData: any = {
       title: title.trim(),
       description: description?.trim() || null,
+      category: category || null,
       isPublic: Boolean(isPublic),
       updatedAt: new Date()
     }
