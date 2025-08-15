@@ -157,3 +157,140 @@ export async function GET(
     )
   }
 }
+
+// PUT - Modifier un document
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    console.log('📝 Modification document - Début')
+    
+    const resolvedParams = await params
+    const documentId = resolvedParams.id
+
+    // Récupérer les données de la requête
+    const raw = await request.text()
+    let body: any = {}
+    try {
+      body = raw ? JSON.parse(raw) : {}
+    } catch {
+      return NextResponse.json({ error: 'Corps JSON invalide' }, { status: 400 })
+    }
+
+    const { title, description, isPublic, folderId } = body
+
+    // Validation des données
+    if (!title || title.trim().length === 0) {
+      return NextResponse.json({ error: 'Le titre est requis' }, { status: 400 })
+    }
+
+    if (title.length > 200) {
+      return NextResponse.json({ error: 'Le titre est trop long (max 200 caractères)' }, { status: 400 })
+    }
+
+    // Vérifier que le document existe
+    const existingDocument = await prisma.document.findFirst({
+      where: {
+        id: documentId
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        folder: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    })
+
+    if (!existingDocument) {
+      return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
+    }
+
+    console.log(`📄 Document à modifier: ${existingDocument.title}`)
+    console.log(`👤 Auteur: ${existingDocument.author?.name}`)
+    console.log(`📁 Dossier actuel: ${existingDocument.folder?.name || 'Racine'}`)
+
+    // Vérifier le dossier si spécifié
+    if (folderId && folderId !== 'root') {
+      const folder = await prisma.folder.findFirst({
+        where: { id: folderId }
+      })
+      if (!folder) {
+        return NextResponse.json({ error: 'Dossier spécifié non trouvé' }, { status: 400 })
+      }
+      console.log(`📁 Nouveau dossier: ${folder.name}`)
+    }
+
+    // Préparer les données de mise à jour
+    const updateData: any = {
+      title: title.trim(),
+      description: description?.trim() || null,
+      isPublic: Boolean(isPublic),
+      updatedAt: new Date()
+    }
+
+    // Gérer le dossier
+    if (folderId === 'root' || folderId === null || folderId === undefined) {
+      updateData.folderId = null
+    } else {
+      updateData.folderId = folderId
+    }
+
+    // Mettre à jour le document
+    const updatedDocument = await prisma.document.update({
+      where: { id: documentId },
+      data: updateData,
+      include: {
+        currentVersion: true,
+        _count: {
+          select: {
+            versions: true
+          }
+        },
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        folder: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    })
+
+    console.log('✅ Document modifié avec succès')
+    console.log(`📄 Nouveau titre: ${updatedDocument.title}`)
+    console.log(`📁 Nouveau dossier: ${updatedDocument.folder?.name || 'Racine'}`)
+
+    return NextResponse.json({
+      success: true,
+      message: 'Document modifié avec succès',
+      document: updatedDocument
+    })
+
+  } catch (error) {
+    console.error('❌ Erreur lors de la modification du document:', error)
+
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Erreur interne du serveur',
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      },
+      { status: 500 }
+    )
+  }
+}
