@@ -3,8 +3,8 @@ import { PrismaClient } from '@prisma/client'
 const resolveDatabaseUrl = (): string => {
   let url = process.env.DATABASE_URL || 'file:./prisma/dev.db'
   
-  // Ajouter des paramètres pour éviter les problèmes de prepared statements en développement
-  if (process.env.NODE_ENV === 'development' && url.includes('postgresql://')) {
+  // Ajouter des paramètres pour éviter les problèmes de prepared statements
+  if (url.includes('postgresql://')) {
     const separator = url.includes('?') ? '&' : '?'
     url += `${separator}pgbouncer=true&connection_limit=1&pool_timeout=0&prepared_statements=false`
   }
@@ -27,13 +27,11 @@ function createPrismaClient(): PrismaClient {
     },
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     // Configuration spéciale pour éviter les problèmes de prepared statements
-    ...(process.env.NODE_ENV === 'development' && {
-      __internal: {
-        engine: {
-          enableEngineDebugMode: false
-        }
+    __internal: {
+      engine: {
+        enableEngineDebugMode: false
       }
-    })
+    }
   })
 }
 
@@ -41,30 +39,28 @@ function createPrismaClient(): PrismaClient {
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
 // Gestion des erreurs de connexion
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-  
-  // Fonction de reconnexion en cas d'erreur
-  const handleConnectionError = async () => {
-    try {
-      await prisma.$disconnect()
-      console.log('🔄 Tentative de reconnexion...')
-      await prisma.$connect()
-      console.log('✅ Reconnexion réussie')
-    } catch (error) {
-      console.error('❌ Échec de la reconnexion:', error)
-    }
+globalForPrisma.prisma = prisma
+
+// Fonction de reconnexion en cas d'erreur
+const handleConnectionError = async () => {
+  try {
+    await prisma.$disconnect()
+    console.log('🔄 Tentative de reconnexion...')
+    await prisma.$connect()
+    console.log('✅ Reconnexion réussie')
+  } catch (error) {
+    console.error('❌ Échec de la reconnexion:', error)
   }
-  
-  // Initialize connection on startup
-  prisma.$connect()
-    .then(() => {
-      console.log('✅ Prisma connected successfully to:', databaseUrl)
-    })
-    .catch((error) => {
-      console.error('❌ Prisma connection failed:', error)
-      console.error('Database URL was:', databaseUrl)
-      // Tentative de reconnexion automatique
-      handleConnectionError()
-    })
 }
+
+// Initialize connection on startup
+prisma.$connect()
+  .then(() => {
+    console.log('✅ Prisma connected successfully to:', databaseUrl)
+  })
+  .catch((error) => {
+    console.error('❌ Prisma connection failed:', error)
+    console.error('Database URL was:', databaseUrl)
+    // Tentative de reconnexion automatique
+    handleConnectionError()
+  })
