@@ -5,6 +5,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 // Vérification des variables d'environnement
+console.log('🔍 Configuration Supabase:')
+console.log('NEXT_PUBLIC_SUPABASE_URL:', !!supabaseUrl)
+console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', !!supabaseAnonKey)
+console.log('SUPABASE_SERVICE_ROLE_KEY:', !!supabaseServiceKey)
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ Variables Supabase manquantes:')
   console.error('NEXT_PUBLIC_SUPABASE_URL:', !!supabaseUrl)
