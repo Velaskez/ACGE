@@ -18,12 +18,12 @@ import {
   Eye,
   FileText,
 } from 'lucide-react'
-import { SidebarFolder } from '@/hooks/use-sidebar-data'
+import { Folder } from '@/hooks/use-folders'
 
 interface FolderGridItemProps {
-  folder: SidebarFolder
-  onView: (folder: SidebarFolder) => void
-  onEdit: (folder: SidebarFolder) => void
+  folder: Folder
+  onView: (folder: Folder) => void
+  onEdit: (folder: Folder) => void
   onDelete: (folderId: string) => void
 }
 
@@ -41,7 +41,7 @@ export function FolderGridItem({
           <div className="flex items-center justify-between mb-3">
             <FolderOpen className="h-8 w-8 text-primary" />
             <Badge variant="secondary" className="text-xs">
-              {folder.documentCount} {folder.documentCount > 1 ? 'fichiers' : 'fichier'}
+              {folder._count?.documents || 0} {(folder._count?.documents || 0) > 1 ? 'fichiers' : 'fichier'}
             </Badge>
           </div>
 
@@ -52,32 +52,25 @@ export function FolderGridItem({
 
           {/* Espace pour la description (non disponible dans SidebarFolder) */}
 
-          {/* Documents récents */}
+          {/* Description */}
+          {folder.description && (
+            <p className="text-xs text-primary mb-3 line-clamp-2">
+              {folder.description}
+            </p>
+          )}
+
+          {/* Informations sur les documents */}
           <div className="flex-1 flex flex-col justify-end">
-            {folder.recentDocuments.length > 0 ? (
-              <div className="space-y-1 mb-3">
-                <p className="text-xs font-medium text-primary">Documents récents:</p>
-                {folder.recentDocuments.slice(0, 2).map((doc) => (
-                  <div key={doc.id} className="flex items-center space-x-1">
-                    <FileText className="h-3 w-3 text-primary flex-shrink-0" />
-                    <span className="text-xs text-primary truncate">
-                      {doc.title}
-                    </span>
-                  </div>
-                ))}
-                {folder.recentDocuments.length > 2 && (
-                  <span className="text-xs text-primary">
-                    +{folder.recentDocuments.length - 2} autres...
-                  </span>
-                )}
-              </div>
-            ) : (
-              <div className="mb-3">
-                <p className="text-xs text-primary italic">
-                  Aucun document
+            <div className="mb-3">
+              <p className="text-xs text-primary">
+                {folder._count?.documents || 0} document{(folder._count?.documents || 0) !== 1 ? 's' : ''}
+              </p>
+              {folder._count?.children > 0 && (
+                <p className="text-xs text-primary">
+                  {folder._count.children} sous-dossier{folder._count.children !== 1 ? 's' : ''}
                 </p>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Note: updatedAt non disponible dans SidebarFolder */}
           </div>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Toutes les APIs - ACGE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .api-result {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Toutes les APIs - ACGE</h1>
+    
+    <div class="card">
+        <h2>Actions</h2>
+        <button onclick="testAllAPIs()">🔍 Tester Toutes les APIs</button>
+        <button onclick="testDashboardAPIs()">📊 Test Dashboard</button>
+        <button onclick="testFoldersAPIs()">📁 Test Dossiers</button>
+        <button onclick="testDocumentsAPIs()">📄 Test Documents</button>
+        <button onclick="testUsersAPIs()">👥 Test Utilisateurs</button>
+        <button onclick="testProfileAPIs()">👤 Test Profil</button>
+        <button onclick="clearResults()">🗑️ Effacer les Résultats</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        async function testAPI(endpoint, method = 'GET', body = null) {
+            try {
+                const options = {
+                    method,
+                    credentials: 'include'
+                }
+                
+                if (body) {
+                    options.headers = { 'Content-Type': 'application/json' }
+                    options.body = JSON.stringify(body)
+                }
+                
+                const response = await fetch(endpoint, options)
+                const responseText = await response.text()
+                
+                let data
+                try {
+                    data = JSON.parse(responseText)
+                } catch (parseError) {
+                    data = { rawResponse: responseText }
+                }
+                
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    data,
+                    error: null
+                }
+            } catch (error) {
+                return {
+                    ok: false,
+                    status: 0,
+                    data: null,
+                    error: error.message
+                }
+            }
+        }
+
+        function createResultCard(title, results) {
+            let html = `<div class="card"><h2>${title}</h2>`
+            
+            for (const [apiName, result] of Object.entries(results)) {
+                const statusClass = result.ok ? 'success' : 'error'
+                const statusIndicator = result.ok ? 'status-success' : 'status-error'
+                
+                html += `
+                    <div class="api-result">
+                        <div>
+                            <span class="status-indicator ${statusIndicator}"></span>
+                            <strong>${apiName}</strong> 
+                            <span class="${statusClass}">(${result.status})</span>
+                        </div>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `
+            }
+            
+            html += '</div>'
+            return html
+        }
+
+        async function testAllAPIs() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test de toutes les APIs...</div>'
+            
+            const results = {}
+            
+            // Test Dashboard APIs
+            results['/api/dashboard/stats'] = await testAPI('/api/dashboard/stats')
+            results['/api/dashboard/activity'] = await testAPI('/api/dashboard/activity')
+            
+            // Test Folders APIs
+            results['/api/folders'] = await testAPI('/api/folders')
+            results['/api/sidebar/folders'] = await testAPI('/api/sidebar/folders')
+            
+            // Test Documents APIs
+            results['/api/documents'] = await testAPI('/api/documents')
+            
+            // Test Users APIs
+            results['/api/users'] = await testAPI('/api/users')
+            
+            // Test Profile APIs
+            results['/api/profile'] = await testAPI('/api/profile')
+            
+            resultsDiv.innerHTML = createResultCard('🔍 Test de Toutes les APIs', results)
+        }
+
+        async function testDashboardAPIs() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Dashboard...</div>'
+            
+            const results = {}
+            results['/api/dashboard/stats'] = await testAPI('/api/dashboard/stats')
+            results['/api/dashboard/activity'] = await testAPI('/api/dashboard/activity')
+            
+            resultsDiv.innerHTML = createResultCard('📊 Test APIs Dashboard', results)
+        }
+
+        async function testFoldersAPIs() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Dossiers...</div>'
+            
+            const results = {}
+            results['/api/folders'] = await testAPI('/api/folders')
+            results['/api/sidebar/folders'] = await testAPI('/api/sidebar/folders')
+            
+            // Test création d'un dossier
+            const testFolderName = `Test Dossier ${new Date().getTime()}`
+            results['/api/folders (POST)'] = await testAPI('/api/folders', 'POST', { 
+                name: testFolderName 
+            })
+            
+            resultsDiv.innerHTML = createResultCard('📁 Test APIs Dossiers', results)
+        }
+
+        async function testDocumentsAPIs() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Documents...</div>'
+            
+            const results = {}
+            results['/api/documents'] = await testAPI('/api/documents')
+            
+            resultsDiv.innerHTML = createResultCard('📄 Test APIs Documents', results)
+        }
+
+        async function testUsersAPIs() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Utilisateurs...</div>'
+            
+            const results = {}
+            results['/api/users'] = await testAPI('/api/users')
+            
+            resultsDiv.innerHTML = createResultCard('👥 Test APIs Utilisateurs', results)
+        }
+
+        async function testProfileAPIs() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Profil...</div>'
+            
+            const results = {}
+            results['/api/profile'] = await testAPI('/api/profile')
+            
+            resultsDiv.innerHTML = createResultCard('👤 Test APIs Profil', results)
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Test automatique au chargement
+        window.onload = function() {
+            testAllAPIs();
+        };
+    </script>
+</body>
+</html>

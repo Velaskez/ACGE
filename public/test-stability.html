@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Stabilité & Latence - ACGE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .api-result {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+        .latency-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #007bff;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Stabilité & Latence - ACGE</h1>
+    
+    <div class="card">
+        <h2>Actions</h2>
+        <button onclick="testStability()">🔄 Test Stabilité (10 requêtes)</button>
+        <button onclick="testLatency()">⏱️ Test Latence</button>
+        <button onclick="testSidebarStability()">📁 Test Stabilité Sidebar</button>
+        <button onclick="testContinuous()">🔄 Test Continu (30s)</button>
+        <button onclick="clearResults()">🗑️ Effacer les Résultats</button>
+    </div>
+
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <div class="stat-value" id="successRate">0%</div>
+            <div class="stat-label">Taux de Succès</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="avgLatency">0ms</div>
+            <div class="stat-label">Latence Moyenne</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalRequests">0</div>
+            <div class="stat-label">Requêtes Totales</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="errorCount">0</div>
+            <div class="stat-label">Erreurs</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Progression</h3>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+        </div>
+        <div id="progressText">0%</div>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        let testResults = {
+            total: 0,
+            success: 0,
+            errors: 0,
+            latencies: []
+        }
+
+        async function testAPI(endpoint, method = 'GET', body = null) {
+            const startTime = performance.now()
+            
+            try {
+                const options = {
+                    method,
+                    credentials: 'include'
+                }
+                
+                if (body) {
+                    options.headers = { 'Content-Type': 'application/json' }
+                    options.body = JSON.stringify(body)
+                }
+                
+                const response = await fetch(endpoint, options)
+                const responseText = await response.text()
+                
+                let data
+                try {
+                    data = JSON.parse(responseText)
+                } catch (parseError) {
+                    data = { rawResponse: responseText }
+                }
+                
+                const endTime = performance.now()
+                const latency = Math.round(endTime - startTime)
+                
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    data,
+                    latency,
+                    error: null
+                }
+            } catch (error) {
+                const endTime = performance.now()
+                const latency = Math.round(endTime - startTime)
+                
+                return {
+                    ok: false,
+                    status: 0,
+                    data: null,
+                    latency,
+                    error: error.message
+                }
+            }
+        }
+
+        function updateStats() {
+            const successRate = testResults.total > 0 ? Math.round((testResults.success / testResults.total) * 100) : 0
+            const avgLatency = testResults.latencies.length > 0 ? 
+                Math.round(testResults.latencies.reduce((a, b) => a + b, 0) / testResults.latencies.length) : 0
+            
+            document.getElementById('successRate').textContent = successRate + '%'
+            document.getElementById('avgLatency').textContent = avgLatency + 'ms'
+            document.getElementById('totalRequests').textContent = testResults.total
+            document.getElementById('errorCount').textContent = testResults.errors
+        }
+
+        function updateProgress(current, total) {
+            const percentage = Math.round((current / total) * 100)
+            document.getElementById('progressBar').style.width = percentage + '%'
+            document.getElementById('progressText').textContent = percentage + '%'
+        }
+
+        function createResultCard(title, results) {
+            let html = `<div class="card"><h2>${title}</h2>`
+            
+            for (const [apiName, result] of Object.entries(results)) {
+                const statusClass = result.ok ? 'success' : 'error'
+                const statusIndicator = result.ok ? 'status-success' : 'status-error'
+                
+                html += `
+                    <div class="api-result">
+                        <div>
+                            <span class="status-indicator ${statusIndicator}"></span>
+                            <strong>${apiName}</strong> 
+                            <span class="${statusClass}">(${result.status})</span>
+                            <span class="info">${result.latency}ms</span>
+                        </div>
+                        <div class="latency-info">
+                            Latence: ${result.latency}ms | 
+                            ${result.ok ? 'Succès' : 'Erreur'}
+                        </div>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `
+            }
+            
+            html += '</div>'
+            return html
+        }
+
+        async function testStability() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test de stabilité en cours...</div>'
+            
+            const apis = [
+                '/api/dashboard/stats',
+                '/api/sidebar/folders',
+                '/api/folders',
+                '/api/documents'
+            ]
+            
+            const results = {}
+            const iterations = 10
+            
+            for (let i = 0; i < iterations; i++) {
+                updateProgress(i + 1, iterations)
+                
+                for (const api of apis) {
+                    const result = await testAPI(api)
+                    
+                    // Mettre à jour les stats
+                    testResults.total++
+                    if (result.ok) {
+                        testResults.success++
+                    } else {
+                        testResults.errors++
+                    }
+                    testResults.latencies.push(result.latency)
+                    
+                    // Stocker le dernier résultat pour chaque API
+                    results[`${api} (test ${i + 1})`] = result
+                    
+                    // Petit délai pour éviter de surcharger
+                    await new Promise(resolve => setTimeout(resolve, 100))
+                }
+            }
+            
+            updateStats()
+            resultsDiv.innerHTML = createResultCard('🔄 Test de Stabilité (10 itérations)', results)
+        }
+
+        async function testLatency() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test de latence en cours...</div>'
+            
+            const apis = [
+                '/api/dashboard/stats',
+                '/api/sidebar/folders',
+                '/api/folders',
+                '/api/documents'
+            ]
+            
+            const results = {}
+            
+            for (const api of apis) {
+                const latencies = []
+                
+                // 5 tests de latence par API
+                for (let i = 0; i < 5; i++) {
+                    const result = await testAPI(api)
+                    latencies.push(result.latency)
+                    await new Promise(resolve => setTimeout(resolve, 200))
+                }
+                
+                const avgLatency = Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length)
+                const minLatency = Math.min(...latencies)
+                const maxLatency = Math.max(...latencies)
+                
+                results[api] = {
+                    ok: true,
+                    status: 200,
+                    data: {
+                        averageLatency: avgLatency,
+                        minLatency: minLatency,
+                        maxLatency: maxLatency,
+                        allLatencies: latencies
+                    },
+                    latency: avgLatency,
+                    error: null
+                }
+            }
+            
+            resultsDiv.innerHTML = createResultCard('⏱️ Test de Latence', results)
+        }
+
+        async function testSidebarStability() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test stabilité sidebar en cours...</div>'
+            
+            const results = {}
+            const iterations = 20
+            
+            for (let i = 0; i < iterations; i++) {
+                updateProgress(i + 1, iterations)
+                
+                const result = await testAPI('/api/sidebar/folders')
+                
+                // Mettre à jour les stats
+                testResults.total++
+                if (result.ok) {
+                    testResults.success++
+                } else {
+                    testResults.errors++
+                }
+                testResults.latencies.push(result.latency)
+                
+                results[`/api/sidebar/folders (test ${i + 1})`] = result
+                
+                await new Promise(resolve => setTimeout(resolve, 150))
+            }
+            
+            updateStats()
+            resultsDiv.innerHTML = createResultCard('📁 Test Stabilité Sidebar (20 itérations)', results)
+        }
+
+        async function testContinuous() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Test continu en cours (30 secondes)...</div>'
+            
+            const startTime = Date.now()
+            const duration = 30000 // 30 secondes
+            const results = {}
+            let testCount = 0
+            
+            const apis = [
+                '/api/dashboard/stats',
+                '/api/sidebar/folders',
+                '/api/folders'
+            ]
+            
+            while (Date.now() - startTime < duration) {
+                testCount++
+                updateProgress(testCount, Math.ceil(duration / 1000))
+                
+                for (const api of apis) {
+                    const result = await testAPI(api)
+                    
+                    // Mettre à jour les stats
+                    testResults.total++
+                    if (result.ok) {
+                        testResults.success++
+                    } else {
+                        testResults.errors++
+                    }
+                    testResults.latencies.push(result.latency)
+                    
+                    results[`${api} (test ${testCount})`] = result
+                }
+                
+                updateStats()
+                await new Promise(resolve => setTimeout(resolve, 1000))
+            }
+            
+            resultsDiv.innerHTML = createResultCard(`🔄 Test Continu (${testCount} cycles en 30s)`, results)
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            testResults = { total: 0, success: 0, errors: 0, latencies: [] };
+            updateStats();
+            updateProgress(0, 1);
+        }
+
+        // Initialisation
+        updateStats();
+    </script>
+</body>
+</html>

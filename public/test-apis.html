@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test APIs - ACGE</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .api-test {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-left: 4px solid #ddd;
+        }
+        .api-test.success { border-left-color: #28a745; }
+        .api-test.error { border-left-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test APIs - ACGE</h1>
+    
+    <div class="card">
+        <button onclick="testAllAPIs()">Tester Toutes les APIs</button>
+        <button onclick="testDashboard()">Test Dashboard</button>
+        <button onclick="testSidebar()">Test Sidebar</button>
+        <button onclick="testDocuments()">Test Documents</button>
+        <button onclick="testDocumentsSimple()" style="background: #28a745;">Test Documents Simple</button>
+        <button onclick="resetDatabase()" style="background: #dc3545;">🔄 Reset Base de Données</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        async function testAllAPIs() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="card">⏳ Test de toutes les APIs en cours...</div>';
+            
+            const apis = [
+                { name: 'Dashboard Stats', url: '/api/dashboard/stats' },
+                { name: 'Dashboard Activity', url: '/api/dashboard/activity' },
+                { name: 'Sidebar Folders', url: '/api/sidebar/folders' },
+                { name: 'Documents', url: '/api/documents' },
+                { name: 'Debug Documents', url: '/api/debug-documents' }
+            ];
+            
+            let results = '';
+            
+            for (const api of apis) {
+                try {
+                    const response = await fetch(api.url, {
+                        credentials: 'include'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    results += `
+                        <div class="api-test ${response.ok ? 'success' : 'error'}">
+                            <h3>${api.name}</h3>
+                            <div class="status ${response.ok ? 'success' : 'error'}">
+                                ${response.ok ? 'Succès' : 'Erreur'} (${response.status})
+                            </div>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    results += `
+                        <div class="api-test error">
+                            <h3>${api.name}</h3>
+                            <div class="status error">Erreur de connexion</div>
+                            <pre>${error.message}</pre>
+                        </div>
+                    `;
+                }
+            }
+            
+            resultsDiv.innerHTML = `
+                <div class="card">
+                    <h2>📊 Résultats des Tests</h2>
+                    ${results}
+                </div>
+            `;
+        }
+
+        async function testDashboard() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="card">⏳ Test du dashboard...</div>';
+            
+            try {
+                const [statsResponse, activityResponse] = await Promise.all([
+                    fetch('/api/dashboard/stats', { credentials: 'include' }),
+                    fetch('/api/dashboard/activity', { credentials: 'include' })
+                ]);
+                
+                const statsData = await statsResponse.json();
+                const activityData = await activityResponse.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>📊 Test Dashboard</h2>
+                        
+                        <h3>Stats API</h3>
+                        <div class="status ${statsResponse.ok ? 'success' : 'error'}">
+                            ${statsResponse.ok ? 'Succès' : 'Erreur'} (${statsResponse.status})
+                        </div>
+                        <pre>${JSON.stringify(statsData, null, 2)}</pre>
+                        
+                        <h3>Activity API</h3>
+                        <div class="status ${activityResponse.ok ? 'success' : 'error'}">
+                            ${activityResponse.ok ? 'Succès' : 'Erreur'} (${activityResponse.status})
+                        </div>
+                        <pre>${JSON.stringify(activityData, null, 2)}</pre>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>❌ Erreur Dashboard</h2>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testSidebar() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="card">⏳ Test de la sidebar...</div>';
+            
+            try {
+                const response = await fetch('/api/sidebar/folders', {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>📁 Test Sidebar</h2>
+                        <div class="status ${response.ok ? 'success' : 'error'}">
+                            ${response.ok ? 'Succès' : 'Erreur'} (${response.status})
+                        </div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>❌ Erreur Sidebar</h2>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testDocuments() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="card">⏳ Test des documents...</div>';
+            
+            try {
+                const response = await fetch('/api/documents', {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>📄 Test Documents</h2>
+                        <div class="status ${response.ok ? 'success' : 'error'}">
+                            ${response.ok ? 'Succès' : 'Erreur'} (${response.status})
+                        </div>
+                        <p><strong>Documents retournés:</strong> ${data.documents?.length || 0}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>❌ Erreur Documents</h2>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testDocumentsSimple() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="card">⏳ Test des documents (version simplifiée)...</div>';
+            
+            try {
+                const response = await fetch('/api/documents', {
+                    credentials: 'include'
+                });
+                
+                const responseText = await response.text();
+                let data;
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    resultsDiv.innerHTML = `
+                        <div class="card">
+                            <h2>❌ Erreur Parsing JSON</h2>
+                            <div class="status error">Erreur (${response.status})</div>
+                            <p><strong>Réponse reçue (non-JSON):</strong></p>
+                            <pre>${responseText.substring(0, 500)}...</pre>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>📄 Test Documents (Simplifié)</h2>
+                        <div class="status ${response.ok ? 'success' : 'error'}">
+                            ${response.ok ? 'Succès' : 'Erreur'} (${response.status})
+                        </div>
+                        <p><strong>Documents retournés:</strong> ${data.documents?.length || 0}</p>
+                        <p><strong>Total:</strong> ${data.pagination?.total || 0}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>❌ Erreur Documents Simple</h2>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function resetDatabase() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="card">⏳ Réinitialisation de la base de données...</div>';
+            
+            try {
+                const response = await fetch('/api/reset-db-connection', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>🔄 Reset Base de Données</h2>
+                        <div class="status ${response.ok ? 'success' : 'error'}">
+                            ${response.ok ? 'Succès' : 'Erreur'} (${response.status})
+                        </div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        
+                        <p><strong>Maintenant, testez à nouveau les APIs :</strong></p>
+                        <button onclick="testAllAPIs()" style="margin-top: 15px;">Tester Toutes les APIs</button>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>❌ Erreur Reset</h2>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

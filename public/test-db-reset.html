@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Reset DB & Stabilité - ACGE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .api-result {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Reset DB & Stabilité - ACGE</h1>
+    
+    <div class="card">
+        <h2>Actions</h2>
+                 <button onclick="resetDatabase()" class="danger">🔄 Reset Base de Données</button>
+         <button onclick="createNotificationsTable()" class="danger">🔔 Créer Table Notifications</button>
+         <button onclick="testAfterReset()">✅ Test Après Reset</button>
+         <button onclick="testStability()">🔄 Test Stabilité (5 requêtes)</button>
+         <button onclick="clearResults()">🗑️ Effacer les Résultats</button>
+    </div>
+
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <div class="stat-value" id="successRate">0%</div>
+            <div class="stat-label">Taux de Succès</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalRequests">0</div>
+            <div class="stat-label">Requêtes Totales</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="errorCount">0</div>
+            <div class="stat-label">Erreurs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="resetCount">0</div>
+            <div class="stat-label">Resets Effectués</div>
+        </div>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        let testResults = {
+            total: 0,
+            success: 0,
+            errors: 0,
+            resets: 0
+        }
+
+        async function testAPI(endpoint, method = 'POST', body = null) {
+            try {
+                const options = {
+                    method,
+                    credentials: 'include'
+                }
+                
+                if (body) {
+                    options.headers = { 'Content-Type': 'application/json' }
+                    options.body = JSON.stringify(body)
+                }
+                
+                const response = await fetch(endpoint, options)
+                const responseText = await response.text()
+                
+                let data
+                try {
+                    data = JSON.parse(responseText)
+                } catch (parseError) {
+                    data = { rawResponse: responseText }
+                }
+                
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    data,
+                    error: null
+                }
+            } catch (error) {
+                return {
+                    ok: false,
+                    status: 0,
+                    data: null,
+                    error: error.message
+                }
+            }
+        }
+
+        function updateStats() {
+            const successRate = testResults.total > 0 ? Math.round((testResults.success / testResults.total) * 100) : 0
+            
+            document.getElementById('successRate').textContent = successRate + '%'
+            document.getElementById('totalRequests').textContent = testResults.total
+            document.getElementById('errorCount').textContent = testResults.errors
+            document.getElementById('resetCount').textContent = testResults.resets
+        }
+
+        function createResultCard(title, results) {
+            let html = `<div class="card"><h2>${title}</h2>`
+            
+            for (const [apiName, result] of Object.entries(results)) {
+                const statusClass = result.ok ? 'success' : 'error'
+                const statusIndicator = result.ok ? 'status-success' : 'status-error'
+                
+                html += `
+                    <div class="api-result">
+                        <div>
+                            <span class="status-indicator ${statusIndicator}"></span>
+                            <strong>${apiName}</strong> 
+                            <span class="${statusClass}">(${result.status})</span>
+                        </div>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `
+            }
+            
+            html += '</div>'
+            return html
+        }
+
+        async function resetDatabase() {
+            const resultsDiv = document.getElementById('results')
+            resultsDiv.innerHTML = '<div class="card">⏳ Réinitialisation de la base de données...</div>'
+            
+            const result = await testAPI('/api/reset-db-connection')
+            
+            testResults.resets++
+            updateStats()
+            
+            if (result.ok) {
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>🔄 Reset Base de Données</h2>
+                        <div class="api-result">
+                            <div>
+                                <span class="status-indicator status-success"></span>
+                                <strong>Reset DB</strong> 
+                                <span class="success">(${result.status})</span>
+                            </div>
+                            <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                        </div>
+                        <p class="success">✅ Base de données réinitialisée avec succès !</p>
+                        <button onclick="testAfterReset()" style="margin-top: 10px;">✅ Tester les APIs maintenant</button>
+                    </div>
+                `
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h2>❌ Erreur Reset Base de Données</h2>
+                        <div class="api-result">
+                            <div>
+                                <span class="status-indicator status-error"></span>
+                                <strong>Reset DB</strong> 
+                                <span class="error">(${result.status})</span>
+                            </div>
+                            <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                        </div>
+                    </div>
+                `
+            }
+        }
+
+                 async function testAfterReset() {
+             const resultsDiv = document.getElementById('results')
+             resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs après reset...</div>'
+             
+             const apis = [
+                 { endpoint: '/api/health', method: 'GET' },
+                 { endpoint: '/api/dashboard/stats', method: 'GET' },
+                 { endpoint: '/api/sidebar/folders', method: 'GET' },
+                 { endpoint: '/api/folders', method: 'GET' },
+                 { endpoint: '/api/documents', method: 'GET' },
+                 { endpoint: '/api/debug-notifications', method: 'GET' },
+                 { endpoint: '/api/notifications?unreadOnly=true&limit=1', method: 'GET' },
+                 { endpoint: '/api/auth/me-simple', method: 'GET' },
+                 { endpoint: '/api/auth/me', method: 'GET' }
+             ]
+             
+             const results = {}
+             
+             for (const api of apis) {
+                 const result = await testAPI(api.endpoint, api.method)
+                 
+                 testResults.total++
+                 if (result.ok) {
+                     testResults.success++
+                 } else {
+                     testResults.errors++
+                 }
+                 
+                 results[api.endpoint] = result
+                 
+                 // Petit délai entre les requêtes
+                 await new Promise(resolve => setTimeout(resolve, 200))
+             }
+             
+             updateStats()
+             resultsDiv.innerHTML = createResultCard('✅ Test Après Reset', results)
+         }
+
+                 async function testStability() {
+             const resultsDiv = document.getElementById('results')
+             resultsDiv.innerHTML = '<div class="card">⏳ Test de stabilité en cours...</div>'
+             
+             const apis = [
+                 { endpoint: '/api/health', method: 'GET' },
+                 { endpoint: '/api/dashboard/stats', method: 'GET' },
+                 { endpoint: '/api/sidebar/folders', method: 'GET' },
+                 { endpoint: '/api/folders', method: 'GET' },
+                 { endpoint: '/api/debug-notifications', method: 'GET' },
+                 { endpoint: '/api/notifications?unreadOnly=true&limit=1', method: 'GET' },
+                 { endpoint: '/api/auth/me-simple', method: 'GET' },
+                 { endpoint: '/api/auth/me', method: 'GET' }
+             ]
+             
+             const results = {}
+             const iterations = 5
+             
+             for (let i = 0; i < iterations; i++) {
+                 for (const api of apis) {
+                     const result = await testAPI(api.endpoint, api.method)
+                     
+                     testResults.total++
+                     if (result.ok) {
+                         testResults.success++
+                     } else {
+                         testResults.errors++
+                     }
+                     
+                     results[`${api.endpoint} (test ${i + 1})`] = result
+                     
+                     await new Promise(resolve => setTimeout(resolve, 100))
+                 }
+             }
+             
+             updateStats()
+             resultsDiv.innerHTML = createResultCard('🔄 Test de Stabilité (5 itérations)', results)
+                  }
+
+         async function createNotificationsTable() {
+             const resultsDiv = document.getElementById('results')
+             resultsDiv.innerHTML = '<div class="card">⏳ Création de la table notifications...</div>'
+             
+             const result = await testAPI('/api/create-notifications-table', 'POST')
+             
+             if (result.ok) {
+                 resultsDiv.innerHTML = `
+                     <div class="card">
+                         <h2>🔔 Création Table Notifications</h2>
+                         <div class="api-result">
+                             <div>
+                                 <span class="status-indicator status-success"></span>
+                                 <strong>Create Table</strong> 
+                                 <span class="success">(${result.status})</span>
+                             </div>
+                             <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                         </div>
+                         <p class="success">✅ Table notifications créée avec succès !</p>
+                         <button onclick="testAfterReset()" style="margin-top: 10px;">✅ Tester les APIs maintenant</button>
+                     </div>
+                 `
+             } else {
+                 resultsDiv.innerHTML = `
+                     <div class="card">
+                         <h2>❌ Erreur Création Table Notifications</h2>
+                         <div class="api-result">
+                             <div>
+                                 <span class="status-indicator status-error"></span>
+                                 <strong>Create Table</strong> 
+                                 <span class="error">(${result.status})</span>
+                             </div>
+                             <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                         </div>
+                     </div>
+                 `
+             }
+         }
+
+         function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            testResults = { total: 0, success: 0, errors: 0, resets: 0 };
+            updateStats();
+        }
+
+        // Initialisation
+        updateStats();
+    </script>
+</body>
+</html>

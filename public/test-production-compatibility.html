@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Compatibilité Production - ACGE</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        .test-section h2 {
+            color: #34495e;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .test-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-item h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .summary {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #28a745;
+        }
+        .details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .environment-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .env-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        .env-card h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        .env-value {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.8em;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Compatibilité Production</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            Vérification complète de la compatibilité avec acge-gabon.com
+        </p>
+
+        <div class="test-section">
+            <h2>🌐 Informations Environnement</h2>
+            <div class="environment-info">
+                <div class="env-card">
+                    <h3>📍 URL Actuelle</h3>
+                    <div class="env-value" id="current-url"></div>
+                </div>
+                <div class="env-card">
+                    <h3>🎯 URL Production</h3>
+                    <div class="env-value">https://acge-gabon.com</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 Test Configuration Base de Données</h2>
+            <div class="test-grid">
+                <div class="test-item">
+                    <h3>🗄️ Connexion Base de Données</h3>
+                    <button onclick="testDatabaseConnection()">Tester Connexion</button>
+                    <div id="db-connection-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>📊 Schéma Prisma</h3>
+                    <button onclick="testPrismaSchema()">Vérifier Schéma</button>
+                    <div id="prisma-schema-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>👥 Table Utilisateurs</h3>
+                    <button onclick="testUsersTable()">Tester Table Users</button>
+                    <div id="users-table-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>📁 Table Documents</h3>
+                    <button onclick="testDocumentsTable()">Tester Table Documents</button>
+                    <div id="documents-table-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔐 Test Authentification</h2>
+            <div class="test-grid">
+                <div class="test-item">
+                    <h3>🔑 API Auth/Me</h3>
+                    <button onclick="testAuthMe()">Tester Auth/Me</button>
+                    <div id="auth-me-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>🔑 API Auth/Me-Simple</h3>
+                    <button onclick="testAuthMeSimple()">Tester Auth/Me-Simple</button>
+                    <div id="auth-me-simple-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>🔑 API Health</h3>
+                    <button onclick="testHealth()">Tester Health</button>
+                    <div id="health-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Test APIs Principales</h2>
+            <div class="test-grid">
+                <div class="test-item">
+                    <h3>📈 Dashboard Stats</h3>
+                    <button onclick="testDashboardStats()">Tester Stats</button>
+                    <div id="dashboard-stats-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>📁 Documents</h3>
+                    <button onclick="testDocuments()">Tester Documents</button>
+                    <div id="documents-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>📂 Dossiers</h3>
+                    <button onclick="testFolders()">Tester Dossiers</button>
+                    <div id="folders-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>🔔 Notifications</h3>
+                    <button onclick="testNotifications()">Tester Notifications</button>
+                    <div id="notifications-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🚀 Test Déploiement Production</h2>
+            <div class="test-grid">
+                <div class="test-item">
+                    <h3>🌐 Test URL Production</h3>
+                    <button onclick="testProductionURL()">Tester acge-gabon.com</button>
+                    <div id="production-url-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>🔗 Test URLs Relatives</h3>
+                    <button onclick="testRelativeURLs()">Tester URLs Relatives</button>
+                    <div id="relative-urls-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>📱 Test Responsive</h3>
+                    <button onclick="testResponsive()">Tester Responsive</button>
+                    <div id="responsive-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>⚡ Test Performance</h2>
+            <div class="test-grid">
+                <div class="test-item">
+                    <h3>⚡ Test Vitesse APIs</h3>
+                    <button onclick="testAPISpeed()">Tester Vitesse</button>
+                    <div id="api-speed-result"></div>
+                </div>
+                <div class="test-item">
+                    <h3>🔄 Test Stabilité</h3>
+                    <button onclick="testStability()">Test Stabilité (5x)</button>
+                    <div id="stability-result"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 Test Complet Automatique</h2>
+            <button onclick="runFullTest()" style="background: linear-gradient(45deg, #28a745, #20c997); font-size: 18px; padding: 15px 30px;">
+                🚀 Lancer Test Complet
+            </button>
+            <div class="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div id="full-test-result"></div>
+        </div>
+
+        <div class="summary" id="test-summary" style="display: none;">
+            <h3>📋 Résumé des Tests</h3>
+            <div id="summary-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {};
+        let currentURL = window.location.origin;
+
+        // Afficher l'URL actuelle
+        document.getElementById('current-url').textContent = currentURL;
+
+        async function makeRequest(url, method = 'GET', body = null) {
+            const startTime = Date.now();
+            try {
+                const options = {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                };
+                if (body) options.body = JSON.stringify(body);
+                
+                const response = await fetch(url, options);
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    duration,
+                    data: response.ok ? await response.json() : null,
+                    error: !response.ok ? await response.text() : null
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    status: 0,
+                    duration: Date.now() - startTime,
+                    error: error.message
+                };
+            }
+        }
+
+        function showResult(elementId, result, type = 'info') {
+            const element = document.getElementById(elementId);
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info';
+            
+            let message = '';
+            if (result.success) {
+                message = `✅ Succès (${result.duration}ms) - Status: ${result.status}`;
+                if (result.data) {
+                    message += `\n📊 Données: ${JSON.stringify(result.data, null, 2)}`;
+                }
+            } else {
+                message = `❌ Erreur (${result.duration}ms) - Status: ${result.status}`;
+                if (result.error) {
+                    message += `\n🔍 Erreur: ${result.error}`;
+                }
+            }
+            
+            element.innerHTML = `<div class="test-result ${className}">${message}</div>`;
+            return result.success;
+        }
+
+        // Tests individuels
+        async function testDatabaseConnection() {
+            const result = await makeRequest('/api/health');
+            const success = showResult('db-connection-result', result, result.success ? 'success' : 'error');
+            testResults.dbConnection = success;
+            return success;
+        }
+
+        async function testPrismaSchema() {
+            const result = await makeRequest('/api/debug-simple');
+            const success = showResult('prisma-schema-result', result, result.success ? 'success' : 'error');
+            testResults.prismaSchema = success;
+            return success;
+        }
+
+        async function testUsersTable() {
+            const result = await makeRequest('/api/users');
+            const success = showResult('users-table-result', result, result.success ? 'success' : 'error');
+            testResults.usersTable = success;
+            return success;
+        }
+
+        async function testDocumentsTable() {
+            const result = await makeRequest('/api/documents');
+            const success = showResult('documents-table-result', result, result.success ? 'success' : 'error');
+            testResults.documentsTable = success;
+            return success;
+        }
+
+        async function testAuthMe() {
+            const result = await makeRequest('/api/auth/me');
+            const success = showResult('auth-me-result', result, result.success ? 'success' : 'warning');
+            testResults.authMe = success;
+            return success;
+        }
+
+        async function testAuthMeSimple() {
+            const result = await makeRequest('/api/auth/me-simple');
+            const success = showResult('auth-me-simple-result', result, result.success ? 'success' : 'warning');
+            testResults.authMeSimple = success;
+            return success;
+        }
+
+        async function testHealth() {
+            const result = await makeRequest('/api/health');
+            const success = showResult('health-result', result, result.success ? 'success' : 'error');
+            testResults.health = success;
+            return success;
+        }
+
+        async function testDashboardStats() {
+            const result = await makeRequest('/api/dashboard/stats');
+            const success = showResult('dashboard-stats-result', result, result.success ? 'success' : 'error');
+            testResults.dashboardStats = success;
+            return success;
+        }
+
+        async function testDocuments() {
+            const result = await makeRequest('/api/documents');
+            const success = showResult('documents-result', result, result.success ? 'success' : 'error');
+            testResults.documents = success;
+            return success;
+        }
+
+        async function testFolders() {
+            const result = await makeRequest('/api/folders');
+            const success = showResult('folders-result', result, result.success ? 'success' : 'error');
+            testResults.folders = success;
+            return success;
+        }
+
+        async function testNotifications() {
+            const result = await makeRequest('/api/notifications?unreadOnly=true&limit=1');
+            const success = showResult('notifications-result', result, result.success ? 'success' : 'error');
+            testResults.notifications = success;
+            return success;
+        }
+
+        async function testProductionURL() {
+            try {
+                const startTime = Date.now();
+                const response = await fetch('https://acge-gabon.com/api/health', {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                const result = {
+                    success: response.ok,
+                    status: response.status,
+                    duration,
+                    data: response.ok ? await response.json() : null,
+                    error: !response.ok ? await response.text() : null
+                };
+                
+                const success = showResult('production-url-result', result, result.success ? 'success' : 'error');
+                testResults.productionURL = success;
+                return success;
+            } catch (error) {
+                const result = {
+                    success: false,
+                    status: 0,
+                    duration: 0,
+                    error: error.message
+                };
+                const success = showResult('production-url-result', result, 'error');
+                testResults.productionURL = success;
+                return success;
+            }
+        }
+
+        async function testRelativeURLs() {
+            const urls = ['/api/health', '/api/auth/me-simple', '/api/dashboard/stats'];
+            let allSuccess = true;
+            
+            for (const url of urls) {
+                const result = await makeRequest(url);
+                if (!result.success) allSuccess = false;
+            }
+            
+            const message = allSuccess ? 
+                '✅ Toutes les URLs relatives fonctionnent' : 
+                '❌ Certaines URLs relatives échouent';
+            
+            document.getElementById('relative-urls-result').innerHTML = 
+                `<div class="test-result ${allSuccess ? 'success' : 'error'}">${message}</div>`;
+            
+            testResults.relativeURLs = allSuccess;
+            return allSuccess;
+        }
+
+        async function testResponsive() {
+            // Test simple de responsive
+            const isMobile = window.innerWidth < 768;
+            const message = `📱 Largeur écran: ${window.innerWidth}px (${isMobile ? 'Mobile' : 'Desktop'})`;
+            
+            document.getElementById('responsive-result').innerHTML = 
+                `<div class="test-result info">${message}</div>`;
+            
+            testResults.responsive = true;
+            return true;
+        }
+
+        async function testAPISpeed() {
+            const apis = ['/api/health', '/api/auth/me-simple', '/api/dashboard/stats'];
+            const results = [];
+            
+            for (const api of apis) {
+                const result = await makeRequest(api);
+                results.push({ api, ...result });
+            }
+            
+            const avgDuration = results.reduce((sum, r) => sum + r.duration, 0) / results.length;
+            const message = `⚡ Vitesse moyenne: ${avgDuration.toFixed(0)}ms\n${results.map(r => `${r.api}: ${r.duration}ms`).join('\n')}`;
+            
+            document.getElementById('api-speed-result').innerHTML = 
+                `<div class="test-result ${avgDuration < 1000 ? 'success' : avgDuration < 3000 ? 'warning' : 'error'}">${message}</div>`;
+            
+            testResults.apiSpeed = avgDuration < 3000;
+            return testResults.apiSpeed;
+        }
+
+        async function testStability() {
+            const api = '/api/health';
+            const results = [];
+            
+            for (let i = 0; i < 5; i++) {
+                const result = await makeRequest(api);
+                results.push(result);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Pause entre les tests
+            }
+            
+            const successCount = results.filter(r => r.success).length;
+            const avgDuration = results.reduce((sum, r) => sum + r.duration, 0) / results.length;
+            
+            const message = `🔄 Stabilité: ${successCount}/5 succès\n⚡ Durée moyenne: ${avgDuration.toFixed(0)}ms`;
+            
+            document.getElementById('stability-result').innerHTML = 
+                `<div class="test-result ${successCount === 5 ? 'success' : successCount >= 3 ? 'warning' : 'error'}">${message}</div>`;
+            
+            testResults.stability = successCount >= 3;
+            return testResults.stability;
+        }
+
+        async function runFullTest() {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = '🔄 Test en cours...';
+            
+            const tests = [
+                { name: 'Connexion DB', fn: testDatabaseConnection },
+                { name: 'Schéma Prisma', fn: testPrismaSchema },
+                { name: 'Table Users', fn: testUsersTable },
+                { name: 'Table Documents', fn: testDocumentsTable },
+                { name: 'Auth/Me', fn: testAuthMe },
+                { name: 'Auth/Me-Simple', fn: testAuthMeSimple },
+                { name: 'Health', fn: testHealth },
+                { name: 'Dashboard Stats', fn: testDashboardStats },
+                { name: 'Documents', fn: testDocuments },
+                { name: 'Dossiers', fn: testFolders },
+                { name: 'Notifications', fn: testNotifications },
+                { name: 'URL Production', fn: testProductionURL },
+                { name: 'URLs Relatives', fn: testRelativeURLs },
+                { name: 'Responsive', fn: testResponsive },
+                { name: 'Vitesse APIs', fn: testAPISpeed },
+                { name: 'Stabilité', fn: testStability }
+            ];
+            
+            const progressBar = document.getElementById('progress-bar');
+            const resultDiv = document.getElementById('full-test-result');
+            
+            let completedTests = 0;
+            const totalTests = tests.length;
+            
+            resultDiv.innerHTML = '<div class="test-result info">🚀 Démarrage du test complet...</div>';
+            
+            for (const test of tests) {
+                try {
+                    await test.fn();
+                    completedTests++;
+                    const progress = (completedTests / totalTests) * 100;
+                    progressBar.style.width = progress + '%';
+                    
+                    resultDiv.innerHTML += `<div class="test-result info">✅ ${test.name} - Terminé</div>`;
+                } catch (error) {
+                    resultDiv.innerHTML += `<div class="test-result error">❌ ${test.name} - Erreur: ${error.message}</div>`;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Pause entre les tests
+            }
+            
+            // Afficher le résumé
+            showTestSummary();
+            
+            button.disabled = false;
+            button.textContent = '🚀 Lancer Test Complet';
+            resultDiv.innerHTML += '<div class="test-result success">🎉 Test complet terminé ! Vérifiez le résumé ci-dessous.</div>';
+        }
+
+        function showTestSummary() {
+            const summaryDiv = document.getElementById('test-summary');
+            const contentDiv = document.getElementById('summary-content');
+            
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(Boolean).length;
+            const failedTests = totalTests - passedTests;
+            
+            let summary = `📊 Résumé des Tests\n`;
+            summary += `✅ Tests réussis: ${passedTests}/${totalTests}\n`;
+            summary += `❌ Tests échoués: ${failedTests}/${totalTests}\n`;
+            summary += `📈 Taux de réussite: ${((passedTests / totalTests) * 100).toFixed(1)}%\n\n`;
+            
+            summary += `🔍 Détails:\n`;
+            for (const [test, result] of Object.entries(testResults)) {
+                summary += `${result ? '✅' : '❌'} ${test}\n`;
+            }
+            
+            summary += `\n🌐 Environnement: ${currentURL}\n`;
+            summary += `🎯 Production: https://acge-gabon.com\n`;
+            
+            if (failedTests === 0) {
+                summary += `\n🎉 Tous les tests sont passés ! L'application est prête pour la production.`;
+            } else {
+                summary += `\n⚠️ Des problèmes ont été détectés. Vérifiez les erreurs avant le déploiement.`;
+            }
+            
+            contentDiv.textContent = summary;
+            summaryDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

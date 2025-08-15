@@ -35,7 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { useSidebarData } from '@/hooks/use-sidebar-data'
+import { useFolders } from '@/hooks/use-folders'
 import { FoldersToolbar } from '@/components/folders/folders-toolbar'
 import { FolderGridItem } from '@/components/folders/folder-grid-item'
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
@@ -77,7 +77,7 @@ interface DocumentItem {
 export default function FoldersPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { folders, stats, isLoading, error, refresh } = useSidebarData()
+  const { folders, stats, isLoading, error, refresh } = useFolders()
   
   // États pour la gestion des dossiers
   const [query, setQuery] = React.useState('')
@@ -670,19 +670,11 @@ export default function FoldersPage() {
                         onClick={() => handleOpenFolder(folder)}
                       >
                         <TableCell className="font-medium">{folder.name}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{folder.documentCount}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{folder._count?.documents || 0}</TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {folder.recentDocuments && folder.recentDocuments.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {folder.recentDocuments.map((doc) => (
-                                <span key={doc.id} className="text-xs text-primary">
-                                  {doc.title}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-primary">Aucun document</span>
-                          )}
+                          <span className="text-xs text-primary">
+                            {folder._count?.documents || 0} document{folder._count?.documents !== 1 ? 's' : ''}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
