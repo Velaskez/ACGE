@@ -111,8 +111,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Mémoriser les valeurs pour éviter les re-renders inutiles
+  const value = React.useMemo(() => ({
+    user,
+    isLoading,
+    login,
+    logout,
+    refreshUser
+  }), [user, isLoading])
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )

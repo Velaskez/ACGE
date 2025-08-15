@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
 
     const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
-    const userRole = decoded.role
 
     // Récupérer les paramètres de requête
     const { searchParams } = new URL(request.url)
@@ -34,44 +33,59 @@ export async function GET(request: NextRequest) {
       where.isRead = false
     }
 
-    // Récupérer les notifications
-    const [notifications, total] = await Promise.all([
-      prisma.notification.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
+    try {
+      // Récupérer les notifications
+      const [notifications, total] = await Promise.all([
+        prisma.notification.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
             }
           }
+        }),
+        prisma.notification.count({ where })
+      ])
+
+      // Calculer le nombre de notifications non lues
+      const unreadCount = await prisma.notification.count({
+        where: {
+          userId: userId,
+          isRead: false
         }
-      }),
-      prisma.notification.count({ where })
-    ])
+      })
 
-    // Calculer le nombre de notifications non lues
-    const unreadCount = await prisma.notification.count({
-      where: {
-        userId: userId,
-        isRead: false
-      }
-    })
-
-    return NextResponse.json({
-      notifications,
-      unreadCount,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit)
-      }
-    })
+      return NextResponse.json({
+        notifications,
+        unreadCount,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      })
+    } catch (dbError) {
+      console.error('Erreur base de données notifications:', dbError)
+      // Retourner une réponse vide si la table n'existe pas encore
+      return NextResponse.json({
+        notifications: [],
+        unreadCount: 0,
+        pagination: {
+          total: 0,
+          page: 1,
+          limit: 50,
+          totalPages: 0
+        }
+      })
+    }
 
   } catch (error) {
     console.error('Erreur récupération notifications:', error)
@@ -117,40 +131,48 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Vérifier que l'utilisateur cible existe
-    const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId }
-    })
+    try {
+      // Vérifier que l'utilisateur cible existe
+      const targetUser = await prisma.user.findUnique({
+        where: { id: targetUserId }
+      })
 
-    if (!targetUser) {
-      return NextResponse.json(
-        { error: 'Utilisateur cible non trouvé' },
-        { status: 404 }
-      )
-    }
+      if (!targetUser) {
+        return NextResponse.json(
+          { error: 'Utilisateur cible non trouvé' },
+          { status: 404 }
+        )
+      }
 
-    // Créer la notification
-    const notification = await prisma.notification.create({
-      data: {
-        title,
-        message,
-        type,
-        userId: targetUserId,
-        data: data || {},
-        isRead: false
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+      // Créer la notification
+      const notification = await prisma.notification.create({
+        data: {
+          title,
+          message,
+          type,
+          userId: targetUserId,
+          data: data || {},
+          isRead: false
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
           }
         }
-      }
-    })
+      })
 
-    return NextResponse.json(notification, { status: 201 })
+      return NextResponse.json(notification, { status: 201 })
+    } catch (dbError) {
+      console.error('Erreur base de données création notification:', dbError)
+      return NextResponse.json(
+        { error: 'Service notifications temporairement indisponible' },
+        { status: 503 }
+      )
+    }
 
   } catch (error) {
     console.error('Erreur création notification:', error)

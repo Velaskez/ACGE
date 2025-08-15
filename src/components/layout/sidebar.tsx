@@ -60,11 +60,12 @@ const mainNav = [
     icon: Users,
     adminOnly: true,
   },
-  {
-    title: 'Paramètres',
-    href: '/settings',
-    icon: Settings,
-  },
+  // Page settings supprimée temporairement
+  // {
+  //   title: 'Paramètres',
+  //   href: '/settings',
+  //   icon: Settings,
+  // },
 ]
 
 export function Sidebar({ className, inSheet = false }: SidebarProps) {
