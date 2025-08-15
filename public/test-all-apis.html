@@ -3,503 +3,553 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Complet des APIs</title>
+    <title>Test API - Diagnostic ACGE</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
+        body {
+            font-family: Arial, sans-serif;
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 30px;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 2.5em;
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
         .test-section {
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-        }
-        .test-title {
-            font-size: 1.3em;
-            color: #333;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .status-pending { background: #ffc107; color: white; }
-        .status-success { background: #28a745; color: white; }
-        .status-error { background: #dc3545; color: white; }
-        .status-warning { background: #fd7e14; color: white; }
-        
-        .test-result {
-            margin-top: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             padding: 15px;
-            background: white;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #dee2e6;
+            margin-bottom: 15px;
         }
-        .error-detail {
-            color: #dc3545;
-            background: #ffe6e6;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
         }
-        .success-detail {
-            color: #28a745;
-            background: #e6ffe6;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        .warning-detail {
-            color: #fd7e14;
-            background: #fff3e0;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .btn {
+            background: #007bff;
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-size: 1em;
+            padding: 10px 20px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: transform 0.2s;
-            margin-right: 10px;
+            margin: 5px;
         }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        .btn:hover {
+            background: #0056b3;
         }
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .btn-danger {
+            background: #dc3545;
         }
-        .controls {
-            text-align: center;
-            margin-bottom: 30px;
+        .btn-danger:hover {
+            background: #c82333;
         }
-        .summary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 30px;
-            text-align: center;
+        .btn-success {
+            background: #28a745;
         }
-        .summary h2 {
-            margin-bottom: 15px;
+        .btn-success:hover {
+            background: #218838;
         }
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            flex-wrap: wrap;
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
         }
-        .stat {
-            text-align: center;
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
         }
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
         }
-        .stat-label {
-            font-size: 0.9em;
-            opacity: 0.9;
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
         }
-        .spinner {
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .loading {
+            background: #e2e3e5;
+            border: 1px solid #d6d8db;
+            color: #383d41;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .status-indicator {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0,0,0,.1);
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            border-top-color: #667eea;
-            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        .status-ok { background: #28a745; }
+        .status-error { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+        .status-loading { background: #17a2b8; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔬 Test Complet des APIs</h1>
+        <h1>🔧 Test API - Diagnostic ACGE</h1>
+        <p>Page de diagnostic pour identifier les problèmes d'API et de chargement des documents.</p>
         
-        <div class="controls">
-            <button onclick="runAllTests()">🚀 Lancer tous les tests</button>
-            <button onclick="clearResults()">🗑️ Effacer les résultats</button>
-            <button onclick="downloadReport()">📥 Télécharger le rapport</button>
+        <div class="test-section">
+            <h3>📊 État Général</h3>
+            <button class="btn" onclick="testAll()">🧪 Lancer tous les tests</button>
+            <button class="btn btn-danger" onclick="clearResults()">🗑️ Effacer les résultats</button>
+            <div id="general-status" class="result info">En attente de test...</div>
         </div>
 
-        <div id="test-container"></div>
-        
-        <div class="summary" id="summary" style="display: none;">
-            <h2>📊 Résumé des tests</h2>
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-value" id="total-tests">0</div>
-                    <div class="stat-label">Tests totaux</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="success-tests">0</div>
-                    <div class="stat-label">Réussis</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="failed-tests">0</div>
-                    <div class="stat-label">Échoués</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="warning-tests">0</div>
-                    <div class="stat-label">Avertissements</div>
-                </div>
+        <div class="grid">
+            <div class="test-section">
+                <h3>🔐 Authentification</h3>
+                <button class="btn" onclick="testAuth()">Tester l'auth</button>
+                <button class="btn" onclick="testLogin()">Tester login</button>
+                <button class="btn" onclick="testLogout()">Tester logout</button>
+                <div id="auth-result" class="result"></div>
             </div>
+
+            <div class="test-section">
+                <h3>📄 Documents</h3>
+                <button class="btn" onclick="testDocumentsList()">Liste documents</button>
+                <button class="btn" onclick="testDocumentDownload()">Téléchargement</button>
+                <button class="btn" onclick="testDocumentPreview()">Aperçu document</button>
+                <div id="documents-result" class="result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>📁 Dossiers</h3>
+                <button class="btn" onclick="testFoldersList()">Liste dossiers</button>
+                <button class="btn" onclick="testFolderDetails()">Détails dossier</button>
+                <div id="folders-result" class="result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>👥 Utilisateurs</h3>
+                <button class="btn" onclick="testUsersList()">Liste utilisateurs</button>
+                <button class="btn" onclick="testUserProfile()">Profil utilisateur</button>
+                <div id="users-result" class="result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>🔔 Notifications</h3>
+                <button class="btn" onclick="testNotifications()">Liste notifications</button>
+                <button class="btn" onclick="testMarkRead()">Marquer comme lu</button>
+                <div id="notifications-result" class="result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>📈 Dashboard</h3>
+                <button class="btn" onclick="testDashboardStats()">Statistiques</button>
+                <button class="btn" onclick="testDashboardActivity()">Activité</button>
+                <div id="dashboard-result" class="result"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Test Spécifique - Aperçu Documents</h3>
+            <p>Test spécifique pour diagnostiquer l'erreur d'aperçu des documents</p>
+            <button class="btn btn-success" onclick="testDocumentPreviewDetailed()">🔍 Test détaillé aperçu</button>
+            <div id="preview-detail-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Logs de Test</h3>
+            <button class="btn" onclick="exportLogs()">📥 Exporter les logs</button>
+            <div id="test-logs" class="result info">Aucun log pour le moment...</div>
         </div>
     </div>
 
     <script>
-        const tests = [
-            {
-                name: 'Reset DB Connection',
-                endpoint: '/api/reset-db-connection',
-                method: 'POST',
-                description: 'Réinitialiser la connexion Prisma'
-            },
-            {
-                name: 'Database Debug',
-                endpoint: '/api/debug-db',
-                method: 'GET',
-                description: 'Debug complet de la connexion et des tables de la base de données'
-            },
-            {
-                name: 'Health Check',
-                endpoint: '/api/health',
-                method: 'GET',
-                description: 'Vérification de la santé de l\'API et de la connexion à la base de données'
-            },
-            {
-                name: 'Authentication Status',
-                endpoint: '/api/auth/me',
-                method: 'GET',
-                description: 'Vérification du statut d\'authentification actuel'
-            },
-            {
-                name: 'Simple Auth Check',
-                endpoint: '/api/auth/me-simple',
-                method: 'GET',
-                description: 'Vérification simple de l\'authentification'
-            },
-            {
-                name: 'Notifications (Unread)',
-                endpoint: '/api/notifications?unreadOnly=true&limit=1',
-                method: 'GET',
-                description: 'Récupération des notifications non lues'
-            },
-            {
-                name: 'All Notifications',
-                endpoint: '/api/notifications',
-                method: 'GET',
-                description: 'Récupération de toutes les notifications'
-            },
-            {
-                name: 'Debug Notifications',
-                endpoint: '/api/debug-notifications',
-                method: 'GET',
-                description: 'Debug détaillé du système de notifications'
-            },
-            {
-                name: 'Test Users',
-                endpoint: '/api/test-users',
-                method: 'GET',
-                description: 'Test de la base de données utilisateurs (sans authentification)'
-            },
-            {
-                name: 'Users List',
-                endpoint: '/api/users',
-                method: 'GET',
-                description: 'Récupération de la liste des utilisateurs (admin only)'
-            },
-            {
-                name: 'Dashboard Stats',
-                endpoint: '/api/dashboard/stats',
-                method: 'GET',
-                description: 'Statistiques du tableau de bord'
-            },
-            {
-                name: 'Dashboard Activity',
-                endpoint: '/api/dashboard/activity',
-                method: 'GET',
-                description: 'Activité récente du tableau de bord'
-            },
-            {
-                name: 'Documents List',
-                endpoint: '/api/documents',
-                method: 'GET',
-                description: 'Liste des documents'
-            },
-            {
-                name: 'Debug Documents',
-                endpoint: '/api/debug-documents',
-                method: 'GET',
-                description: 'Debug détaillé du système de documents'
-            },
-            {
-                name: 'Folders List',
-                endpoint: '/api/folders',
-                method: 'GET',
-                description: 'Liste des dossiers'
-            },
-            {
-                name: 'Sidebar Folders',
-                endpoint: '/api/sidebar/folders',
-                method: 'GET',
-                description: 'Dossiers pour la sidebar'
-            },
-            {
-                name: 'Test Profile',
-                endpoint: '/api/test-profile',
-                method: 'GET',
-                description: 'Test du profil utilisateur (données mock)'
-            },
-            {
-                name: 'User Profile',
-                endpoint: '/api/profile',
-                method: 'GET',
-                description: 'Profil de l\'utilisateur actuel'
-            },
-            {
-                name: 'Debug Simple',
-                endpoint: '/api/debug-simple',
-                method: 'GET',
-                description: 'Debug simple de l\'API'
-            },
-            {
-                name: 'Create Notifications Table',
-                endpoint: '/api/create-notifications-table',
-                method: 'GET',
-                description: 'Vérification/création de la table notifications'
-            },
-            {
-                name: 'Fix Documents Ownership',
-                endpoint: '/api/fix-documents-ownership',
-                method: 'GET',
-                description: 'Correction de la propriété des documents'
-            },
-            {
-                name: 'Reset DB Connection',
-                endpoint: '/api/reset-db-connection',
-                method: 'GET',
-                description: 'Réinitialisation de la connexion à la base de données'
-            }
-        ];
+        let testLogs = [];
+        let currentAuthToken = null;
 
-        let testResults = [];
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${message}`;
+            testLogs.push(logEntry);
+            
+            const logsDiv = document.getElementById('test-logs');
+            logsDiv.textContent = testLogs.join('\n');
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            
+            console.log(logEntry);
+        }
 
-        async function runTest(test) {
-            const container = document.getElementById('test-container');
-            const testDiv = document.createElement('div');
-            testDiv.className = 'test-section';
-            testDiv.innerHTML = `
-                <div class="test-title">
-                    <span>${test.name}</span>
-                    <span class="status-badge status-pending">En cours...</span>
-                    <div class="spinner"></div>
-                </div>
-                <div style="color: #666; margin-bottom: 10px;">
-                    <strong>Endpoint:</strong> ${test.endpoint}<br>
-                    <strong>Method:</strong> ${test.method}<br>
-                    <strong>Description:</strong> ${test.description}
-                </div>
-                <div class="test-result" style="display: none;"></div>
-            `;
-            container.appendChild(testDiv);
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = content;
+            element.className = `result ${type}`;
+        }
 
-            const statusBadge = testDiv.querySelector('.status-badge');
-            const spinner = testDiv.querySelector('.spinner');
-            const resultDiv = testDiv.querySelector('.test-result');
+        function clearResults() {
+            const results = document.querySelectorAll('.result');
+            results.forEach(result => {
+                result.textContent = '';
+                result.className = 'result';
+            });
+            testLogs = [];
+            document.getElementById('test-logs').textContent = 'Aucun log pour le moment...';
+        }
 
+        async function makeRequest(url, options = {}) {
             try {
-                const startTime = Date.now();
-                const response = await fetch(test.endpoint, {
-                    method: test.method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
+                log(`🌐 Requête vers: ${url}`);
+                const response = await fetch(url, {
+                    credentials: 'include',
+                    ...options
                 });
-                const endTime = Date.now();
-                const responseTime = endTime - startTime;
-
-                let data;
+                
                 const contentType = response.headers.get('content-type');
+                let data;
+                
                 if (contentType && contentType.includes('application/json')) {
                     data = await response.json();
                 } else {
                     data = await response.text();
                 }
-
-                const result = {
-                    test: test.name,
-                    endpoint: test.endpoint,
-                    status: response.status,
-                    statusText: response.statusText,
-                    responseTime: responseTime,
-                    data: data,
-                    timestamp: new Date().toISOString()
-                };
-
-                testResults.push(result);
-
-                spinner.style.display = 'none';
-                resultDiv.style.display = 'block';
-
-                if (response.ok) {
-                    statusBadge.className = 'status-badge status-success';
-                    statusBadge.textContent = `✅ Succès (${response.status})`;
-                    resultDiv.innerHTML = `
-                        <div class="success-detail">
-                            <strong>Status:</strong> ${response.status} ${response.statusText}<br>
-                            <strong>Temps de réponse:</strong> ${responseTime}ms
-                        </div>
-                        <strong>Réponse:</strong><br>
-                        ${JSON.stringify(data, null, 2)}
-                    `;
-                } else if (response.status === 401) {
-                    statusBadge.className = 'status-badge status-warning';
-                    statusBadge.textContent = `⚠️ Non authentifié (${response.status})`;
-                    resultDiv.innerHTML = `
-                        <div class="warning-detail">
-                            <strong>Status:</strong> ${response.status} ${response.statusText}<br>
-                            <strong>Message:</strong> Authentification requise<br>
-                            <strong>Temps de réponse:</strong> ${responseTime}ms
-                        </div>
-                        <strong>Réponse:</strong><br>
-                        ${JSON.stringify(data, null, 2)}
-                    `;
-                } else {
-                    statusBadge.className = 'status-badge status-error';
-                    statusBadge.textContent = `❌ Erreur (${response.status})`;
-                    resultDiv.innerHTML = `
-                        <div class="error-detail">
-                            <strong>Status:</strong> ${response.status} ${response.statusText}<br>
-                            <strong>Temps de réponse:</strong> ${responseTime}ms
-                        </div>
-                        <strong>Réponse:</strong><br>
-                        ${JSON.stringify(data, null, 2)}
-                    `;
-                }
-            } catch (error) {
-                spinner.style.display = 'none';
-                statusBadge.className = 'status-badge status-error';
-                statusBadge.textContent = '❌ Erreur réseau';
-                resultDiv.style.display = 'block';
-                resultDiv.innerHTML = `
-                    <div class="error-detail">
-                        <strong>Erreur:</strong> ${error.message}<br>
-                        <strong>Type:</strong> ${error.name}
-                    </div>
-                    <strong>Stack trace:</strong><br>
-                    ${error.stack}
-                `;
                 
-                testResults.push({
-                    test: test.name,
-                    endpoint: test.endpoint,
-                    error: error.message,
-                    stack: error.stack,
-                    timestamp: new Date().toISOString()
-                });
+                log(`✅ Réponse ${response.status}: ${response.statusText}`);
+                return { ok: response.ok, status: response.status, data, headers: response.headers };
+            } catch (error) {
+                log(`❌ Erreur: ${error.message}`, 'error');
+                return { ok: false, error: error.message };
             }
         }
 
-        async function runAllTests() {
-            clearResults();
-            testResults = [];
+        async function testAuth() {
+            log('🔐 Test d\'authentification...');
+            const result = await makeRequest('/api/auth/me');
             
-            for (const test of tests) {
-                await runTest(test);
-                await new Promise(resolve => setTimeout(resolve, 500)); // Petit délai entre les tests
+            if (result.ok && result.data) {
+                currentAuthToken = result.data;
+                showResult('auth-result', 
+                    `✅ Authentifié\nUtilisateur: ${result.data.name || 'N/A'}\nEmail: ${result.data.email || 'N/A'}\nRôle: ${result.data.role || 'N/A'}`, 
+                    'success'
+                );
+            } else {
+                showResult('auth-result', 
+                    `❌ Non authentifié\nErreur: ${result.error || 'Token invalide'}`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testLogin() {
+            log('🔑 Test de connexion...');
+            const result = await makeRequest('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: 'admin@acge-gabon.com',
+                    password: 'admin123'
+                })
+            });
+            
+            if (result.ok) {
+                showResult('auth-result', '✅ Connexion réussie', 'success');
+                await testAuth(); // Vérifier l'état après connexion
+            } else {
+                showResult('auth-result', `❌ Échec connexion: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testLogout() {
+            log('🚪 Test de déconnexion...');
+            const result = await makeRequest('/api/auth/logout', { method: 'POST' });
+            
+            if (result.ok) {
+                showResult('auth-result', '✅ Déconnexion réussie', 'success');
+                currentAuthToken = null;
+            } else {
+                showResult('auth-result', `❌ Échec déconnexion: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testDocumentsList() {
+            log('📄 Test liste des documents...');
+            const result = await makeRequest('/api/documents');
+            
+            if (result.ok) {
+                const docs = result.data.documents || [];
+                showResult('documents-result', 
+                    `✅ ${docs.length} document(s) trouvé(s)\n${docs.map(d => `- ${d.title} (${d.currentVersion?.fileName || 'N/A'})`).join('\n')}`, 
+                    'success'
+                );
+            } else {
+                showResult('documents-result', `❌ Erreur: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testDocumentDownload() {
+            log('⬇️ Test téléchargement document...');
+            // D'abord récupérer la liste des documents
+            const listResult = await makeRequest('/api/documents');
+            
+            if (!listResult.ok || !listResult.data.documents || listResult.data.documents.length === 0) {
+                showResult('documents-result', '❌ Aucun document disponible pour le test', 'warning');
+                return;
             }
             
-            showSummary();
+            const firstDoc = listResult.data.documents[0];
+            log(`📄 Test avec document: ${firstDoc.title} (ID: ${firstDoc.id})`);
+            
+            const result = await makeRequest(`/api/documents/${firstDoc.id}/download`);
+            
+            if (result.ok) {
+                showResult('documents-result', 
+                    `✅ Téléchargement réussi\nDocument: ${firstDoc.title}\nTaille: ${result.data.length || 'N/A'} bytes`, 
+                    'success'
+                );
+            } else {
+                showResult('documents-result', 
+                    `❌ Erreur téléchargement: ${JSON.stringify(result.data)}\nDocument testé: ${firstDoc.title}`, 
+                    'error'
+                );
+            }
         }
 
-        function clearResults() {
-            document.getElementById('test-container').innerHTML = '';
-            document.getElementById('summary').style.display = 'none';
-            testResults = [];
+        async function testDocumentPreview() {
+            log('👁️ Test aperçu document...');
+            // D'abord récupérer la liste des documents
+            const listResult = await makeRequest('/api/documents');
+            
+            if (!listResult.ok || !listResult.data.documents || listResult.data.documents.length === 0) {
+                showResult('documents-result', '❌ Aucun document disponible pour le test', 'warning');
+                return;
+            }
+            
+            const firstDoc = listResult.data.documents[0];
+            log(`👁️ Test aperçu avec: ${firstDoc.title} (Type: ${firstDoc.currentVersion?.fileType || 'N/A'})`);
+            
+            const result = await makeRequest(`/api/documents/${firstDoc.id}/download`);
+            
+            if (result.ok) {
+                showResult('documents-result', 
+                    `✅ Aperçu disponible\nDocument: ${firstDoc.title}\nType: ${firstDoc.currentVersion?.fileType || 'N/A'}\nTaille: ${result.data.length || 'N/A'} bytes`, 
+                    'success'
+                );
+            } else {
+                showResult('documents-result', 
+                    `❌ Erreur aperçu: ${JSON.stringify(result.data)}\nDocument testé: ${firstDoc.title}`, 
+                    'error'
+                );
+            }
         }
 
-        function showSummary() {
-            const summary = document.getElementById('summary');
-            const totalTests = document.querySelectorAll('.test-section').length;
-            const successTests = document.querySelectorAll('.status-success').length;
-            const failedTests = document.querySelectorAll('.status-error').length;
-            const warningTests = document.querySelectorAll('.status-warning').length;
-
-            document.getElementById('total-tests').textContent = totalTests;
-            document.getElementById('success-tests').textContent = successTests;
-            document.getElementById('failed-tests').textContent = failedTests;
-            document.getElementById('warning-tests').textContent = warningTests;
-
-            summary.style.display = 'block';
+        async function testDocumentPreviewDetailed() {
+            log('🔍 Test détaillé aperçu document...');
+            
+            // 1. Vérifier l'authentification
+            const authResult = await makeRequest('/api/auth/me');
+            if (!authResult.ok) {
+                showResult('preview-detail-result', '❌ Non authentifié - Impossible de tester l\'aperçu', 'error');
+                return;
+            }
+            
+            // 2. Récupérer la liste des documents
+            const listResult = await makeRequest('/api/documents');
+            if (!listResult.ok || !listResult.data.documents || listResult.data.documents.length === 0) {
+                showResult('preview-detail-result', '❌ Aucun document disponible', 'warning');
+                return;
+            }
+            
+            const docs = listResult.data.documents;
+            let detailedResults = [];
+            
+            for (let i = 0; i < Math.min(3, docs.length); i++) {
+                const doc = docs[i];
+                log(`🔍 Test document ${i + 1}: ${doc.title}`);
+                
+                const downloadResult = await makeRequest(`/api/documents/${doc.id}/download`);
+                
+                if (downloadResult.ok) {
+                    detailedResults.push(`✅ ${doc.title}\n   Type: ${doc.currentVersion?.fileType || 'N/A'}\n   Taille: ${downloadResult.data.length || 'N/A'} bytes`);
+                } else {
+                    detailedResults.push(`❌ ${doc.title}\n   Erreur: ${JSON.stringify(downloadResult.data)}`);
+                }
+            }
+            
+            showResult('preview-detail-result', 
+                `🔍 Résultats détaillés:\n\n${detailedResults.join('\n\n')}`, 
+                detailedResults.some(r => r.includes('❌')) ? 'error' : 'success'
+            );
         }
 
-        function downloadReport() {
-            const report = {
-                timestamp: new Date().toISOString(),
-                summary: {
-                    total: testResults.length,
-                    success: testResults.filter(r => r.status >= 200 && r.status < 300).length,
-                    failed: testResults.filter(r => r.status >= 400 || r.error).length
-                },
-                results: testResults
-            };
+        async function testFoldersList() {
+            log('📁 Test liste des dossiers...');
+            const result = await makeRequest('/api/folders');
+            
+            if (result.ok) {
+                const folders = result.data.folders || [];
+                showResult('folders-result', 
+                    `✅ ${folders.length} dossier(s) trouvé(s)\n${folders.map(f => `- ${f.name}`).join('\n')}`, 
+                    'success'
+                );
+            } else {
+                showResult('folders-result', `❌ Erreur: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
 
-            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+        async function testFolderDetails() {
+            log('📂 Test détails dossier...');
+            const listResult = await makeRequest('/api/folders');
+            
+            if (!listResult.ok || !listResult.data.folders || listResult.data.folders.length === 0) {
+                showResult('folders-result', '❌ Aucun dossier disponible pour le test', 'warning');
+                return;
+            }
+            
+            const firstFolder = listResult.data.folders[0];
+            const result = await makeRequest(`/api/folders/${firstFolder.id}`);
+            
+            if (result.ok) {
+                showResult('folders-result', 
+                    `✅ Détails dossier: ${result.data.name}\nDocuments: ${result.data._count?.documents || 0}`, 
+                    'success'
+                );
+            } else {
+                showResult('folders-result', `❌ Erreur: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testUsersList() {
+            log('👥 Test liste des utilisateurs...');
+            const result = await makeRequest('/api/users');
+            
+            if (result.ok) {
+                const users = result.data.users || [];
+                showResult('users-result', 
+                    `✅ ${users.length} utilisateur(s) trouvé(s)\n${users.map(u => `- ${u.name} (${u.email})`).join('\n')}`, 
+                    'success'
+                );
+            } else {
+                showResult('users-result', `❌ Erreur: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testUserProfile() {
+            log('👤 Test profil utilisateur...');
+            const result = await makeRequest('/api/profile');
+            
+            if (result.ok) {
+                showResult('users-result', 
+                    `✅ Profil: ${result.data.name}\nEmail: ${result.data.email}\nRôle: ${result.data.role}`, 
+                    'success'
+                );
+            } else {
+                showResult('users-result', `❌ Erreur: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testNotifications() {
+            log('🔔 Test notifications...');
+            const result = await makeRequest('/api/notifications');
+            
+            if (result.ok) {
+                const notifications = result.data.notifications || [];
+                showResult('notifications-result', 
+                    `✅ ${notifications.length} notification(s)\n${notifications.map(n => `- ${n.title}`).join('\n')}`, 
+                    'success'
+                );
+            } else {
+                showResult('notifications-result', `❌ Erreur: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testMarkRead() {
+            log('✅ Test marquer comme lu...');
+            const result = await makeRequest('/api/notifications/mark-all-read', { method: 'POST' });
+            
+            if (result.ok) {
+                showResult('notifications-result', '✅ Notifications marquées comme lues', 'success');
+            } else {
+                showResult('notifications-result', `❌ Erreur: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testDashboardStats() {
+            log('📊 Test statistiques dashboard...');
+            const result = await makeRequest('/api/dashboard/stats');
+            
+            if (result.ok) {
+                const stats = result.data;
+                showResult('dashboard-result', 
+                    `✅ Statistiques:\nDocuments: ${stats.totalDocuments || 0}\nDossiers: ${stats.totalFolders || 0}\nUtilisateurs: ${stats.totalUsers || 0}`, 
+                    'success'
+                );
+            } else {
+                showResult('dashboard-result', `❌ Erreur: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testDashboardActivity() {
+            log('📈 Test activité dashboard...');
+            const result = await makeRequest('/api/dashboard/activity');
+            
+            if (result.ok) {
+                const activities = result.data.activities || [];
+                showResult('dashboard-result', 
+                    `✅ ${activities.length} activité(s) récente(s)\n${activities.map(a => `- ${a.type}: ${a.description}`).join('\n')}`, 
+                    'success'
+                );
+            } else {
+                showResult('dashboard-result', `❌ Erreur: ${JSON.stringify(result.data)}`, 'error');
+            }
+        }
+
+        async function testAll() {
+            log('🧪 Lancement de tous les tests...');
+            showResult('general-status', '🔄 Tests en cours...', 'loading');
+            
+            try {
+                await testAuth();
+                await testDocumentsList();
+                await testFoldersList();
+                await testUsersList();
+                await testNotifications();
+                await testDashboardStats();
+                await testDocumentPreviewDetailed();
+                
+                showResult('general-status', '✅ Tous les tests terminés', 'success');
+            } catch (error) {
+                showResult('general-status', `❌ Erreur lors des tests: ${error.message}`, 'error');
+            }
+        }
+
+        function exportLogs() {
+            const logsText = testLogs.join('\n');
+            const blob = new Blob([logsText], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `api-test-report-${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
+            a.download = `acge-test-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
             a.click();
-            document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
 
-        // Auto-run tests on page load
+        // Test initial au chargement
         window.addEventListener('load', () => {
-            console.log('Page de test des APIs chargée. Cliquez sur "Lancer tous les tests" pour commencer.');
+            log('🚀 Page de test chargée');
+            showResult('general-status', '✅ Page prête pour les tests', 'success');
         });
     </script>
 </body>

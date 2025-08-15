@@ -127,16 +127,72 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
     setIsLoading(true)
     setError(null)
     try {
+      console.log('🔍 Chargement aperçu pour document:', document.id, document.title)
+      console.log('📁 Type de fichier:', document.currentVersion?.fileType)
+      console.log('📂 Chemin fichier:', document.currentVersion?.filePath)
+      
+      // Essayer d'abord l'API de téléchargement
       const response = await fetch(`/api/documents/${document.id}/download`)
+      console.log('📡 Réponse API:', response.status, response.statusText)
+      
       if (response.ok) {
         const blob = await response.blob()
+        console.log('📦 Blob créé, taille:', blob.size, 'type:', blob.type)
+        
         const url = URL.createObjectURL(blob)
         setPreviewUrl(url)
+        console.log('✅ URL de prévisualisation créée via API')
       } else {
-        setError('Erreur lors du chargement du document')
+        // Si l'API échoue, essayer d'utiliser directement l'URL Supabase
+        console.log('⚠️ API échouée, tentative avec URL Supabase directe')
+        
+        const filePath = document.currentVersion?.filePath
+        if (filePath && (filePath.includes('supabase.co') || filePath.startsWith('http'))) {
+          console.log('🔗 Utilisation URL Supabase directe:', filePath)
+          
+          // Créer un blob à partir de l'URL Supabase
+          try {
+            const supabaseResponse = await fetch(filePath)
+            if (supabaseResponse.ok) {
+              const blob = await supabaseResponse.blob()
+              console.log('📦 Blob Supabase créé, taille:', blob.size, 'type:', blob.type)
+              
+              const url = URL.createObjectURL(blob)
+              setPreviewUrl(url)
+              console.log('✅ URL de prévisualisation créée via Supabase direct')
+            } else {
+              console.error('❌ Erreur Supabase direct:', supabaseResponse.status, supabaseResponse.statusText)
+              throw new Error(`Erreur Supabase: ${supabaseResponse.status}`)
+            }
+          } catch (supabaseError) {
+            console.error('❌ Erreur fetch Supabase:', supabaseError)
+            throw supabaseError
+          }
+        } else {
+          // Aucune URL disponible
+          const errorData = await response.text()
+          console.error('❌ Erreur API:', response.status, errorData)
+          
+          let errorMessage = 'Erreur lors du chargement du document'
+          try {
+            const errorJson = JSON.parse(errorData)
+            errorMessage = errorJson.error || errorMessage
+            if (errorJson.details) {
+              errorMessage += ` (${errorJson.details})`
+            }
+          } catch {
+            // Si ce n'est pas du JSON, utiliser le texte brut
+            if (errorData) {
+              errorMessage += `: ${errorData}`
+            }
+          }
+          
+          setError(errorMessage)
+        }
       }
     } catch (err) {
-      setError('Erreur de connexion')
+      console.error('❌ Erreur réseau:', err)
+      setError(`Erreur de connexion: ${err instanceof Error ? err.message : 'Erreur inconnue'}`)
     } finally {
       setIsLoading(false)
     }

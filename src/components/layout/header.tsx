@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { NotificationDropdown } from '@/components/notifications/notification-dropdown'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const { user, logout } = useAuth()
@@ -84,6 +85,8 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           >
             <Search className="h-5 w-5" />
           </Button>
+          {/* Toggle de thème */}
+          <ThemeToggle />
           {/* Notifications */}
           <NotificationDropdown />
 
@@ -114,7 +117,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
                   <User className="mr-2 h-4 w-4" />
                   <span>Profil</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Paramètres</span>
                 </DropdownMenuItem>
