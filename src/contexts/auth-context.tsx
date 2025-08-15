@@ -37,6 +37,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async () => {
     try {
       console.log('🔍 Vérification de l\'authentification...')
+      
+      // Vérifier si on est côté client
+      if (typeof window === 'undefined') {
+        console.log('🖥️ Côté serveur, pas de vérification d\'auth')
+        setIsLoading(false)
+        setIsInitialized(true)
+        return
+      }
+      
       const response = await fetch('/api/auth/me', {
         credentials: 'include'
       })
@@ -48,13 +57,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data.user) {
           setUser(data.user)
           console.log('👤 Utilisateur défini:', data.user.email)
+        } else {
+          console.log('❌ Pas de données utilisateur dans la réponse')
+          setUser(null)
         }
+      } else if (response.status === 401) {
+        console.log('🔒 Non authentifié (401) - normal au chargement')
+        setUser(null)
       } else {
-        console.log('❌ Non authentifié ou erreur')
+        console.log('❌ Erreur HTTP:', response.status)
         setUser(null)
       }
     } catch (error) {
       console.error('❌ Erreur lors de la vérification de l\'authentification:', error)
+      // En cas d'erreur réseau, on considère qu'il n'y a pas d'authentification
       setUser(null)
     } finally {
       setIsLoading(false)
