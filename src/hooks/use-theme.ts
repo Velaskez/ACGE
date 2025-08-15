@@ -19,8 +19,9 @@ export function useThemeHook() {
     if (currentTheme === 'light') {
       setTheme('dark')
     } else if (currentTheme === 'dark') {
-      setTheme('system')
+      setTheme('light')
     } else {
+      // Si c'est 'system', on bascule vers 'light'
       setTheme('light')
     }
   }

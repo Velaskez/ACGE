@@ -102,15 +102,28 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
   const fetchFolders = async () => {
     setFoldersLoading(true)
     try {
+      console.log('🔍 Chargement des dossiers pour la modal d\'édition...')
       const response = await fetch('/api/sidebar/folders', {
         credentials: 'include'
       })
+      console.log('📡 Réponse API sidebar/folders:', response.status, response.statusText)
+      
       if (response.ok) {
         const data = await response.json()
-        setFolders(data.folders || [])
+        console.log('📂 Données reçues:', data)
+        
+        // L'API sidebar/folders retourne un tableau directement, pas un objet avec .folders
+        const foldersArray = Array.isArray(data) ? data : (data.folders || [])
+        console.log('📁 Dossiers trouvés:', foldersArray.length)
+        
+        setFolders(foldersArray)
+      } else {
+        console.error('❌ Erreur API sidebar/folders:', response.status)
+        setFolders([])
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des dossiers:', error)
+      console.error('❌ Erreur lors du chargement des dossiers:', error)
+      setFolders([])
     } finally {
       setFoldersLoading(false)
     }

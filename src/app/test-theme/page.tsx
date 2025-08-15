@@ -19,7 +19,8 @@ import {
   FileText,
   Folder,
   Users,
-  BarChart3
+  BarChart3,
+  Eye
 } from 'lucide-react'
 
 export default function TestThemePage() {
@@ -29,9 +30,9 @@ export default function TestThemePage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Test du Mode Dark</h1>
+          <h1 className="text-3xl font-bold">Test du Mode Dark - ACGE</h1>
           <p className="text-muted-foreground">
-            Démonstration des composants en mode clair et sombre
+            Démonstration de la cohérence des couleurs entre les modes
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -63,6 +64,57 @@ export default function TestThemePage() {
             <div className="flex items-center gap-2">
               <Monitor className="h-4 w-4" />
               <span>Thème actuel: {theme}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Démonstration de la cohérence des couleurs */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" />
+            Cohérence des couleurs ACGE
+          </CardTitle>
+          <CardDescription>
+            Le mode dark utilise le bleu primaire comme couleur de fond pour maintenir l'identité visuelle
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="font-semibold">Mode Light</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-primary rounded"></div>
+                  <span className="text-sm">Bleu primaire (boutons, liens)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-background border border-border rounded"></div>
+                  <span className="text-sm">Fond blanc</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-foreground rounded"></div>
+                  <span className="text-sm">Texte noir</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <h3 className="font-semibold">Mode Dark</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-primary rounded"></div>
+                  <span className="text-sm">Blanc (boutons, liens)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-background border border-border rounded"></div>
+                  <span className="text-sm">Fond bleu primaire</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-foreground rounded"></div>
+                  <span className="text-sm">Texte blanc</span>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -225,8 +277,8 @@ export default function TestThemePage() {
           <div className="space-y-2 text-sm">
             <p>• Utilisez le bouton de toggle en haut à droite pour basculer entre les modes</p>
             <p>• Utilisez le sélecteur de thème pour choisir entre clair, sombre ou système</p>
-            <p>• Le thème système suit automatiquement les préférences de votre appareil</p>
-            <p>• Observez les changements de couleurs sur tous les composants</p>
+            <p>• Observez la cohérence du bleu ACGE entre les modes</p>
+            <p>• Le mode dark utilise le bleu primaire comme fond avec du texte blanc</p>
             <p>• Testez la persistance en rechargeant la page</p>
           </div>
         </CardContent>

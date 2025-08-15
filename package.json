@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
+    "dev:turbo": "next dev --turbo --experimental-turbo",
+    "dev:fast": "next dev --turbo --experimental-turbo --port 3001",
+    "dev:optimized": "tsx scripts/dev-turbo.ts",
+    "test:turbo": "tsx scripts/test-turbo-setup.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

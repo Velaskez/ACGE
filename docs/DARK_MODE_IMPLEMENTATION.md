@@ -12,7 +12,7 @@ L'application ACGE dispose maintenant d'un système de thème complet avec suppo
 - **Package**: `next-themes`
 - **Configuration**: Dans `src/app/layout.tsx`
 - **Attribut**: `class` pour appliquer les classes CSS
-- **Thème par défaut**: `system` (suit les préférences système)
+- **Thème par défaut**: `light` (mode clair par défaut)
 
 #### Variables CSS
 - **Fichier**: `src/app/globals.css`
@@ -96,11 +96,17 @@ function MonComposant() {
 
 ## Variables CSS disponibles
 
-### Couleurs principales
-- `--background`: Arrière-plan principal
-- `--foreground`: Texte principal
-- `--primary`: Couleur primaire (bleu)
-- `--secondary`: Couleur secondaire
+### Mode Light (par défaut)
+- `--background`: Blanc pur
+- `--foreground`: Gris foncé pour la lisibilité
+- `--primary`: Bleu doux (plus agréable)
+- `--secondary`: Gris très clair
+
+### Mode Dark
+- `--background`: Bleu primaire (cohérent avec l'identité ACGE)
+- `--foreground`: Blanc pur pour le contraste
+- `--primary`: Blanc (inversé par rapport au mode light)
+- `--secondary`: Bleu plus clair
 
 ### Composants
 - `--card`: Arrière-plan des cartes
