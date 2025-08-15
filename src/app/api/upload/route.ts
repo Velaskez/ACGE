@@ -7,6 +7,15 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Début de l\'upload Supabase...')
     
+    // Vérifier la configuration Supabase
+    if (!supabaseAdmin) {
+      console.error('❌ Client Supabase admin non disponible')
+      return NextResponse.json(
+        { error: 'Service d\'upload temporairement indisponible - Configuration Supabase manquante' },
+        { status: 503 }
+      )
+    }
+    
     // Vérifier l'authentification
     const token = request.cookies.get('auth-token')?.value
 
@@ -91,11 +100,7 @@ export async function POST(request: NextRequest) {
         
         console.log('📦 Buffer créé, taille:', buffer.length)
         
-        // Upload vers Supabase Storage avec le client admin
-        if (!supabaseAdmin) {
-          throw new Error('Client Supabase admin non disponible')
-        }
-
+        // Upload vers Supabase Storage
         const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
           .from('documents')
           .upload(filePath, buffer, {
