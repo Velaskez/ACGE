@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       checkAuth()
-    }, 0)
+    }, 100) // Délai de 100ms au lieu de 0
     return () => clearTimeout(timer)
   }, [])
 
@@ -46,9 +46,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
       
+      // Vérifier si le navigateur est prêt
+      if (document.readyState !== 'complete') {
+        console.log('📄 Document pas encore prêt, attente...')
+        setTimeout(checkAuth, 50)
+        return
+      }
+      
+      // Utiliser un timeout pour éviter les blocages
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 secondes de timeout
+      
       const response = await fetch('/api/auth/me', {
-        credentials: 'include'
+        credentials: 'include',
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
       })
+      
+      clearTimeout(timeoutId)
       console.log('📡 Status checkAuth:', response.status)
       
       if (response.ok) {
@@ -70,6 +88,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('❌ Erreur lors de la vérification de l\'authentification:', error)
+      
+      // Gérer spécifiquement les erreurs de timeout et de réseau
+      if (error.name === 'AbortError') {
+        console.log('⏰ Timeout lors de la vérification d\'auth')
+      } else if (error.message.includes('Failed to fetch')) {
+        console.log('🌐 Erreur réseau - serveur peut-être indisponible')
+        
+        // Retry après un délai si c'est une erreur réseau
+        setTimeout(() => {
+          console.log('🔄 Retry de la vérification d\'auth...')
+          checkAuth()
+        }, 1000)
+        return
+      }
+      
       // En cas d'erreur réseau, on considère qu'il n'y a pas d'authentification
       setUser(null)
     } finally {
