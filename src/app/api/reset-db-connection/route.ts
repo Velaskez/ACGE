@@ -3,38 +3,33 @@ import { prisma } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 Réinitialisation de la connexion Prisma...')
-    
-    // Fermer la connexion Prisma
+    // Force disconnect any existing connections
     await prisma.$disconnect()
     
-    // Attendre un peu
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Tester la reconnexion avec une requête simple
-    try {
-      await prisma.$connect()
-      const testQuery = await prisma.user.count()
-      console.log('✅ Connexion Prisma réinitialisée avec succès')
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Connexion Prisma réinitialisée avec succès',
-        testQuery: testQuery
-      })
-    } catch (reconnectError) {
-      console.error('❌ Erreur lors de la reconnexion:', reconnectError)
-      return NextResponse.json({
-        success: false,
-        error: 'Erreur lors de la reconnexion Prisma'
-      }, { status: 500 })
+    // Clear the global prisma instance
+    const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined }
+    if (globalForPrisma.prisma) {
+      await globalForPrisma.prisma.$disconnect()
+      globalForPrisma.prisma = undefined
     }
     
-  } catch (error) {
-    console.error('❌ Erreur réinitialisation connexion:', error)
+    // Reconnect the global instance
+    await prisma.$connect()
+    const userCount = await prisma.user.count()
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Database connection reset successfully',
+      userCount,
+      databaseUrl: process.env.DATABASE_URL ? 'Set (hidden)' : 'Using SQLite'
+    })
+    
+  } catch (error: any) {
+    console.error('Error resetting database connection:', error)
     return NextResponse.json({
       success: false,
-      error: 'Erreur lors de la réinitialisation'
+      error: error.message,
+      stack: error.stack
     }, { status: 500 })
   }
 }

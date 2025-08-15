@@ -3,234 +3,504 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Toutes les APIs - ACGE</title>
+    <title>Test Complet des APIs</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
         }
-        .card {
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .test-title {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-pending { background: #ffc107; color: white; }
+        .status-success { background: #28a745; color: white; }
+        .status-error { background: #dc3545; color: white; }
+        .status-warning { background: #fd7e14; color: white; }
+        
+        .test-result {
+            margin-top: 15px;
+            padding: 15px;
             background: white;
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+        }
+        .error-detail {
+            color: #dc3545;
+            background: #ffe6e6;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .success-detail {
+            color: #28a745;
+            background: #e6ffe6;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .warning-detail {
+            color: #fd7e14;
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
         }
         button {
-            background: #007bff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
             cursor: pointer;
-            margin: 5px;
+            transition: transform 0.2s;
+            margin-right: 10px;
         }
         button:hover {
-            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
-        .success { color: #28a745; }
-        .error { color: #dc3545; }
-        .warning { color: #ffc107; }
-        pre {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            overflow-x: auto;
-            max-height: 300px;
-            overflow-y: auto;
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
-        .api-result {
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 4px;
-            background: #f9f9f9;
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
         }
-        .status-indicator {
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .summary h2 {
+            margin-bottom: 15px;
+        }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .spinner {
             display: inline-block;
-            width: 12px;
-            height: 12px;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
             border-radius: 50%;
-            margin-right: 8px;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
         }
-        .status-success { background: #28a745; }
-        .status-error { background: #dc3545; }
-        .status-warning { background: #ffc107; }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-    <h1>🧪 Test Toutes les APIs - ACGE</h1>
-    
-    <div class="card">
-        <h2>Actions</h2>
-        <button onclick="testAllAPIs()">🔍 Tester Toutes les APIs</button>
-        <button onclick="testDashboardAPIs()">📊 Test Dashboard</button>
-        <button onclick="testFoldersAPIs()">📁 Test Dossiers</button>
-        <button onclick="testDocumentsAPIs()">📄 Test Documents</button>
-        <button onclick="testUsersAPIs()">👥 Test Utilisateurs</button>
-        <button onclick="testProfileAPIs()">👤 Test Profil</button>
-        <button onclick="clearResults()">🗑️ Effacer les Résultats</button>
+    <div class="container">
+        <h1>🔬 Test Complet des APIs</h1>
+        
+        <div class="controls">
+            <button onclick="runAllTests()">🚀 Lancer tous les tests</button>
+            <button onclick="clearResults()">🗑️ Effacer les résultats</button>
+            <button onclick="downloadReport()">📥 Télécharger le rapport</button>
+        </div>
+
+        <div id="test-container"></div>
+        
+        <div class="summary" id="summary" style="display: none;">
+            <h2>📊 Résumé des tests</h2>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="total-tests">0</div>
+                    <div class="stat-label">Tests totaux</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="success-tests">0</div>
+                    <div class="stat-label">Réussis</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="failed-tests">0</div>
+                    <div class="stat-label">Échoués</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="warning-tests">0</div>
+                    <div class="stat-label">Avertissements</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="results"></div>
-
     <script>
-        async function testAPI(endpoint, method = 'GET', body = null) {
+        const tests = [
+            {
+                name: 'Reset DB Connection',
+                endpoint: '/api/reset-db-connection',
+                method: 'POST',
+                description: 'Réinitialiser la connexion Prisma'
+            },
+            {
+                name: 'Database Debug',
+                endpoint: '/api/debug-db',
+                method: 'GET',
+                description: 'Debug complet de la connexion et des tables de la base de données'
+            },
+            {
+                name: 'Health Check',
+                endpoint: '/api/health',
+                method: 'GET',
+                description: 'Vérification de la santé de l\'API et de la connexion à la base de données'
+            },
+            {
+                name: 'Authentication Status',
+                endpoint: '/api/auth/me',
+                method: 'GET',
+                description: 'Vérification du statut d\'authentification actuel'
+            },
+            {
+                name: 'Simple Auth Check',
+                endpoint: '/api/auth/me-simple',
+                method: 'GET',
+                description: 'Vérification simple de l\'authentification'
+            },
+            {
+                name: 'Notifications (Unread)',
+                endpoint: '/api/notifications?unreadOnly=true&limit=1',
+                method: 'GET',
+                description: 'Récupération des notifications non lues'
+            },
+            {
+                name: 'All Notifications',
+                endpoint: '/api/notifications',
+                method: 'GET',
+                description: 'Récupération de toutes les notifications'
+            },
+            {
+                name: 'Debug Notifications',
+                endpoint: '/api/debug-notifications',
+                method: 'GET',
+                description: 'Debug détaillé du système de notifications'
+            },
+            {
+                name: 'Test Users',
+                endpoint: '/api/test-users',
+                method: 'GET',
+                description: 'Test de la base de données utilisateurs (sans authentification)'
+            },
+            {
+                name: 'Users List',
+                endpoint: '/api/users',
+                method: 'GET',
+                description: 'Récupération de la liste des utilisateurs (admin only)'
+            },
+            {
+                name: 'Dashboard Stats',
+                endpoint: '/api/dashboard/stats',
+                method: 'GET',
+                description: 'Statistiques du tableau de bord'
+            },
+            {
+                name: 'Dashboard Activity',
+                endpoint: '/api/dashboard/activity',
+                method: 'GET',
+                description: 'Activité récente du tableau de bord'
+            },
+            {
+                name: 'Documents List',
+                endpoint: '/api/documents',
+                method: 'GET',
+                description: 'Liste des documents'
+            },
+            {
+                name: 'Debug Documents',
+                endpoint: '/api/debug-documents',
+                method: 'GET',
+                description: 'Debug détaillé du système de documents'
+            },
+            {
+                name: 'Folders List',
+                endpoint: '/api/folders',
+                method: 'GET',
+                description: 'Liste des dossiers'
+            },
+            {
+                name: 'Sidebar Folders',
+                endpoint: '/api/sidebar/folders',
+                method: 'GET',
+                description: 'Dossiers pour la sidebar'
+            },
+            {
+                name: 'Test Profile',
+                endpoint: '/api/test-profile',
+                method: 'GET',
+                description: 'Test du profil utilisateur (données mock)'
+            },
+            {
+                name: 'User Profile',
+                endpoint: '/api/profile',
+                method: 'GET',
+                description: 'Profil de l\'utilisateur actuel'
+            },
+            {
+                name: 'Debug Simple',
+                endpoint: '/api/debug-simple',
+                method: 'GET',
+                description: 'Debug simple de l\'API'
+            },
+            {
+                name: 'Create Notifications Table',
+                endpoint: '/api/create-notifications-table',
+                method: 'GET',
+                description: 'Vérification/création de la table notifications'
+            },
+            {
+                name: 'Fix Documents Ownership',
+                endpoint: '/api/fix-documents-ownership',
+                method: 'GET',
+                description: 'Correction de la propriété des documents'
+            },
+            {
+                name: 'Reset DB Connection',
+                endpoint: '/api/reset-db-connection',
+                method: 'GET',
+                description: 'Réinitialisation de la connexion à la base de données'
+            }
+        ];
+
+        let testResults = [];
+
+        async function runTest(test) {
+            const container = document.getElementById('test-container');
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-section';
+            testDiv.innerHTML = `
+                <div class="test-title">
+                    <span>${test.name}</span>
+                    <span class="status-badge status-pending">En cours...</span>
+                    <div class="spinner"></div>
+                </div>
+                <div style="color: #666; margin-bottom: 10px;">
+                    <strong>Endpoint:</strong> ${test.endpoint}<br>
+                    <strong>Method:</strong> ${test.method}<br>
+                    <strong>Description:</strong> ${test.description}
+                </div>
+                <div class="test-result" style="display: none;"></div>
+            `;
+            container.appendChild(testDiv);
+
+            const statusBadge = testDiv.querySelector('.status-badge');
+            const spinner = testDiv.querySelector('.spinner');
+            const resultDiv = testDiv.querySelector('.test-result');
+
             try {
-                const options = {
-                    method,
+                const startTime = Date.now();
+                const response = await fetch(test.endpoint, {
+                    method: test.method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     credentials: 'include'
+                });
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+
+                let data;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = await response.text();
                 }
-                
-                if (body) {
-                    options.headers = { 'Content-Type': 'application/json' }
-                    options.body = JSON.stringify(body)
-                }
-                
-                const response = await fetch(endpoint, options)
-                const responseText = await response.text()
-                
-                let data
-                try {
-                    data = JSON.parse(responseText)
-                } catch (parseError) {
-                    data = { rawResponse: responseText }
-                }
-                
-                return {
-                    ok: response.ok,
+
+                const result = {
+                    test: test.name,
+                    endpoint: test.endpoint,
                     status: response.status,
-                    data,
-                    error: null
+                    statusText: response.statusText,
+                    responseTime: responseTime,
+                    data: data,
+                    timestamp: new Date().toISOString()
+                };
+
+                testResults.push(result);
+
+                spinner.style.display = 'none';
+                resultDiv.style.display = 'block';
+
+                if (response.ok) {
+                    statusBadge.className = 'status-badge status-success';
+                    statusBadge.textContent = `✅ Succès (${response.status})`;
+                    resultDiv.innerHTML = `
+                        <div class="success-detail">
+                            <strong>Status:</strong> ${response.status} ${response.statusText}<br>
+                            <strong>Temps de réponse:</strong> ${responseTime}ms
+                        </div>
+                        <strong>Réponse:</strong><br>
+                        ${JSON.stringify(data, null, 2)}
+                    `;
+                } else if (response.status === 401) {
+                    statusBadge.className = 'status-badge status-warning';
+                    statusBadge.textContent = `⚠️ Non authentifié (${response.status})`;
+                    resultDiv.innerHTML = `
+                        <div class="warning-detail">
+                            <strong>Status:</strong> ${response.status} ${response.statusText}<br>
+                            <strong>Message:</strong> Authentification requise<br>
+                            <strong>Temps de réponse:</strong> ${responseTime}ms
+                        </div>
+                        <strong>Réponse:</strong><br>
+                        ${JSON.stringify(data, null, 2)}
+                    `;
+                } else {
+                    statusBadge.className = 'status-badge status-error';
+                    statusBadge.textContent = `❌ Erreur (${response.status})`;
+                    resultDiv.innerHTML = `
+                        <div class="error-detail">
+                            <strong>Status:</strong> ${response.status} ${response.statusText}<br>
+                            <strong>Temps de réponse:</strong> ${responseTime}ms
+                        </div>
+                        <strong>Réponse:</strong><br>
+                        ${JSON.stringify(data, null, 2)}
+                    `;
                 }
             } catch (error) {
-                return {
-                    ok: false,
-                    status: 0,
-                    data: null,
-                    error: error.message
-                }
-            }
-        }
-
-        function createResultCard(title, results) {
-            let html = `<div class="card"><h2>${title}</h2>`
-            
-            for (const [apiName, result] of Object.entries(results)) {
-                const statusClass = result.ok ? 'success' : 'error'
-                const statusIndicator = result.ok ? 'status-success' : 'status-error'
-                
-                html += `
-                    <div class="api-result">
-                        <div>
-                            <span class="status-indicator ${statusIndicator}"></span>
-                            <strong>${apiName}</strong> 
-                            <span class="${statusClass}">(${result.status})</span>
-                        </div>
-                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                spinner.style.display = 'none';
+                statusBadge.className = 'status-badge status-error';
+                statusBadge.textContent = '❌ Erreur réseau';
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div class="error-detail">
+                        <strong>Erreur:</strong> ${error.message}<br>
+                        <strong>Type:</strong> ${error.name}
                     </div>
-                `
+                    <strong>Stack trace:</strong><br>
+                    ${error.stack}
+                `;
+                
+                testResults.push({
+                    test: test.name,
+                    endpoint: test.endpoint,
+                    error: error.message,
+                    stack: error.stack,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+            testResults = [];
+            
+            for (const test of tests) {
+                await runTest(test);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Petit délai entre les tests
             }
             
-            html += '</div>'
-            return html
-        }
-
-        async function testAllAPIs() {
-            const resultsDiv = document.getElementById('results')
-            resultsDiv.innerHTML = '<div class="card">⏳ Test de toutes les APIs...</div>'
-            
-            const results = {}
-            
-            // Test Dashboard APIs
-            results['/api/dashboard/stats'] = await testAPI('/api/dashboard/stats')
-            results['/api/dashboard/activity'] = await testAPI('/api/dashboard/activity')
-            
-            // Test Folders APIs
-            results['/api/folders'] = await testAPI('/api/folders')
-            results['/api/sidebar/folders'] = await testAPI('/api/sidebar/folders')
-            
-            // Test Documents APIs
-            results['/api/documents'] = await testAPI('/api/documents')
-            
-            // Test Users APIs
-            results['/api/users'] = await testAPI('/api/users')
-            
-            // Test Profile APIs
-            results['/api/profile'] = await testAPI('/api/profile')
-            
-            resultsDiv.innerHTML = createResultCard('🔍 Test de Toutes les APIs', results)
-        }
-
-        async function testDashboardAPIs() {
-            const resultsDiv = document.getElementById('results')
-            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Dashboard...</div>'
-            
-            const results = {}
-            results['/api/dashboard/stats'] = await testAPI('/api/dashboard/stats')
-            results['/api/dashboard/activity'] = await testAPI('/api/dashboard/activity')
-            
-            resultsDiv.innerHTML = createResultCard('📊 Test APIs Dashboard', results)
-        }
-
-        async function testFoldersAPIs() {
-            const resultsDiv = document.getElementById('results')
-            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Dossiers...</div>'
-            
-            const results = {}
-            results['/api/folders'] = await testAPI('/api/folders')
-            results['/api/sidebar/folders'] = await testAPI('/api/sidebar/folders')
-            
-            // Test création d'un dossier
-            const testFolderName = `Test Dossier ${new Date().getTime()}`
-            results['/api/folders (POST)'] = await testAPI('/api/folders', 'POST', { 
-                name: testFolderName 
-            })
-            
-            resultsDiv.innerHTML = createResultCard('📁 Test APIs Dossiers', results)
-        }
-
-        async function testDocumentsAPIs() {
-            const resultsDiv = document.getElementById('results')
-            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Documents...</div>'
-            
-            const results = {}
-            results['/api/documents'] = await testAPI('/api/documents')
-            
-            resultsDiv.innerHTML = createResultCard('📄 Test APIs Documents', results)
-        }
-
-        async function testUsersAPIs() {
-            const resultsDiv = document.getElementById('results')
-            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Utilisateurs...</div>'
-            
-            const results = {}
-            results['/api/users'] = await testAPI('/api/users')
-            
-            resultsDiv.innerHTML = createResultCard('👥 Test APIs Utilisateurs', results)
-        }
-
-        async function testProfileAPIs() {
-            const resultsDiv = document.getElementById('results')
-            resultsDiv.innerHTML = '<div class="card">⏳ Test des APIs Profil...</div>'
-            
-            const results = {}
-            results['/api/profile'] = await testAPI('/api/profile')
-            
-            resultsDiv.innerHTML = createResultCard('👤 Test APIs Profil', results)
+            showSummary();
         }
 
         function clearResults() {
-            document.getElementById('results').innerHTML = '';
+            document.getElementById('test-container').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+            testResults = [];
         }
 
-        // Test automatique au chargement
-        window.onload = function() {
-            testAllAPIs();
-        };
+        function showSummary() {
+            const summary = document.getElementById('summary');
+            const totalTests = document.querySelectorAll('.test-section').length;
+            const successTests = document.querySelectorAll('.status-success').length;
+            const failedTests = document.querySelectorAll('.status-error').length;
+            const warningTests = document.querySelectorAll('.status-warning').length;
+
+            document.getElementById('total-tests').textContent = totalTests;
+            document.getElementById('success-tests').textContent = successTests;
+            document.getElementById('failed-tests').textContent = failedTests;
+            document.getElementById('warning-tests').textContent = warningTests;
+
+            summary.style.display = 'block';
+        }
+
+        function downloadReport() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                summary: {
+                    total: testResults.length,
+                    success: testResults.filter(r => r.status >= 200 && r.status < 300).length,
+                    failed: testResults.filter(r => r.status >= 400 || r.error).length
+                },
+                results: testResults
+            };
+
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `api-test-report-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            console.log('Page de test des APIs chargée. Cliquez sur "Lancer tous les tests" pour commencer.');
+        });
     </script>
 </body>
 </html>

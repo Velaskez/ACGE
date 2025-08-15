@@ -36,12 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/api/user-profile', {
         credentials: 'include'
       })
       if (response.ok) {
         const data = await response.json()
-        setUser(data.user)
+        if (data.success && data.user) {
+          setUser(data.user)
+        }
       }
     } catch (error) {
       console.error('Erreur lors de la vérification de l\'authentification:', error)
@@ -53,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/login-simple', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,8 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok) {
         const data = await response.json()
-        setUser(data.user)
-        return true
+        if (data.success && data.user) {
+          setUser(data.user)
+          return true
+        }
       }
 
       return false
@@ -77,12 +81,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { 
+      const response = await fetch('/api/logout-simple', { 
         method: 'POST',
         credentials: 'include'
       })
-      setUser(null)
-      router.push('/login')
+      
+      if (response.ok) {
+        setUser(null)
+        router.push('/login')
+      }
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error)
     }
@@ -90,12 +97,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/api/user-profile', {
         credentials: 'include'
       })
       if (response.ok) {
         const data = await response.json()
-        setUser(data.user)
+        if (data.success && data.user) {
+          setUser(data.user)
+        }
       }
     } catch (error) {
       console.error('Erreur lors du rafraîchissement des données utilisateur:', error)
