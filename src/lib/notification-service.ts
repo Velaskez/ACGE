@@ -38,7 +38,7 @@ export class NotificationService {
    */
   static async createMany(notifications: CreateNotificationData[]) {
     try {
-      const result = await prisma.notification.createMany({
+      const createdNotifications = await prisma.notification.createMany({
         data: notifications.map(n => ({
           type: n.type,
           title: n.title,
@@ -48,12 +48,29 @@ export class NotificationService {
         }))
       })
       
-      console.log(`${result.count} notifications créées en lot`)
-      return result
+      console.log(`${createdNotifications.count} notifications créées en lot`)
+      return createdNotifications
     } catch (error) {
-      console.error('Erreur lors de la création de notifications en lot:', error)
+      console.error('Erreur lors de la création en lot:', error)
       return null
     }
+  }
+
+  /**
+   * Notification de bienvenue
+   */
+  static async notifyWelcome(userId: string, userName: string) {
+    return this.create({
+      type: 'WELCOME',
+      title: 'Bienvenue sur ACGE !',
+      message: `Bonjour ${userName}, votre compte a été créé avec succès. Vous pouvez maintenant commencer à utiliser la plateforme de gestion documentaire.`,
+      userId,
+      data: { 
+        version: '1.0.0',
+        userName,
+        welcomeDate: new Date().toISOString()
+      }
+    })
   }
 
   /**
@@ -88,28 +105,24 @@ export class NotificationService {
       select: { name: true }
     })
 
-    const notifications = sharedWithUserIds
-      .filter(userId => userId !== createdByUserId) // Ne pas notifier l'auteur
-      .map(userId => ({
-        type: 'VERSION_ADDED' as NotificationType,
-        title: 'Nouvelle version disponible',
-        message: `${createdByUser?.name || 'Un utilisateur'} a ajouté la version ${versionNumber} du document "${documentTitle}".`,
-        userId,
-        data: {
-          documentId,
-          documentTitle,
-          versionNumber,
-          createdByUserId
-        }
-      }))
+    const notifications = sharedWithUserIds.map(userId => ({
+      type: 'VERSION_ADDED' as NotificationType,
+      title: 'Nouvelle version disponible',
+      message: `${createdByUser?.name || 'Un utilisateur'} a ajouté une nouvelle version (v${versionNumber}) au document "${documentTitle}".`,
+      userId,
+      data: {
+        documentId,
+        documentTitle,
+        versionNumber,
+        createdByUserId
+      }
+    }))
 
-    if (notifications.length > 0) {
-      return this.createMany(notifications)
-    }
+    return this.createMany(notifications)
   }
 
   /**
-   * Notification pour restauration de version
+   * Notification pour version restaurée
    */
   static async notifyVersionRestored(documentId: string, documentTitle: string, versionNumber: number, restoredByUserId: string, sharedWithUserIds: string[]) {
     const restoredByUser = await prisma.user.findUnique({
@@ -117,38 +130,90 @@ export class NotificationService {
       select: { name: true }
     })
 
-    const notifications = sharedWithUserIds
-      .filter(userId => userId !== restoredByUserId) // Ne pas notifier l'auteur
-      .map(userId => ({
-        type: 'VERSION_RESTORED' as NotificationType,
-        title: 'Version restaurée',
-        message: `${restoredByUser?.name || 'Un utilisateur'} a restauré la version ${versionNumber} du document "${documentTitle}".`,
-        userId,
-        data: {
-          documentId,
-          documentTitle,
-          versionNumber,
-          restoredByUserId
-        }
-      }))
+    const notifications = sharedWithUserIds.map(userId => ({
+      type: 'VERSION_RESTORED' as NotificationType,
+      title: 'Version restaurée',
+      message: `${restoredByUser?.name || 'Un utilisateur'} a restauré la version ${versionNumber} du document "${documentTitle}".`,
+      userId,
+      data: {
+        documentId,
+        documentTitle,
+        versionNumber,
+        restoredByUserId
+      }
+    }))
 
-    if (notifications.length > 0) {
-      return this.createMany(notifications)
-    }
+    return this.createMany(notifications)
   }
 
   /**
-   * Notification de bienvenue pour nouveaux utilisateurs
+   * Notification pour suppression de document
    */
-  static async notifyWelcome(userId: string, userName: string) {
-    return this.create({
-      type: 'WELCOME',
-      title: 'Bienvenue dans ACGE !',
-      message: `Bonjour ${userName} ! Vous pouvez maintenant commencer à gérer vos documents, créer des dossiers et collaborer avec votre équipe.`,
+  static async notifyDocumentDeleted(documentTitle: string, deletedByUserId: string, sharedWithUserIds: string[]) {
+    const deletedByUser = await prisma.user.findUnique({
+      where: { id: deletedByUserId },
+      select: { name: true }
+    })
+
+    const notifications = sharedWithUserIds.map(userId => ({
+      type: 'DOCUMENT_DELETED' as NotificationType,
+      title: 'Document supprimé',
+      message: `${deletedByUser?.name || 'Un utilisateur'} a supprimé le document "${documentTitle}".`,
       userId,
       data: {
-        version: '1.0.0',
-        features: ['documents', 'folders', 'sharing', 'versions']
+        documentTitle,
+        deletedByUserId,
+        deletionDate: new Date().toISOString()
+      }
+    }))
+
+    return this.createMany(notifications)
+  }
+
+  /**
+   * Notification pour nouveau commentaire
+   */
+  static async notifyCommentAdded(documentId: string, documentTitle: string, commentId: string, authorId: string, sharedWithUserIds: string[]) {
+    const author = await prisma.user.findUnique({
+      where: { id: authorId },
+      select: { name: true }
+    })
+
+    const notifications = sharedWithUserIds.map(userId => ({
+      type: 'COMMENT_ADDED' as NotificationType,
+      title: 'Nouveau commentaire',
+      message: `${author?.name || 'Un utilisateur'} a ajouté un commentaire sur le document "${documentTitle}".`,
+      userId,
+      data: {
+        documentId,
+        documentTitle,
+        commentId,
+        authorId
+      }
+    }))
+
+    return this.createMany(notifications)
+  }
+
+  /**
+   * Notification pour partage de dossier
+   */
+  static async notifyFolderShared(folderId: string, folderName: string, sharedByUserId: string, sharedWithUserId: string, permission: string) {
+    const sharedByUser = await prisma.user.findUnique({
+      where: { id: sharedByUserId },
+      select: { name: true }
+    })
+
+    return this.create({
+      type: 'FOLDER_SHARED',
+      title: 'Dossier partagé avec vous',
+      message: `${sharedByUser?.name || 'Un utilisateur'} a partagé le dossier "${folderName}" avec vous (${permission.toLowerCase()}).`,
+      userId: sharedWithUserId,
+      data: {
+        folderId,
+        folderName,
+        sharedByUserId,
+        permission
       }
     })
   }
@@ -171,18 +236,72 @@ export class NotificationService {
   /**
    * Récupérer les utilisateurs qui ont accès à un document (pour notifications)
    */
-  static async getDocumentAccessUsers(documentId: string): Promise<string[]> {
-    const document = await prisma.document.findUnique({
-      where: { id: documentId },
-      include: {
-        author: { select: { id: true } },
-        shares: { select: { userId: true } }
-      }
-    })
+  static async getDocumentSharedUsers(documentId: string, excludeUserId?: string): Promise<string[]> {
+    try {
+      const shares = await prisma.documentShare.findMany({
+        where: {
+          documentId,
+          userId: excludeUserId ? { not: excludeUserId } : undefined
+        },
+        select: { userId: true }
+      })
 
-    if (!document) return []
+      return shares.map(share => share.userId)
+    } catch (error) {
+      console.error('Erreur lors de la récupération des utilisateurs partagés:', error)
+      return []
+    }
+  }
 
-    const userIds = [document.author.id, ...document.shares.map(share => share.userId)]
-    return [...new Set(userIds)] // Supprimer les doublons
+  /**
+   * Récupérer les utilisateurs qui ont accès à un dossier (pour notifications)
+   */
+  static async getFolderSharedUsers(folderId: string, excludeUserId?: string): Promise<string[]> {
+    try {
+      // Pour l'instant, retourner un tableau vide car le partage de dossiers n'est pas encore implémenté
+      // TODO: Implémenter quand le système de partage de dossiers sera ajouté
+      return []
+    } catch (error) {
+      console.error('Erreur lors de la récupération des utilisateurs partagés du dossier:', error)
+      return []
+    }
+  }
+
+  /**
+   * Marquer une notification comme lue
+   */
+  static async markAsRead(notificationId: string, userId: string) {
+    try {
+      const notification = await prisma.notification.update({
+        where: {
+          id: notificationId,
+          userId: userId
+        },
+        data: { isRead: true }
+      })
+      
+      return notification
+    } catch (error) {
+      console.error('Erreur lors du marquage comme lu:', error)
+      return null
+    }
+  }
+
+  /**
+   * Marquer toutes les notifications d'un utilisateur comme lues
+   */
+  static async markAllAsRead(userId: string) {
+    try {
+      const result = await prisma.notification.updateMany({
+        where: { userId, isRead: false },
+        data: { isRead: true }
+      })
+      
+      console.log(`${result.count} notifications marquées comme lues pour l'utilisateur ${userId}`)
+      return result
+    } catch (error) {
+      console.error('Erreur lors du marquage global:', error)
+      return null
+    }
   }
 }

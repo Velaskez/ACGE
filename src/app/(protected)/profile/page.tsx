@@ -266,7 +266,7 @@ export default function ProfilePage() {
       .map(word => word.charAt(0))
       .join('')
       .toUpperCase()
-      .slice(0, 2)
+      .slice(0, 1)
   }
 
   return (
@@ -385,9 +385,9 @@ export default function ProfilePage() {
           )}
 
           {success && (
-            <Alert className="border-green-200 bg-green-50 animate-in slide-in-from-top-2 duration-300">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">{success}</AlertDescription>
+            <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 animate-in slide-in-from-top-2 duration-300">
+              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertDescription className="text-green-800 dark:text-green-200">{success}</AlertDescription>
             </Alert>
           )}
 
@@ -396,7 +396,7 @@ export default function ProfilePage() {
             <div className="lg:col-span-1">
               <Card className="card-elevated group animate-fade-in-scale">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-3 text-xl text-primary">
+                  <CardTitle className="flex items-center gap-3 text-xl text-foreground">
                     <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors duration-200">
                       <Shield className="h-6 w-6 text-primary" />
                     </div>
@@ -406,18 +406,15 @@ export default function ProfilePage() {
                 <CardContent className="space-y-6">
                   {displayProfile && (
                     <>
-                      <div className="flex items-center gap-4">
-                        <div className="relative group/avatar">
-                          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-lg avatar-hover">
-                            {getInitials(displayProfile.name)}
-                          </div>
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover/avatar:bg-opacity-20 rounded-full transition-all duration-200 flex items-center justify-center">
-                            <Camera className="h-5 w-5 text-white opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200" />
-                          </div>
-                        </div>
+                                             <div className="flex items-center gap-4">
+                         <div className="relative group/avatar">
+                           <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-semibold text-lg shadow-lg avatar-hover">
+                             {getInitials(displayProfile.name)}
+                           </div>
+                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-lg text-primary">{displayProfile.name}</p>
-                          <p className="text-sm text-primary flex items-center gap-1">
+                          <p className="font-semibold text-lg text-foreground">{displayProfile.name}</p>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
                             <Mail className="h-3 w-3" />
                             {displayProfile.email}
                           </p>
@@ -427,34 +424,34 @@ export default function ProfilePage() {
                       <Separator className="my-6" />
 
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                          <span className="text-sm font-medium text-primary">Rôle</span>
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-200">
+                          <span className="text-sm font-medium text-foreground">Rôle</span>
                           <div className="badge-animated">
                             {getRoleBadge(displayProfile.role)}
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                          <span className="text-sm font-medium text-primary">Documents</span>
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-200">
+                          <span className="text-sm font-medium text-foreground">Documents</span>
                           <div className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium text-primary">{displayProfile._count.documents}</span>
+                            <span className="text-sm font-medium text-foreground">{displayProfile._count.documents}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                          <span className="text-sm font-medium text-primary">Partages reçus</span>
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-200">
+                          <span className="text-sm font-medium text-foreground">Partages reçus</span>
                           <div className="flex items-center gap-2">
                             <Share2 className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium text-primary">{displayProfile._count.sharedWith}</span>
+                            <span className="text-sm font-medium text-foreground">{displayProfile._count.sharedWith}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                          <span className="text-sm font-medium text-primary">Membre depuis</span>
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-200">
+                          <span className="text-sm font-medium text-foreground">Membre depuis</span>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium text-primary">{formatRelativeTime(displayProfile.createdAt)}</span>
+                            <span className="text-sm font-medium text-foreground">{formatRelativeTime(displayProfile.createdAt)}</span>
                           </div>
                         </div>
                       </div>
@@ -470,13 +467,13 @@ export default function ProfilePage() {
                 <CardHeader className="pb-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="flex items-center gap-3 text-xl text-primary">
+                      <CardTitle className="flex items-center gap-3 text-xl text-foreground">
                         <div className="p-2 bg-primary/10 rounded-lg">
                           <User className="h-6 w-6 text-primary" />
                         </div>
                         Modifier le profil
                       </CardTitle>
-                      <CardDescription className="mt-2 text-base text-primary">
+                      <CardDescription className="mt-2 text-base text-muted-foreground">
                         Mettez à jour vos informations personnelles et votre mot de passe
                       </CardDescription>
                     </div>
@@ -492,14 +489,14 @@ export default function ProfilePage() {
                   <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Informations personnelles */}
                     <div className="space-y-6">
-                      <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                         <div className="w-1 h-6 bg-primary rounded-full"></div>
                         Informations personnelles
                       </h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-3">
-                          <Label htmlFor="name" className="text-sm font-medium text-primary">
+                          <Label htmlFor="name" className="text-sm font-medium text-foreground">
                             Nom complet
                           </Label>
                           <Input
@@ -514,7 +511,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="space-y-3">
-                          <Label htmlFor="email" className="text-sm font-medium text-primary">
+                          <Label htmlFor="email" className="text-sm font-medium text-foreground">
                             Adresse email
                           </Label>
                           <Input
@@ -538,15 +535,15 @@ export default function ProfilePage() {
                         <div className="p-2 bg-primary/10 rounded-lg">
                           <Key className="h-5 w-5 text-primary" />
                         </div>
-                        <h3 className="text-lg font-semibold text-primary">Changer le mot de passe</h3>
+                        <h3 className="text-lg font-semibold text-foreground">Changer le mot de passe</h3>
                       </div>
-                      <p className="text-sm text-primary bg-primary/5 p-3 rounded-lg">
+                      <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
                         Laissez vide si vous ne souhaitez pas changer votre mot de passe
                       </p>
 
                       <div className="space-y-6">
                         <div className="space-y-3">
-                          <Label htmlFor="currentPassword" className="text-sm font-medium text-primary">
+                          <Label htmlFor="currentPassword" className="text-sm font-medium text-foreground">
                             Mot de passe actuel
                           </Label>
                           <div className="relative">
@@ -562,7 +559,7 @@ export default function ProfilePage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="absolute right-0 top-0 h-full px-3 hover:bg-gray-100"
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-muted"
                               onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                             >
                               {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -572,7 +569,7 @@ export default function ProfilePage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-3">
-                            <Label htmlFor="newPassword" className="text-sm font-medium text-primary">
+                            <Label htmlFor="newPassword" className="text-sm font-medium text-foreground">
                               Nouveau mot de passe
                             </Label>
                             <div className="relative">
@@ -588,7 +585,7 @@ export default function ProfilePage() {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="absolute right-0 top-0 h-full px-3 hover:bg-gray-100"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-muted"
                                 onClick={() => setShowNewPassword(!showNewPassword)}
                               >
                                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -597,7 +594,7 @@ export default function ProfilePage() {
                           </div>
 
                           <div className="space-y-3">
-                            <Label htmlFor="confirmPassword" className="text-sm font-medium text-primary">
+                            <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
                               Confirmer le nouveau mot de passe
                             </Label>
                             <div className="relative">
@@ -613,7 +610,7 @@ export default function ProfilePage() {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="absolute right-0 top-0 h-full px-3 hover:bg-gray-100"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-muted"
                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                               >
                                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -625,13 +622,13 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Boutons */}
-                    <div className="flex justify-end gap-3 pt-6 border-t">
+                    <div className="flex justify-end gap-3 pt-6 border-t border-border">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={handleCancel}
                         disabled={isSaving}
-                        className="btn-press transition-all duration-200 hover:bg-gray-50"
+                        className="btn-press transition-all duration-200 hover:bg-muted"
                       >
                         Annuler
                       </Button>

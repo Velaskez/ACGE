@@ -16,6 +16,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
     const folderId = searchParams.get('folderId')
+    const fileType = searchParams.get('fileType')
+    const minSize = searchParams.get('minSize')
+    const maxSize = searchParams.get('maxSize')
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
+    const tags = searchParams.get('tags')
+    const sortBy = searchParams.get('sortBy') || 'updatedAt'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
@@ -29,11 +37,12 @@ export async function GET(request: NextRequest) {
       where.authorId = userId
     }
 
-    // Recherche textuelle simple
+    // Recherche textuelle avancée
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { description: { contains: search, mode: 'insensitive' } },
+        { currentVersion: { fileName: { contains: search, mode: 'insensitive' } } }
       ]
     }
 
@@ -43,6 +52,49 @@ export async function GET(request: NextRequest) {
         where.folderId = null
       } else {
         where.folderId = folderId
+      }
+    }
+
+    // Filtre par type de fichier
+    if (fileType) {
+      where.currentVersion = {
+        ...where.currentVersion,
+        fileType: { contains: fileType, mode: 'insensitive' }
+      }
+    }
+
+    // Filtre par taille de fichier
+    if (minSize || maxSize) {
+      where.currentVersion = {
+        ...where.currentVersion,
+        fileSize: {}
+      }
+      if (minSize) {
+        where.currentVersion.fileSize.gte = parseInt(minSize)
+      }
+      if (maxSize) {
+        where.currentVersion.fileSize.lte = parseInt(maxSize)
+      }
+    }
+
+    // Filtre par période
+    if (startDate || endDate) {
+      where.createdAt = {}
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate)
+      }
+      if (endDate) {
+        where.createdAt.lte = new Date(endDate + 'T23:59:59.999Z')
+      }
+    }
+
+    // Filtre par tags
+    if (tags) {
+      const tagArray = tags.split(',').map(t => t.trim())
+      where.tags = {
+        some: {
+          name: { in: tagArray, mode: 'insensitive' }
+        }
       }
     }
 
@@ -93,7 +145,7 @@ export async function GET(request: NextRequest) {
           }
         },
         orderBy: {
-          updatedAt: 'desc'
+          [sortBy]: sortOrder
         },
         skip: offset,
         take: limit

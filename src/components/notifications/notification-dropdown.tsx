@@ -24,7 +24,11 @@ import {
   Settings,
   Trash2,
   AlertCircle,
-  Loader2
+  Loader2,
+  MessageSquare,
+  FolderOpen,
+  Crown,
+  Wrench
 } from 'lucide-react'
 import type { Notification, NotificationType } from '@/types'
 
@@ -120,12 +124,79 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
   }
 
   const getNotificationIcon = (type: NotificationType) => {
-    // Toutes les icônes de notifications utilisent maintenant des couleurs neutres
-    return (
-      <div className="p-1.5 bg-muted rounded-md">
-        <AlertCircle className="h-4 w-4 text-muted-foreground" />
-      </div>
-    )
+    const iconClass = "h-4 w-4"
+    const bgClass = "p-1.5 rounded-md"
+    
+    switch (type) {
+      case 'WELCOME':
+        return (
+          <div className={`${bgClass} bg-blue-100`}>
+            <User className={`${iconClass} text-blue-600`} />
+          </div>
+        )
+      case 'DOCUMENT_SHARED':
+        return (
+          <div className={`${bgClass} bg-green-100`}>
+            <Share2 className={`${iconClass} text-green-600`} />
+          </div>
+        )
+      case 'VERSION_ADDED':
+        return (
+          <div className={`${bgClass} bg-purple-100`}>
+            <FileText className={`${iconClass} text-purple-600`} />
+          </div>
+        )
+      case 'VERSION_RESTORED':
+        return (
+          <div className={`${bgClass} bg-orange-100`}>
+            <RotateCcw className={`${iconClass} text-orange-600`} />
+          </div>
+        )
+      case 'DOCUMENT_DELETED':
+        return (
+          <div className={`${bgClass} bg-red-100`}>
+            <Trash2 className={`${iconClass} text-red-600`} />
+          </div>
+        )
+      case 'FOLDER_SHARED':
+        return (
+          <div className={`${bgClass} bg-indigo-100`}>
+            <FolderOpen className={`${iconClass} text-indigo-600`} />
+          </div>
+        )
+      case 'COMMENT_ADDED':
+        return (
+          <div className={`${bgClass} bg-yellow-100`}>
+            <MessageSquare className={`${iconClass} text-yellow-600`} />
+          </div>
+        )
+      case 'SYSTEM':
+        return (
+          <div className={`${bgClass} bg-gray-100`}>
+            <Wrench className={`${iconClass} text-gray-600`} />
+          </div>
+        )
+      default:
+        return (
+          <div className={`${bgClass} bg-muted`}>
+            <AlertCircle className={`${iconClass} text-muted-foreground`} />
+          </div>
+        )
+    }
+  }
+
+  const getTypeLabel = (type: NotificationType) => {
+    switch (type) {
+      case 'WELCOME': return 'Bienvenue'
+      case 'DOCUMENT_SHARED': return 'Partage'
+      case 'VERSION_ADDED': return 'Nouvelle version'
+      case 'VERSION_RESTORED': return 'Version restaurée'
+      case 'DOCUMENT_DELETED': return 'Suppression'
+      case 'FOLDER_SHARED': return 'Dossier partagé'
+      case 'COMMENT_ADDED': return 'Commentaire'
+      case 'SYSTEM': return 'Système'
+      default: return 'Notification'
+    }
   }
 
   const handleNotificationClick = async (notification: Notification) => {
@@ -196,7 +267,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                  className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 group ${
                     !notification.isRead ? 'bg-blue-50 border-l-2 border-l-blue-500' : ''
                   }`}
                   onClick={() => handleNotificationClick(notification)}
@@ -208,11 +279,16 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className={`text-sm font-medium truncate ${
-                          !notification.isRead ? 'text-primary' : 'text-primary'
-                        }`}>
-                          {notification.title}
-                        </h4>
+                        <div className="flex-1">
+                          <h4 className={`text-sm font-medium truncate ${
+                            !notification.isRead ? 'text-primary' : 'text-primary'
+                          }`}>
+                            {notification.title}
+                          </h4>
+                          <Badge variant="outline" className="text-xs mt-1">
+                            {getTypeLabel(notification.type)}
+                          </Badge>
+                        </div>
                         
                         {!notification.isRead && (
                           <Button
@@ -229,7 +305,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
                         )}
                       </div>
                       
-                      <p className="text-xs text-primary mt-1 line-clamp-2">
+                      <p className="text-xs text-primary mt-2 line-clamp-2">
                         {notification.message}
                       </p>
                       

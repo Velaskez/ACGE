@@ -266,6 +266,8 @@ export default function FoldersPage() {
     if (!name.trim()) return
     try {
       setCreating(true)
+      console.log('🔄 Création dossier en cours...', { name: name.trim(), description: description.trim() })
+      
       const url = editingFolder ? `/api/folders/${editingFolder.id}` : '/api/folders'
       const method = editingFolder ? 'PUT' : 'POST'
       
@@ -274,24 +276,43 @@ export default function FoldersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined })
       })
+      
+      console.log('📡 Réponse API:', res.status, res.statusText)
+      
       if (res.ok) {
+        const data = await res.json()
+        console.log('✅ Dossier créé:', data)
+        
         setOpen(false)
         setName('')
         setDescription('')
         setEditingFolder(null)
-        await refresh()
+        
+        // Rafraîchir la liste des dossiers
+        if (refresh) {
+          await refresh()
+        } else {
+          console.warn('⚠️ Fonction refresh non disponible')
+        }
+      } else {
+        const errorData = await res.json().catch(() => ({ error: 'Erreur inconnue' }))
+        console.error('❌ Erreur création dossier:', errorData)
+        alert(errorData.error || 'Erreur lors de la création du dossier')
       }
+    } catch (error) {
+      console.error('❌ Exception création dossier:', error)
+      alert('Erreur lors de la création du dossier')
     } finally {
       setCreating(false)
     }
   }
 
-  const handleEditFolder = (folder: any) => {
+  const handleEditFolder = React.useCallback((folder: any) => {
     setEditingFolder(folder)
     setName(folder.name)
     setDescription(folder.description || '')
     setOpen(true)
-  }
+  }, [])
 
   const handleDeleteFolder = async (folderId: string) => {
     try {
@@ -310,11 +331,20 @@ export default function FoldersPage() {
     }
   }
 
-  const handleCloseDialog = () => {
-    setOpen(false)
-    setEditingFolder(null)
-    setName('')
-    setDescription('')
+  const handleCloseDialog = (open: boolean) => {
+    if (!open) {
+      console.log('🔒 Fermeture dialogue')
+      setOpen(false)
+      setEditingFolder(null)
+      setName('')
+      setDescription('')
+    } else {
+      console.log('🔓 Ouverture dialogue')
+      setOpen(true)
+      setEditingFolder(null)
+      setName('')
+      setDescription('')
+    }
   }
 
   // Fonctions d'adaptation des types pour les modales
@@ -327,25 +357,25 @@ export default function FoldersPage() {
   })
 
   // Fonctions pour la gestion des documents
-  const handleViewDocument = (document: DocumentItem) => {
+  const handleViewDocument = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setPreviewOpen(true)
-  }
+  }, [])
 
-  const handleEditDocument = (document: DocumentItem) => {
+  const handleEditDocument = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setEditModalOpen(true)
-  }
+  }, [])
 
-  const handleShareDocument = (document: DocumentItem) => {
+  const handleShareDocument = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setShareModalOpen(true)
-  }
+  }, [])
 
-  const handleVersionHistory = (document: DocumentItem) => {
+  const handleVersionHistory = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setVersionHistoryOpen(true)
-  }
+  }, [])
 
   const handleDownloadDocument = async (document: DocumentItem) => {
     try {
@@ -381,14 +411,14 @@ export default function FoldersPage() {
   }
 
   // Fonction pour ouvrir un dossier
-  const handleOpenFolder = (folder: any) => {
+  const handleOpenFolder = React.useCallback((folder: any) => {
     router.push(`/folders?folder=${folder.id}`)
-  }
+  }, [router])
 
   // Fonction pour revenir à la liste des dossiers
-  const handleBackToFolders = () => {
+  const handleBackToFolders = React.useCallback(() => {
     router.push('/folders')
-  }
+  }, [router])
 
   // Rendu conditionnel : soit la liste des dossiers, soit le contenu d'un dossier
   if (folderId && currentFolder) {
@@ -494,26 +524,49 @@ export default function FoldersPage() {
                                   <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewDocument(document)}>
+                              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleViewDocument(document)
+                                  }}
+                                >
                                   <Eye className="mr-2 h-4 w-4" />
                                   Prévisualiser
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDownloadDocument(document)}>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDownloadDocument(document)
+                                  }}
+                                >
                                   <Download className="mr-2 h-4 w-4" />
                                   Télécharger
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleShareDocument(document)}>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleShareDocument(document)
+                                  }}
+                                >
                                   <Share2 className="mr-2 h-4 w-4" />
                                   Partager
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleEditDocument(document)}>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleEditDocument(document)
+                                  }}
+                                >
                                   <Edit className="mr-2 h-4 w-4" />
                                   Modifier
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => handleDeleteDocument(document.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDeleteDocument(document.id)
+                                  }}
                                   className="text-destructive"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
@@ -716,18 +769,31 @@ export default function FoldersPage() {
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleOpenFolder(folder)}>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleOpenFolder(folder)
+                                }}
+                              >
                                 <Eye className="mr-2 h-4 w-4" />
                                 Voir les documents
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditFolder(folder)}>
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEditFolder(folder)
+                                }}
+                              >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Modifier
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
-                                onClick={() => setDeleteConfirm(folder.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setDeleteConfirm(folder.id)
+                                }}
                                 className="text-destructive"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -758,12 +824,12 @@ export default function FoldersPage() {
                 <FolderOpen className="mx-auto h-10 w-10 text-primary" />
                 <h3 className="mt-2 text-sm font-medium">Aucun dossier</h3>
                 <p className="mt-1 text-sm text-primary">Créez votre premier dossier pour organiser vos documents.</p>
-                <div className="mt-4">
-                  <Button onClick={() => setOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nouveau dossier
-                  </Button>
-                </div>
+                                 <div className="mt-4">
+                   <Button onClick={() => setOpen(true)}>
+                     <Plus className="mr-2 h-4 w-4" />
+                     Nouveau dossier
+                   </Button>
+                 </div>
               </div>
             )}
             {error && (

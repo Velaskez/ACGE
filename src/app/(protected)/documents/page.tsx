@@ -45,6 +45,7 @@ import { DocumentVersionHistory } from '@/components/documents/document-version-
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
 import { DocumentsFilters, type DocumentFilters } from '@/components/documents/documents-filters'
+import { ActiveFiltersDisplay } from '@/components/documents/active-filters-display'
 import { DocumentGridItem } from '@/components/documents/document-grid-item'
 import { useFolders } from '@/hooks/use-folders'
 import { useSearchParams } from 'next/navigation'
@@ -183,10 +184,41 @@ export default function DocumentsPage() {
     setPagination(prev => ({ ...prev, page: 1 }))
   }
 
+  const handleRemoveFilter = (filterKey: keyof DocumentFilters) => {
+    setFilters(prev => {
+      const newFilters = { ...prev }
+      if (filterKey === 'minSize' || filterKey === 'maxSize') {
+        newFilters.minSize = undefined
+        newFilters.maxSize = undefined
+      } else if (filterKey === 'startDate' || filterKey === 'endDate') {
+        newFilters.startDate = undefined
+        newFilters.endDate = undefined
+      } else {
+        newFilters[filterKey] = undefined
+      }
+      return newFilters
+    })
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const handleClearAllFilters = () => {
+    const resetFilters: DocumentFilters = {
+      sortBy: 'updatedAt',
+      sortOrder: 'desc'
+    }
+    setFilters(resetFilters)
+    setSearchQuery('')
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
   const handleSearchQueryChange = (query: string) => {
     setSearchQuery(query)
-    // Ne pas mettre à jour les filtres immédiatement pour éviter les appels API
-    // Les filtres seront mis à jour seulement quand l'utilisateur valide la recherche
+    // Mettre à jour les filtres avec debounce pour éviter trop d'appels API
+    const timeoutId = setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: query || undefined }))
+    }, 500)
+    
+    return () => clearTimeout(timeoutId)
   }
 
   const handleSearchSelect = (suggestion: SearchSuggestion) => {
@@ -381,6 +413,13 @@ export default function DocumentsPage() {
           onSortFieldChange={setSortField}
           onSortOrderChange={setSortOrder}
           onOpenFilters={() => setIsFiltersOpen(true)}
+        />
+
+        {/* Affichage des filtres actifs */}
+        <ActiveFiltersDisplay
+          filters={filters}
+          onRemoveFilter={handleRemoveFilter}
+          onClearAll={handleClearAllFilters}
         />
 
         {/* Messages d'erreur */}

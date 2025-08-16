@@ -65,12 +65,6 @@ const mainNav = [
     color: 'red',
     adminOnly: true,
   },
-  {
-    title: 'Paramètres',
-    href: '/settings',
-    icon: Settings,
-    color: 'gray'
-  },
 ]
 
 export function Sidebar({ className, inSheet = false }: SidebarProps) {

@@ -106,27 +106,41 @@ export function FolderGridItem({
 
         {/* Menu d'actions */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               className="h-6 w-6 p-0"
+              onClick={(e) => e.stopPropagation()}
             >
               <MoreHorizontal className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onView(folder)}>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem 
+              onClick={(e) => {
+                e.stopPropagation()
+                onView(folder)
+              }}
+            >
               <Eye className="mr-2 h-4 w-4" />
-              Ouvrir
+              Voir les documents
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onEdit(folder)}>
+            <DropdownMenuItem 
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit(folder)
+              }}
+            >
               <Edit className="mr-2 h-4 w-4" />
-              Éditer
+              Modifier
             </DropdownMenuItem>
             <DropdownMenuItem 
-              onClick={() => onDelete(folder.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(folder.id)
+              }}
               className="text-destructive"
             >
               <Trash2 className="mr-2 h-4 w-4" />

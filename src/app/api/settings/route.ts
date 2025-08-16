@@ -29,19 +29,74 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Paramètres par défaut (pour l'instant, pas de persistance)
-    const defaultSettings = {
-      emailNotifications: true,
-      pushNotifications: false,
-      language: 'fr',
-      timezone: 'Africa/Libreville',
-      security: {
-        sessionTimeout: 15,
-        passwordExpiry: 90
-      }
+    // Récupérer les paramètres utilisateur avec SQL direct
+    const settings = await prisma.$queryRaw`
+      SELECT 
+        "emailNotifications",
+        "pushNotifications",
+        language,
+        timezone,
+        "sessionTimeout",
+        "passwordExpiry",
+        theme
+      FROM user_settings 
+      WHERE "userId" = ${userId}
+    ` as any[]
+
+    // Si l'utilisateur n'a pas de paramètres, les créer avec les valeurs par défaut
+    if (settings.length === 0) {
+      await prisma.$executeRaw`
+        INSERT INTO user_settings (
+          "userId", 
+          "emailNotifications", 
+          "pushNotifications", 
+          language, 
+          timezone, 
+          "sessionTimeout", 
+          "passwordExpiry", 
+          theme
+        ) VALUES (
+          ${userId}, 
+          true, 
+          false, 
+          'fr', 
+          'Africa/Libreville', 
+          15, 
+          90, 
+          'system'
+        )
+      `
+
+      return NextResponse.json({
+        settings: {
+          emailNotifications: true,
+          pushNotifications: false,
+          language: 'fr',
+          timezone: 'Africa/Libreville',
+          security: {
+            sessionTimeout: 15,
+            passwordExpiry: 90
+          },
+          theme: 'system'
+        }
+      })
     }
 
-    return NextResponse.json({ settings: defaultSettings })
+    // Retourner les paramètres existants
+    const userSettings = settings[0]
+    return NextResponse.json({
+      settings: {
+        emailNotifications: userSettings.emailNotifications,
+        pushNotifications: userSettings.pushNotifications,
+        language: userSettings.language,
+        timezone: userSettings.timezone,
+        security: {
+          sessionTimeout: userSettings.sessionTimeout,
+          passwordExpiry: userSettings.passwordExpiry
+        },
+        theme: userSettings.theme
+      }
+    })
 
   } catch (error) {
     console.error('Erreur lors de la récupération des paramètres:', error)
@@ -127,11 +182,68 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Pour l'instant, on retourne juste les paramètres validés sans les sauvegarder
-    // TODO: Implémenter une table séparée pour les paramètres utilisateur si nécessaire
+    // Mettre à jour ou créer les paramètres utilisateur avec SQL direct
+    await prisma.$executeRaw`
+      INSERT INTO user_settings (
+        "userId", 
+        "emailNotifications", 
+        "pushNotifications", 
+        language, 
+        timezone, 
+        "sessionTimeout", 
+        "passwordExpiry", 
+        theme,
+        "updatedAt"
+      ) VALUES (
+        ${userId}, 
+        ${settings.emailNotifications ?? true}, 
+        ${settings.pushNotifications ?? false}, 
+        ${settings.language || 'fr'}, 
+        ${settings.timezone || 'Africa/Libreville'}, 
+        ${settings.security?.sessionTimeout || 15}, 
+        ${settings.security?.passwordExpiry || 90}, 
+        ${settings.theme || 'system'},
+        NOW()
+      ) ON CONFLICT ("userId") DO UPDATE SET
+        "emailNotifications" = EXCLUDED."emailNotifications",
+        "pushNotifications" = EXCLUDED."pushNotifications",
+        language = EXCLUDED.language,
+        timezone = EXCLUDED.timezone,
+        "sessionTimeout" = EXCLUDED."sessionTimeout",
+        "passwordExpiry" = EXCLUDED."passwordExpiry",
+        theme = EXCLUDED.theme,
+        "updatedAt" = NOW()
+    `
+
+    // Récupérer les paramètres mis à jour
+    const updatedSettings = await prisma.$queryRaw`
+      SELECT 
+        "emailNotifications",
+        "pushNotifications",
+        language,
+        timezone,
+        "sessionTimeout",
+        "passwordExpiry",
+        theme
+      FROM user_settings 
+      WHERE "userId" = ${userId}
+    ` as any[]
+
+    const userSettings = updatedSettings[0]
+
     return NextResponse.json({
-      message: 'Paramètres validés avec succès (non persistés pour l\'instant)',
-      settings: settings
+      message: 'Paramètres mis à jour avec succès',
+      settings: {
+        emailNotifications: userSettings.emailNotifications,
+        pushNotifications: userSettings.pushNotifications,
+        language: userSettings.language,
+        timezone: userSettings.timezone,
+        security: {
+          sessionTimeout: userSettings.sessionTimeout,
+          passwordExpiry: userSettings.passwordExpiry
+        },
+        theme: userSettings.theme
+      }
     })
 
   } catch (error) {

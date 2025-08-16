@@ -34,7 +34,8 @@ import {
   Search,
   X,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Key
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import Link from 'next/link'
@@ -57,7 +58,8 @@ export default function SettingsPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedSection, setSelectedSection] = useState<string | null>(null)
+  const [selectedSection, setSelectedSection] = useState<string>('Apparence')
+  const [sessionTimeoutUpdated, setSessionTimeoutUpdated] = useState(false)
 
   // États du formulaire
   const [formData, setFormData] = useState({
@@ -145,7 +147,6 @@ export default function SettingsPage() {
       available: true,
       action: () => setSelectedSection('Sécurité')
     },
-
     {
       id: 'session-timeout',
       title: 'Délai d\'expiration de session',
@@ -154,20 +155,25 @@ export default function SettingsPage() {
       keywords: ['session', 'expiration', 'délai', 'timeout'],
       available: true,
       component: (
-        <Select
-          value={settings.security.sessionTimeout.toString()}
-          onValueChange={(value) => handleSecurityChange('sessionTimeout', parseInt(value))}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-                                 <SelectContent>
-                         <SelectItem value="5">5 minutes</SelectItem>
-                         <SelectItem value="10">10 minutes</SelectItem>
-                         <SelectItem value="15">15 minutes</SelectItem>
-                         <SelectItem value="30">30 minutes</SelectItem>
-                       </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select
+            value={settings.security.sessionTimeout.toString()}
+            onValueChange={(value) => handleSecurityChange('sessionTimeout', parseInt(value))}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5 minutes</SelectItem>
+              <SelectItem value="10">10 minutes</SelectItem>
+              <SelectItem value="15">15 minutes</SelectItem>
+              <SelectItem value="30">30 minutes</SelectItem>
+            </SelectContent>
+          </Select>
+          {sessionTimeoutUpdated && (
+            <CheckCircle className="h-4 w-4 text-green-500 animate-pulse" />
+          )}
+        </div>
       )
     },
     // Régional
@@ -266,7 +272,10 @@ export default function SettingsPage() {
       [key]: value
     }
     setSettings(newSettings)
-    saveSettings(newSettings)
+    saveSettings(newSettings).then(() => {
+      // Déclencher un événement pour notifier les autres composants seulement après sauvegarde
+      window.dispatchEvent(new CustomEvent('settings-changed'))
+    })
   }
 
   const handleSecurityChange = (key: string, value: boolean | number) => {
@@ -278,7 +287,16 @@ export default function SettingsPage() {
       }
     }
     setSettings(newSettings)
-    saveSettings(newSettings)
+    saveSettings(newSettings).then(() => {
+      // Déclencher un événement pour notifier les autres composants seulement après sauvegarde
+      window.dispatchEvent(new CustomEvent('settings-changed'))
+      
+      // Afficher un message de confirmation pour le délai d'expiration
+      if (key === 'sessionTimeout') {
+        setSessionTimeoutUpdated(true)
+        setTimeout(() => setSessionTimeoutUpdated(false), 3000) // Masquer après 3 secondes
+      }
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -368,12 +386,15 @@ export default function SettingsPage() {
       if (response.ok) {
         setSuccess('Paramètres mis à jour avec succès')
         setTimeout(() => setSuccess(''), 3000)
+        return Promise.resolve() // Indique la réussite
       } else {
         const data = await response.json()
         setError(data.error || 'Erreur lors de la sauvegarde')
+        return Promise.reject(data.error || 'Erreur lors de la sauvegarde') // Indique l'échec
       }
     } catch (error) {
       setError('Erreur de connexion')
+      return Promise.reject('Erreur de connexion') // Indique l'échec
     } finally {
       setIsLoading(false)
     }
@@ -383,6 +404,29 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchSettings()
   }, [])
+
+  // Écouter les changements de paramètres via un événement personnalisé
+  useEffect(() => {
+    const handleSettingsChange = () => {
+      console.log('🔄 Mise à jour des paramètres dans la page settings...')
+      fetchSettings()
+    }
+
+    // Écouter l'événement de changement de paramètres
+    window.addEventListener('settings-changed', handleSettingsChange)
+
+    return () => {
+      window.removeEventListener('settings-changed', handleSettingsChange)
+    }
+  }, [])
+
+  // Filtrer les sections visibles basées sur la sélection
+  const visibleSections = useMemo(() => {
+    if (searchQuery.trim()) {
+      return Object.keys(groupedSettings)
+    }
+    return [selectedSection]
+  }, [selectedSection, searchQuery, groupedSettings])
 
   return (
     <MainLayout>
@@ -412,6 +456,13 @@ export default function SettingsPage() {
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>{success}</AlertDescription>
+          </Alert>
+        )}
+
+        {sessionTimeoutUpdated && (
+          <Alert>
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>Délai d'expiration de session mis à jour avec succès !</AlertDescription>
           </Alert>
         )}
 
@@ -449,26 +500,34 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   {sections.map((section) => {
                     const Icon = section.icon
-                    const isActive = selectedSection === section.name || (!selectedSection && section.name === 'Apparence')
+                    const isActive = selectedSection === section.name
                     const hasResults = Object.keys(groupedSettings).includes(section.name)
+                    const count = groupedSettings[section.name]?.length || 0
                     
                     return (
                       <Button
                         key={section.name}
                         variant={isActive ? "default" : "ghost"}
-                        className={`w-full justify-start ${
-                          isActive ? '' : ''
+                        className={`w-full justify-start transition-all duration-200 ${
+                          isActive ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-accent'
                         } ${!hasResults && searchQuery ? 'opacity-50' : ''}`}
-                        onClick={() => setSelectedSection(section.name)}
+                        onClick={() => {
+                          setSelectedSection(section.name)
+                          setSearchQuery('') // Effacer la recherche quand on clique sur une section
+                        }}
                         disabled={!hasResults && !!searchQuery}
                       >
-                        <div className="p-1.5 bg-muted rounded-md mr-3">
-                          <Icon className="h-4 w-4 text-muted-foreground" />
+                        <div className={`p-1.5 rounded-md mr-3 transition-colors duration-200 ${
+                          isActive ? 'bg-primary-foreground/20' : 'bg-muted'
+                        }`}>
+                          <Icon className={`h-4 w-4 transition-colors duration-200 ${
+                            isActive ? 'text-primary-foreground' : 'text-muted-foreground'
+                          }`} />
                         </div>
                         <span className="font-medium">{section.name}</span>
-                        {!hasResults && searchQuery && (
-                          <Badge variant="secondary" className="ml-auto text-xs">
-                            0
+                        {count > 0 && (
+                          <Badge variant={isActive ? "secondary" : "outline"} className="ml-auto text-xs">
+                            {count}
                           </Badge>
                         )}
                       </Button>
@@ -505,12 +564,15 @@ export default function SettingsPage() {
               </Card>
             ) : (
               <div className="space-y-6">
-                {Object.entries(groupedSettings).map(([sectionName, settings]) => {
+                {visibleSections.map((sectionName) => {
+                  const settings = groupedSettings[sectionName]
+                  if (!settings) return null
+                  
                   const Icon = getSectionIcon(sectionName)
                   const color = getSectionColor(sectionName)
                   
                   return (
-                    <Card key={sectionName}>
+                    <Card key={sectionName} className="animate-in slide-in-from-top-2 duration-300">
                       <CardHeader className="pb-4">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-muted rounded-md">
@@ -531,7 +593,7 @@ export default function SettingsPage() {
                       <CardContent className="pt-0">
                         <div className="space-y-3">
                           {settings.map((setting) => (
-                            <div key={setting.id} className="group flex items-center justify-between p-4 rounded-lg border hover:bg-accent transition-colors">
+                            <div key={setting.id} className="group flex items-center justify-between p-4 rounded-lg border hover:bg-accent transition-all duration-200">
                               <div className="flex-1">
                                 <p className="font-semibold">{setting.title}</p>
                                 <p className="text-sm text-muted-foreground mt-1">
@@ -546,12 +608,17 @@ export default function SettingsPage() {
                                 )}
                                 {setting.component && setting.component}
                                 {setting.action && (
-                                  <Button variant="outline" size="sm" className="text-xs" onClick={setting.action}>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="text-xs hover:bg-primary hover:text-primary-foreground transition-colors duration-200" 
+                                    onClick={setting.action}
+                                  >
                                     <ExternalLink className="h-3 w-3 mr-1" />
                                     Modifier
                                   </Button>
                                 )}
-                                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
                               </div>
                             </div>
                           ))}
@@ -560,115 +627,115 @@ export default function SettingsPage() {
                     </Card>
                   )
                 })}
+
+                                {/* Formulaire de changement de mot de passe pour la section Sécurité */}
+                {selectedSection === 'Sécurité' && (
+                  <Card className="animate-in slide-in-from-top-2 duration-300">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Key className="w-5 h-5" />
+                        Changer le mot de passe
+                      </CardTitle>
+                      <CardDescription>
+                        Modifiez votre mot de passe de sécurité
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="currentPassword">Mot de passe actuel</Label>
+                            <div className="relative">
+                              <Input
+                                id="currentPassword"
+                                name="currentPassword"
+                                type={showCurrentPassword ? 'text' : 'password'}
+                                value={formData.currentPassword}
+                                onChange={handleInputChange}
+                                placeholder="Mot de passe actuel"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1 h-7 w-7"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              >
+                                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+                            <div className="relative">
+                              <Input
+                                id="newPassword"
+                                name="newPassword"
+                                type={showNewPassword ? 'text' : 'password'}
+                                value={formData.newPassword}
+                                onChange={handleInputChange}
+                                placeholder="Nouveau mot de passe"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1 h-7 w-7"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                              >
+                                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPassword">Confirmer le nouveau mot de passe</Label>
+                          <div className="relative">
+                            <Input
+                              id="confirmPassword"
+                              name="confirmPassword"
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              value={formData.confirmPassword}
+                              onChange={handleInputChange}
+                              placeholder="Confirmer le nouveau mot de passe"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-1 top-1 h-7 w-7"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <Button type="button" variant="outline" onClick={() => setSelectedSection('Apparence')}>
+                            Annuler
+                          </Button>
+                          <Button type="submit" disabled={isLoading}>
+                            {isLoading ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Sauvegarde...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="mr-2 h-4 w-4" />
+                                Sauvegarder
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </div>
         </div>
-
-        {/* Formulaire de changement de mot de passe (caché par défaut) */}
-        {selectedSection === 'Sécurité' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                Changer le mot de passe
-              </CardTitle>
-              <CardDescription>
-                Modifiez votre mot de passe de sécurité
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Mot de passe actuel</Label>
-                    <div className="relative">
-                      <Input
-                        id="currentPassword"
-                        name="currentPassword"
-                        type={showCurrentPassword ? 'text' : 'password'}
-                        value={formData.currentPassword}
-                        onChange={handleInputChange}
-                        placeholder="Mot de passe actuel"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1 h-7 w-7"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      >
-                        {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">Nouveau mot de passe</Label>
-                    <div className="relative">
-                      <Input
-                        id="newPassword"
-                        name="newPassword"
-                        type={showNewPassword ? 'text' : 'password'}
-                        value={formData.newPassword}
-                        onChange={handleInputChange}
-                        placeholder="Nouveau mot de passe"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1 h-7 w-7"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                      >
-                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmer le nouveau mot de passe</Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      placeholder="Confirmer le nouveau mot de passe"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1 h-7 w-7"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => setSelectedSection(null)}>
-                    Annuler
-                  </Button>
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sauvegarde...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Sauvegarder
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </MainLayout>
   )

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertTriangle, Eye, EyeOff, Mail, Lock, CheckCircle, XCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import Image from 'next/image'
 
 export default function LoginPage() {
@@ -31,8 +32,6 @@ export default function LoginPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     setEmailValid(emailRegex.test(formData.email))
   }, [formData.email])
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,10 +61,13 @@ export default function LoginPage() {
     }))
   }
 
-
-
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-background to-muted/20 dark:from-background dark:to-muted/10">
+      {/* Bouton de thème en haut à droite */}
+      <div className="absolute top-4 right-4 z-30">
+        <ThemeToggle />
+      </div>
+
       {/* Arrière-plan avec logo en blur et particules subtiles */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative w-full h-full">
@@ -75,14 +77,14 @@ export default function LoginPage() {
               alt="Logo ACGE Background"
               width={1000}
               height={1000}
-              className="object-contain opacity-25"
+              className="object-contain opacity-10 dark:opacity-5"
               priority
             />
           </div>
           {/* Particules flottantes très discrètes */}
-          <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-gray-300/20 rounded-full animate-pulse"></div>
-          <div className="absolute top-3/4 right-1/3 w-0.5 h-0.5 bg-gray-300/15 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
-          <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-gray-300/10 rounded-full animate-pulse" style={{animationDelay: '4s'}}></div>
+          <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-muted-foreground/20 dark:bg-muted-foreground/10 rounded-full animate-pulse"></div>
+          <div className="absolute top-3/4 right-1/3 w-0.5 h-0.5 bg-muted-foreground/15 dark:bg-muted-foreground/5 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
+          <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-muted-foreground/10 dark:bg-muted-foreground/5 rounded-full animate-pulse" style={{animationDelay: '4s'}}></div>
         </div>
       </div>
 
@@ -96,7 +98,7 @@ export default function LoginPage() {
               alt="Logo ACGE"
               width={150}
               height={150}
-              className="mx-auto rounded-xl shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl"
+              className="mx-auto rounded-xl shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl dark:shadow-2xl"
             />
           </div>
           <h1 className="text-5xl font-bold text-primary mb-4 animate-fade-in-up" style={{animationDelay: '0.2s'}}>ACGE</h1>
@@ -104,17 +106,17 @@ export default function LoginPage() {
         </div>
 
         {/* Formulaire avec animation d'entrée */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-          <div className="bg-primary p-8 text-white text-center">
-            <h2 className="text-3xl font-bold text-white">Connexion</h2>
-            <p className="text-white/90 mt-2 text-sm">Accédez à votre espace de gestion</p>
+        <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] animate-fade-in-up" style={{animationDelay: '0.4s'}}>
+          <div className="bg-primary p-8 text-primary-foreground text-center">
+            <h2 className="text-3xl font-bold text-primary-foreground">Connexion</h2>
+            <p className="text-primary-foreground/90 mt-2 text-sm">Accédez à votre espace de gestion</p>
           </div>
 
           <div className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-shake">
-                  <div className="flex items-center gap-2 text-red-700">
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 animate-shake">
+                  <div className="flex items-center gap-2 text-destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <span className="text-sm font-medium">{error}</span>
                   </div>
@@ -122,21 +124,21 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-semibold text-primary">
+                <Label htmlFor="email" className="text-sm font-semibold text-foreground">
                   Identifiant
                 </Label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-primary group-focus-within:text-primary transition-colors duration-200" />
+                    <Mail className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors duration-200" />
                   </div>
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     required
-                    className={`pl-10 h-12 border-gray-300 focus:border-primary focus:ring-primary rounded-lg transition-all duration-200 ${
+                    className={`pl-10 h-12 border-input bg-background focus:border-primary focus:ring-primary rounded-lg transition-all duration-200 ${
                       emailValid === true ? 'border-green-500 focus:border-green-500 focus:ring-green-500' :
-                      emailValid === false ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      emailValid === false ? 'border-destructive focus:border-destructive focus:ring-destructive' : ''
                     }`}
                     placeholder="votre@email.com"
                     autoFocus
@@ -147,7 +149,7 @@ export default function LoginPage() {
                   {emailValid !== null && (
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                       {emailValid ? (
-                        <CheckCircle className="h-5 w-5 text-muted-foreground" />
+                        <CheckCircle className="h-5 w-5 text-green-500" />
                       ) : (
                         <XCircle className="h-5 w-5 text-destructive" />
                       )}
@@ -160,19 +162,19 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-semibold text-primary">
+                <Label htmlFor="password" className="text-sm font-semibold text-foreground">
                   Mot de passe
                 </Label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-primary group-focus-within:text-primary transition-colors duration-200" />
+                    <Lock className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors duration-200" />
                   </div>
                   <Input
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className="pl-10 pr-12 h-12 border-gray-300 focus:border-primary focus:ring-primary rounded-lg transition-all duration-200"
+                    className="pl-10 pr-12 h-12 border-input bg-background focus:border-primary focus:ring-primary rounded-lg transition-all duration-200"
                     placeholder="Votre mot de passe"
                     value={formData.password}
                     onChange={handleInputChange}
@@ -183,7 +185,7 @@ export default function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-primary hover:text-primary transition-colors duration-200"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors duration-200"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -193,8 +195,6 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
-                
-
                 
                 {capsLockOn && (
                   <div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -206,12 +206,12 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-primary hover:bg-white hover:text-primary hover:border-2 hover:border-primary text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
                     Connexion en cours...
                   </div>
                 ) : (
@@ -254,8 +254,8 @@ export default function LoginPage() {
 
       {/* Copyright en bas de page */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-        <p className="text-primary text-sm text-center">
-                        © Powered by <span className="font-semibold text-primary">GTF</span>
+        <p className="text-muted-foreground text-sm text-center">
+          © Powered by <span className="font-semibold text-primary">GTF</span>
         </p>
       </div>
     </div>

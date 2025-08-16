@@ -29,7 +29,8 @@ import {
   HardDrive,
   Tag,
   FolderOpen,
-  RotateCcw
+  RotateCcw,
+  Search
 } from 'lucide-react'
 
 export interface DocumentFilters {
@@ -94,6 +95,7 @@ export function DocumentsFilters({
     }
     setLocalFilters(resetFilters)
     setSelectedTags([])
+    setTagInput('')
     onApplyFilters(resetFilters)
   }
 
@@ -114,6 +116,17 @@ export function DocumentsFilters({
 
   const removeTag = (tag: string) => {
     setSelectedTags(selectedTags.filter(t => t !== tag))
+  }
+
+  const getActiveFiltersCount = () => {
+    let count = 0
+    if (localFilters.search) count++
+    if (localFilters.fileType) count++
+    if (localFilters.minSize || localFilters.maxSize) count++
+    if (localFilters.startDate || localFilters.endDate) count++
+    if (localFilters.folderId) count++
+    if (selectedTags.length > 0) count++
+    return count
   }
 
   const formatFileSize = (bytes: number) => {
@@ -138,6 +151,24 @@ export function DocumentsFilters({
         </SheetHeader>
 
         <div className="space-y-6 py-6">
+          {/* Recherche textuelle */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Recherche textuelle
+            </Label>
+            <Input
+              placeholder="Rechercher dans le titre, description, nom de fichier..."
+              value={localFilters.search || ''}
+              onChange={(e) => setLocalFilters({
+                ...localFilters,
+                search: e.target.value || undefined
+              })}
+            />
+          </div>
+
+          <Separator />
+
           {/* Type de fichier */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
@@ -357,6 +388,11 @@ export function DocumentsFilters({
           <Button onClick={handleApply} className="flex-1">
             <Filter className="h-4 w-4 mr-2" />
             Appliquer les filtres
+            {getActiveFiltersCount() > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {getActiveFiltersCount()}
+              </Badge>
+            )}
           </Button>
         </SheetFooter>
       </SheetContent>
