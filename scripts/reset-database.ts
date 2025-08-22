@@ -34,16 +34,16 @@ async function resetDatabase() {
     })
     console.log('✅ Admin créé:', admin.email)
 
-    const managerPassword = await bcrypt.hash('manager123', 12)
-    const manager = await prisma.user.create({
+    const secretairePassword = await bcrypt.hash('secretaire123', 12)
+    const secretaire = await prisma.user.create({
       data: {
-        email: 'manager@acge.com',
-        name: 'Manager ACGE',
-        password: managerPassword,
-        role: 'MANAGER'
+        email: 'secretaire@acge.com',
+        name: 'Secrétaire ACGE',
+        password: secretairePassword,
+        role: 'SECRETAIRE'
       }
     })
-    console.log('✅ Manager créé:', manager.email)
+    console.log('✅ Secrétaire créé:', secretaire.email)
 
     const userPassword = await bcrypt.hash('user123', 12)
     const user = await prisma.user.create({
@@ -51,7 +51,7 @@ async function resetDatabase() {
         email: 'user@acge.com',
         name: 'User ACGE',
         password: userPassword,
-        role: 'USER'
+        role: 'SECRETAIRE'
       }
     })
     console.log('✅ User créé:', user.email)

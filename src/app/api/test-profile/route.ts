@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
       id: 'test-user-id',
       name: 'Test User',
       email: 'test@acge.com',
-      role: 'USER',
+      role: 'SECRETAIRE',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       _count: {

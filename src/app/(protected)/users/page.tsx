@@ -64,7 +64,7 @@ export default function UsersPage() {
     name: '',
     email: '',
     password: '',
-    role: 'USER' as Role
+    role: 'SECRETAIRE' as Role
   })
 
   // Vérifier si l'utilisateur est admin
@@ -282,22 +282,34 @@ export default function UsersPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="USER">
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          Utilisateur
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="MANAGER">
-                        <div className="flex items-center gap-2">
-                          <UserCheck className="w-4 h-4" />
-                          Manager
-                        </div>
-                      </SelectItem>
                       <SelectItem value="ADMIN">
                         <div className="flex items-center gap-2">
                           <Shield className="w-4 h-4" />
                           Administrateur
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="SECRETAIRE">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Secrétaire
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="CONTROLEUR_BUDGETAIRE">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4" />
+                          Contrôleur Budgétaire
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="ORDONNATEUR">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="w-4 h-4" />
+                          Ordonnateur
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="AGENT_COMPTABLE">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Agent Comptable
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -354,8 +366,10 @@ export default function UsersPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {userItem.role === 'ADMIN' && <Shield className="w-4 h-4 text-muted-foreground" />}
-                          {userItem.role === 'MANAGER' && <UserCheck className="w-4 h-4 text-muted-foreground" />}
-                          {userItem.role === 'USER' && <User className="w-4 h-4 text-muted-foreground" />}
+                          {userItem.role === 'SECRETAIRE' && <User className="w-4 h-4 text-muted-foreground" />}
+                          {userItem.role === 'CONTROLEUR_BUDGETAIRE' && <Shield className="w-4 h-4 text-muted-foreground" />}
+                          {userItem.role === 'ORDONNATEUR' && <UserCheck className="w-4 h-4 text-muted-foreground" />}
+                          {userItem.role === 'AGENT_COMPTABLE' && <User className="w-4 h-4 text-muted-foreground" />}
                           {userItem.role}
                         </div>
                       </TableCell>

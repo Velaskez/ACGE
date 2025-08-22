@@ -17,7 +17,7 @@ async function main() {
           name: 'Utilisateur Test',
           email: 'test@acge.com',
           password: await hash('password123', 12),
-          role: 'USER'
+          role: 'SECRETAIRE'
         }
       })
 

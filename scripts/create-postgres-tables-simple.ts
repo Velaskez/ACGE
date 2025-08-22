@@ -13,7 +13,7 @@ async function createPostgresTables() {
       name TEXT,
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
-      role TEXT DEFAULT 'USER',
+      role TEXT DEFAULT 'SECRETAIRE',
       "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );`

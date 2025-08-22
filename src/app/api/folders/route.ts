@@ -5,6 +5,13 @@ type CreateFolderBody = {
   name?: string
   description?: string
   parentId?: string | null
+  numeroDossier?: string
+  dateDepot?: string
+  posteComptableId?: string
+  numeroNature?: string
+  natureDocumentId?: string
+  objetOperation?: string
+  beneficiaire?: string
 }
 
 export async function POST(request: NextRequest) {
@@ -15,7 +22,7 @@ export async function POST(request: NextRequest) {
     // Pour l'instant, utiliser un utilisateur admin par défaut
     // En production, vous pourriez vérifier l'authentification côté client
     
-    const userId = 'cfd9238c-53a2-4092-837f-4c6aa818241c' // ID de l'admin existant
+    const userId = 'cmebotahv0000c17w3izkh2k9' // ID de l'admin existant
 
     const raw = await request.text()
     let body: CreateFolderBody = {}
@@ -28,6 +35,13 @@ export async function POST(request: NextRequest) {
     const name = (body.name || '').trim()
     const description = (body.description || '').trim() || undefined
     const parentId = body.parentId ?? undefined
+    const numeroDossier = body.numeroDossier || undefined
+    const dateDepot = body.dateDepot || undefined
+    const posteComptableId = body.posteComptableId || undefined
+    const numeroNature = body.numeroNature || undefined
+    const natureDocumentId = body.natureDocumentId || undefined
+    const objetOperation = (body.objetOperation || '').trim() || undefined
+    const beneficiaire = (body.beneficiaire || '').trim() || undefined
 
     if (!name) {
       return NextResponse.json({ error: 'Le nom du dossier est requis' }, { status: 400 })
@@ -50,7 +64,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Un dossier portant ce nom existe déjà' }, { status: 409 })
     }
 
-    // Création du dossier
+    // Création du dossier (version simplifiée pour compatibilité)
     const created = await prisma.folder.create({
       data: {
         name,
@@ -83,7 +97,7 @@ export async function GET(request: NextRequest) {
     // Pour l'instant, retourner tous les dossiers (ADMIN)
     // En production, vous pourriez vérifier l'authentification côté client
     
-    const userId = 'cfd9238c-53a2-4092-837f-4c6aa818241c' // ID de l'admin existant
+    const userId = 'cmebotahv0000c17w3izkh2k9' // ID de l'admin existant
     const userRole = 'ADMIN' // Admin voit tout
 
     // Construire les conditions de filtrage selon le rôle
@@ -97,7 +111,6 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           name: true,
-          description: true,
           createdAt: true,
           updatedAt: true,
           authorId: true

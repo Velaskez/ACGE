@@ -34,18 +34,13 @@ const nextConfig: NextConfig = {
   // Configuration expérimentale
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
   
+  // Optimisations SWC (déprécié dans Next.js 15)
+  // swcMinify: true,
+  
   // Configuration webpack
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     // Résoudre le problème du loader
     if (!isServer) {
       config.resolve.fallback = {
@@ -55,6 +50,22 @@ const nextConfig: NextConfig = {
         tls: false,
       };
     }
+    
+    // Optimisations pour le développement
+    if (dev) {
+      // Désactiver la minification en dev pour plus de vitesse
+      config.optimization.minimize = false;
+      config.optimization.minimizer = [];
+      
+      // Cache plus agressif
+      config.cache = {
+        type: 'filesystem',
+        buildDependencies: {
+          config: [__filename],
+        },
+      };
+    }
+    
     return config;
   },
 };

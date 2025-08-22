@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env' });
 const { PrismaClient } = require('@prisma/client');
 
 async function testConnection() {

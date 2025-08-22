@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     })
 
-    if (!currentUser || !['ADMIN', 'MANAGER'].includes(currentUser.role)) {
+    if (!currentUser || !['ADMIN', 'SECRETAIRE'].includes(currentUser.role)) {
       return NextResponse.json({ error: 'Permissions insuffisantes' }, { status: 403 })
     }
 

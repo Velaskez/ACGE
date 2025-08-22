@@ -1,9 +1,9 @@
 // Types pour l'application GED basés sur le schéma Prisma
 
 // Types de rôles comme chaînes (compatible SQLite)
-export type Role = 'ADMIN' | 'MANAGER' | 'USER'
+export type Role = 'ADMIN' | 'SECRETAIRE' | 'CONTROLEUR_BUDGETAIRE' | 'ORDONNATEUR' | 'AGENT_COMPTABLE'
 
-export type Permission = 'READ' | 'WRITE' | 'ADMIN'
+export type Permission = 'READ' | 'WRITE' | 'ADMIN' | 'VALIDATE' | 'ORDONNATE' | 'COMPTABILISE'
 
 export interface User {
   id: string

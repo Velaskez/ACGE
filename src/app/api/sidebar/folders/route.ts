@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           name: true,
-          description: true,
           createdAt: true,
           updatedAt: true,
           documents: {

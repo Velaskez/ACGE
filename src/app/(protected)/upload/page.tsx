@@ -7,8 +7,6 @@ import { FileUploadZone } from '@/components/upload/file-upload-zone'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useFolders } from '@/hooks/use-folders'
@@ -22,38 +20,25 @@ import {
 import { 
   Upload, 
   FolderOpen, 
-  Tag, 
-  Info,
+  Tag,
   ArrowLeft,
   Check
 } from 'lucide-react'
 
 interface FileMetadata {
-  name: string
-  description: string
   tags: string[]
   folderId?: string
-  category: string
 }
 
 export default function UploadPage() {
   const router = useRouter()
   const { folders, isLoading: foldersLoading } = useFolders()
   const [metadata, setMetadata] = useState<FileMetadata>({
-    name: '',
-    description: '',
-    tags: [],
-    category: 'ordre-recette'
+    tags: []
   })
   const [tagInput, setTagInput] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState('')
-
-  const categories = [
-    { value: 'ordre-recette', label: 'Ordre de recette' },
-    { value: 'ordre-paiement', label: 'Ordre de paiement' },
-    { value: 'courier', label: 'Courier' }
-  ]
 
   const handleUpload = async (files: File[]) => {
     setError('')
@@ -197,52 +182,8 @@ export default function UploadPage() {
             </Card>
           </div>
 
-          {/* Métadonnées */}
+          {/* Options d'organisation */}
           <div className="space-y-6">
-            {/* Informations générales */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Info className="w-5 h-5" />
-                  Métadonnées
-                </CardTitle>
-                <CardDescription>
-                  Informations qui seront appliquées à tous les fichiers
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Catégorie</Label>
-                  <Select
-                    value={metadata.category}
-                    onValueChange={(value) => setMetadata(prev => ({ ...prev, category: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Description des documents..."
-                    value={metadata.description}
-                    onChange={(e) => setMetadata(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Tags */}
             <Card>
               <CardHeader>

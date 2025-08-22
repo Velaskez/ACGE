@@ -32,7 +32,7 @@ async function main() {
         email: 'user@acge.com',
         name: 'User Test',
         password: userPassword,
-        role: 'USER'
+        role: 'SECRETAIRE'
       }
     })
     

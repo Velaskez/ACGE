@@ -87,6 +87,42 @@ interface DocumentItem {
   }
 }
 
+interface DossierComptable {
+  id: string
+  numeroDossier: string
+  dateDepot: string
+  numeroNature: string
+  objetOperation: string
+  beneficiaire: string
+  statut: string
+  posteComptable: {
+    numero: string
+    intitule: string
+  }
+  natureDocument: {
+    numero: string
+    nom: string
+  }
+  secretaire: {
+    name: string
+  }
+}
+
+interface PosteComptable {
+  id: string
+  numero: string
+  intitule: string
+  isActive: boolean
+}
+
+interface NatureDocument {
+  id: string
+  numero: string
+  nom: string
+  description?: string
+  isActive: boolean
+}
+
 type ViewMode = 'list' | 'grid'
 type SortField = 'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'
 type SortOrder = 'asc' | 'desc'
@@ -120,6 +156,20 @@ export default function DocumentsPage() {
     totalPages: 0
   })
 
+  // États pour les dossiers comptables
+  const [dossiersComptables, setDossiersComptables] = useState<DossierComptable[]>([])
+  const [postesComptables, setPostesComptables] = useState<PosteComptable[]>([])
+  const [naturesDocuments, setNaturesDocuments] = useState<NatureDocument[]>([])
+  const [showDossierModal, setShowDossierModal] = useState(false)
+  const [dossierFormData, setDossierFormData] = useState({
+    numeroNature: '',
+    objetOperation: '',
+    beneficiaire: '',
+    posteComptableId: '',
+    natureDocumentId: ''
+  })
+  const [activeTab, setActiveTab] = useState<'documents' | 'dossiers'>('documents')
+
   // Initialiser la recherche depuis l'URL
   useEffect(() => {
     const urlSearch = searchParams.get('search')
@@ -136,6 +186,15 @@ export default function DocumentsPage() {
   useEffect(() => {
     filterAndSortDocuments()
   }, [documents, searchQuery, sortField, sortOrder])
+
+  // Charger les données des dossiers comptables
+  useEffect(() => {
+    if (activeTab === 'dossiers') {
+      fetchDossiersComptables()
+      fetchPostesComptables()
+      fetchNaturesDocuments()
+    }
+  }, [activeTab])
 
   const fetchDocuments = async () => {
     try {
@@ -250,6 +309,86 @@ export default function DocumentsPage() {
     // Valider la recherche en mettant à jour les filtres
     setFilters(prev => ({ ...prev, search: searchQuery || undefined }))
     setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  // Fonctions pour les dossiers comptables
+  const fetchDossiersComptables = async () => {
+    try {
+      const response = await fetch('/api/documents/dossiers-comptables')
+      if (response.ok) {
+        const data = await response.json()
+        setDossiersComptables(data.dossiers)
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des dossiers comptables:', error)
+    }
+  }
+
+  const fetchPostesComptables = async () => {
+    try {
+      const response = await fetch('/api/documents/postes-comptables')
+      if (response.ok) {
+        const data = await response.json()
+        setPostesComptables(data.postesComptables)
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des postes comptables:', error)
+    }
+  }
+
+  const fetchNaturesDocuments = async () => {
+    try {
+      const response = await fetch('/api/documents/natures-documents')
+      if (response.ok) {
+        const data = await response.json()
+        setNaturesDocuments(data.naturesDocuments)
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des natures de documents:', error)
+    }
+  }
+
+  const handleCreateDossier = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const response = await fetch('/api/documents/dossiers-comptables', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dossierFormData),
+      })
+
+      if (response.ok) {
+        setShowDossierModal(false)
+        setDossierFormData({
+          numeroNature: '',
+          objetOperation: '',
+          beneficiaire: '',
+          posteComptableId: '',
+          natureDocumentId: ''
+        })
+        fetchDossiersComptables()
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Erreur lors de la création')
+      }
+    } catch (error) {
+      setError('Erreur de connexion')
+    }
+  }
+
+  const getStatutColor = (statut: string) => {
+    switch (statut) {
+      case 'EN_ATTENTE':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'VALIDE':
+        return 'bg-green-100 text-green-800'
+      case 'REJETE':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
   }
 
   const filterAndSortDocuments = () => {

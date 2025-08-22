@@ -4,7 +4,7 @@ CREATE TABLE "users" (
     "name" TEXT,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'USER',
+    "role" TEXT NOT NULL DEFAULT 'SECRETAIRE',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );

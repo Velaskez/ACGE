@@ -11,10 +11,10 @@ interface DecodedToken {
   userId: string
   email: string
   name?: string
-  role: 'ADMIN' | 'MANAGER' | 'USER'
+  role: 'ADMIN' | 'SECRETAIRE' | 'CONTROLEUR_BUDGETAIRE' | 'ORDONNATEUR' | 'AGENT_COMPTABLE'
 }
 
-const allowedRoles = new Set(['ADMIN', 'MANAGER', 'USER'])
+const allowedRoles = new Set(['ADMIN', 'SECRETAIRE', 'CONTROLEUR_BUDGETAIRE', 'ORDONNATEUR', 'AGENT_COMPTABLE'])
 
 function getDecodedTokenOrNull(request: NextRequest): DecodedToken | null {
   const token = request.cookies.get('auth-token')?.value

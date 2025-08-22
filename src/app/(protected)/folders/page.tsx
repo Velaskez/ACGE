@@ -92,6 +92,20 @@ export default function FoldersPage() {
   const [editingFolder, setEditingFolder] = React.useState<any>(null)
   const [deleteConfirm, setDeleteConfirm] = React.useState<string | null>(null)
 
+  // États pour les nouveaux champs du formulaire de dossier
+  const [numeroDossier, setNumeroDossier] = React.useState('')
+  const [dateDepot, setDateDepot] = React.useState('')
+  const [posteComptableId, setPosteComptableId] = React.useState('')
+  const [numeroNature, setNumeroNature] = React.useState('')
+  const [natureDocumentId, setNatureDocumentId] = React.useState('')
+  const [objetOperation, setObjetOperation] = React.useState('')
+  const [beneficiaire, setBeneficiaire] = React.useState('')
+  
+  // États pour les données des dropdowns
+  const [postesComptables, setPostesComptables] = React.useState<any[]>([])
+  const [naturesDocuments, setNaturesDocuments] = React.useState<any[]>([])
+  const [loadingData, setLoadingData] = React.useState(false)
+
   // États pour la vue du contenu d'un dossier
   const folderId = searchParams.get('folder')
   const [currentFolder, setCurrentFolder] = React.useState<any>(null)
@@ -139,6 +153,45 @@ export default function FoldersPage() {
   const [editModalOpen, setEditModalOpen] = React.useState(false)
   const [shareModalOpen, setShareModalOpen] = React.useState(false)
   const [versionHistoryOpen, setVersionHistoryOpen] = React.useState(false)
+
+  // Fonction pour générer le numéro de dossier
+  const generateNumeroDossier = () => {
+    const year = new Date().getFullYear()
+    const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+    return `DOSS-ACGE-${year}${randomNum}`
+  }
+
+  // Fonction pour charger les postes comptables
+  const loadPostesComptables = async () => {
+    try {
+      const response = await fetch('/api/postes-comptables')
+      if (response.ok) {
+        const data = await response.json()
+        setPostesComptables(data.postesComptables || [])
+      }
+    } catch (error) {
+      console.error('Erreur chargement postes comptables:', error)
+    }
+  }
+
+  // Fonction pour charger les natures de documents
+  const loadNaturesDocuments = async () => {
+    try {
+      const response = await fetch('/api/natures-documents')
+      if (response.ok) {
+        const data = await response.json()
+        setNaturesDocuments(data.naturesDocuments || [])
+      }
+    } catch (error) {
+      console.error('Erreur chargement natures documents:', error)
+    }
+  }
+
+  // Charger les données au montage du composant
+  React.useEffect(() => {
+    loadPostesComptables()
+    loadNaturesDocuments()
+  }, [])
 
   // Fonction pour charger les documents d'un dossier
   const loadFolderDocuments = React.useCallback(async (folderId: string) => {
@@ -266,7 +319,17 @@ export default function FoldersPage() {
     if (!name.trim()) return
     try {
       setCreating(true)
-      console.log('🔄 Création dossier en cours...', { name: name.trim(), description: description.trim() })
+      console.log('🔄 Création dossier en cours...', { 
+        name: name.trim(), 
+        description: description.trim(),
+        numeroDossier,
+        dateDepot,
+        posteComptableId,
+        numeroNature,
+        natureDocumentId,
+        objetOperation,
+        beneficiaire
+      })
       
       const url = editingFolder ? `/api/folders/${editingFolder.id}` : '/api/folders'
       const method = editingFolder ? 'PUT' : 'POST'
@@ -274,7 +337,17 @@ export default function FoldersPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined })
+        body: JSON.stringify({ 
+          name: name.trim(), 
+          description: description.trim() || undefined,
+          numeroDossier: numeroDossier || generateNumeroDossier(),
+          dateDepot: dateDepot || new Date().toISOString().split('T')[0],
+          posteComptableId: posteComptableId || undefined,
+          numeroNature: numeroNature || undefined,
+          natureDocumentId: natureDocumentId || undefined,
+          objetOperation: objetOperation || undefined,
+          beneficiaire: beneficiaire || undefined
+        })
       })
       
       console.log('📡 Réponse API:', res.status, res.statusText)
@@ -286,6 +359,13 @@ export default function FoldersPage() {
         setOpen(false)
         setName('')
         setDescription('')
+        setNumeroDossier('')
+        setDateDepot('')
+        setPosteComptableId('')
+        setNumeroNature('')
+        setNatureDocumentId('')
+        setObjetOperation('')
+        setBeneficiaire('')
         setEditingFolder(null)
         
         // Rafraîchir la liste des dossiers
@@ -338,12 +418,26 @@ export default function FoldersPage() {
       setEditingFolder(null)
       setName('')
       setDescription('')
+      setNumeroDossier('')
+      setDateDepot('')
+      setPosteComptableId('')
+      setNumeroNature('')
+      setNatureDocumentId('')
+      setObjetOperation('')
+      setBeneficiaire('')
     } else {
       console.log('🔓 Ouverture dialogue')
       setOpen(true)
       setEditingFolder(null)
       setName('')
       setDescription('')
+      setNumeroDossier('')
+      setDateDepot('')
+      setPosteComptableId('')
+      setNumeroNature('')
+      setNatureDocumentId('')
+      setObjetOperation('')
+      setBeneficiaire('')
     }
   }
 
@@ -648,24 +742,137 @@ export default function FoldersPage() {
                   Nouveau dossier
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>{editingFolder ? 'Modifier le dossier' : 'Nouveau dossier'}</DialogTitle>
-                  <DialogDescription>Créez un dossier pour organiser vos documents.</DialogDescription>
+                  <DialogTitle>{editingFolder ? 'Modifier le dossier' : 'CRÉATION DU DOSSIER'}</DialogTitle>
+                  <DialogDescription>Créez un dossier comptable avec toutes les informations requises.</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="folder-name">Nom</Label>
-                    <Input id="folder-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Mon dossier" />
+                <div className="space-y-6 py-4">
+                  {/* Champs auto-générés */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-primary">Champs auto-générés</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="numero-dossier">Numéro dossier</Label>
+                        <Input 
+                          id="numero-dossier" 
+                          value={numeroDossier || generateNumeroDossier()} 
+                          onChange={(e) => setNumeroDossier(e.target.value)} 
+                          placeholder="DOSS-ACGE-2023042"
+                          readOnly={!numeroDossier}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="date-depot">Date dépôt</Label>
+                        <Input 
+                          id="date-depot" 
+                          type="date" 
+                          value={dateDepot || new Date().toISOString().split('T')[0]} 
+                          onChange={(e) => setDateDepot(e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="folder-desc">Description (optionnel)</Label>
-                    <Input id="folder-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+
+                  {/* Champs sélectionnables */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-primary">Champs sélectionnables</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="poste-comptable">Poste comptable</Label>
+                      <select 
+                        id="poste-comptable"
+                        value={posteComptableId}
+                        onChange={(e) => setPosteComptableId(e.target.value)}
+                        className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                      >
+                        <option value="">Sélectionner un poste comptable</option>
+                        {postesComptables.map((poste) => (
+                          <option key={poste.id} value={poste.id}>
+                            {poste.numero} - {poste.intitule}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Champs manuels */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-primary">Champs manuels</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="numero-nature">Numéro nature</Label>
+                        <Input 
+                          id="numero-nature" 
+                          value={numeroNature} 
+                          onChange={(e) => setNumeroNature(e.target.value)} 
+                          placeholder="01"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="nature-document">Nature document</Label>
+                        <select 
+                          id="nature-document"
+                          value={natureDocumentId}
+                          onChange={(e) => setNatureDocumentId(e.target.value)}
+                          className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                        >
+                          <option value="">Sélectionner une nature</option>
+                          {naturesDocuments.map((nature) => (
+                            <option key={nature.id} value={nature.id}>
+                              {nature.numero} - {nature.nom}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="objet-operation">Objet opération</Label>
+                      <Input 
+                        id="objet-operation" 
+                        value={objetOperation} 
+                        onChange={(e) => setObjetOperation(e.target.value)} 
+                        placeholder="Description de l'opération"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="beneficiaire">Bénéficiaire</Label>
+                      <Input 
+                        id="beneficiaire" 
+                        value={beneficiaire} 
+                        onChange={(e) => setBeneficiaire(e.target.value)} 
+                        placeholder="Nom du bénéficiaire"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Champs de base */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-primary">Informations générales</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="folder-name">Nom du dossier</Label>
+                      <Input 
+                        id="folder-name" 
+                        value={name} 
+                        onChange={(e) => setName(e.target.value)} 
+                        placeholder="Nom du dossier"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="folder-desc">Description (optionnel)</Label>
+                      <Input 
+                        id="folder-desc" 
+                        value={description} 
+                        onChange={(e) => setDescription(e.target.value)} 
+                        placeholder="Description complémentaire"
+                      />
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOpen(false)} disabled={creating}>Annuler</Button>
-                  <Button onClick={handleCreateFolder} disabled={!name.trim() || creating}>{creating ? 'Création...' : 'Créer'}</Button>
+                  <Button onClick={handleCreateFolder} disabled={!name.trim() || creating}>
+                    {creating ? 'Création...' : 'Créer le dossier'}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

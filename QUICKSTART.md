@@ -67,8 +67,10 @@ Après avoir exécuté `npm run create-admin`, utilisez :
 
 ### **Rôles Disponibles**
 - **ADMIN** : Accès complet, gestion des utilisateurs
-- **MANAGER** : Gestion des documents et dossiers
-- **USER** : Utilisation basique de l'application
+- **SECRETAIRE** : Gestion des documents et dossiers
+- **CONTROLEUR_BUDGETAIRE** : Contrôle budgétaire
+- **ORDONNATEUR** : Ordonnancement
+- **AGENT_COMPTABLE** : Gestion comptable
 
 ### **Créer de Nouveaux Utilisateurs**
 1. Connectez-vous en tant qu'administrateur

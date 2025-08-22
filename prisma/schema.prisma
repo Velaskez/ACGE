@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -12,7 +13,7 @@ model User {
   name             String?
   email            String            @unique
   password         String
-  role             String            @default("USER")
+  role             String            @default("SECRETAIRE")
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   comments         Comment[]
@@ -21,7 +22,6 @@ model User {
   documents        Document[]
   folders          Folder[]
   notifications    Notification[]
-  settings         UserSettings?
 
   @@map("users")
 }
@@ -29,8 +29,7 @@ model User {
 model Document {
   id               String            @id @default(cuid())
   title            String
-  description      String?
-  category         String?
+  description      String?           @db.Text
   isPublic         Boolean           @default(false)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -54,8 +53,8 @@ model DocumentVersion {
   fileName      String
   fileSize      Int
   fileType      String
-  filePath      String
-  changeLog     String?
+  filePath      String    @db.Text
+  changeLog     String?   @db.Text
   createdAt     DateTime  @default(now())
   documentId    String
   createdById   String
@@ -70,7 +69,7 @@ model DocumentVersion {
 model Folder {
   id          String     @id @default(cuid())
   name        String
-  description String?
+  description String?    @db.Text
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   authorId    String
@@ -108,7 +107,7 @@ model DocumentShare {
 
 model Comment {
   id         String   @id @default(cuid())
-  content    String
+  content    String   @db.Text
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   documentId String
@@ -123,7 +122,7 @@ model Notification {
   id        String   @id @default(cuid())
   type      String
   title     String
-  message   String
+  message   String   @db.Text
   isRead    Boolean  @default(false)
   data      Json?
   createdAt DateTime @default(now())
@@ -131,21 +130,4 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
-}
-
-model UserSettings {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  emailNotifications Boolean  @default(true)
-  pushNotifications  Boolean  @default(false)
-  language           String   @default("fr")
-  timezone           String   @default("Africa/Libreville")
-  sessionTimeout     Int      @default(15)
-  passwordExpiry     Int      @default(90)
-  theme              String   @default("system")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_settings")
 }
