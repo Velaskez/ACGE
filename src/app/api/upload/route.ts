@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { ensureUUID } from '@/lib/uuid-utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,11 +26,12 @@ export async function POST(request: NextRequest) {
       }
 
       const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
-      userId = decoded.userId
-      console.log('✅ Utilisateur authentifié:', userId)
+      const originalUserId = decoded.userId
+      userId = ensureUUID(originalUserId) || ''
+      console.log('✅ Utilisateur authentifié:', originalUserId, '-> UUID:', userId)
     } else {
       // Mode test - utiliser un userId de test
-      userId = 'test-user-id'
+      userId = ensureUUID('test-user-id') || '00000000-0000-0000-0000-000000000001'
       console.log('🧪 Mode test - utilisateur:', userId)
     }
 
@@ -60,16 +62,19 @@ export async function POST(request: NextRequest) {
     // Valider le dossier cible si fourni (par Supabase)
     let validFolderId: string | null = null
     if (metadata?.folderId) {
-      const { data: folder, error: folderErr } = await supabase
-        .from('folders')
-        .select('id, author_id')
-        .eq('id', String(metadata.folderId))
-        .eq('author_id', userId)
-        .maybeSingle()
-      if (!folderErr && folder) {
-        validFolderId = folder.id
+      const convertedFolderId = ensureUUID(String(metadata.folderId))
+      if (convertedFolderId) {
+        const { data: folder, error: folderErr } = await supabase
+          .from('folders')
+          .select('id, author_id')
+          .eq('id', convertedFolderId)
+          .eq('author_id', userId)
+          .maybeSingle()
+        if (!folderErr && folder) {
+          validFolderId = folder.id
+        }
+        console.log('📂 Dossier:', metadata.folderId, '-> UUID:', convertedFolderId, 'Validé:', validFolderId ? 'Oui' : 'Non')
       }
-      console.log('📂 Dossier validé:', validFolderId)
     }
 
     const uploadedFiles: Array<{
