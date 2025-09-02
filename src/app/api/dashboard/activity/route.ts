@@ -1,72 +1,95 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
 
   try {
     console.log('📊 Dashboard activity - Début')
     
+    const supabase = getSupabaseAdmin()
+    
     // Pour l'instant, retourner les activités pour tous les utilisateurs (ADMIN)
     // En production, vous pourriez vérifier l'authentification côté client
     
-    // Construire les conditions de filtrage (tous les utilisateurs pour l'instant)
-    const userFilter = {} // Admin voit tout
-    const userId = 'admin' // Placeholder pour les partages
-
     // Récupérer les activités récentes
     let recentDocuments: any[] = []
     let recentFolders: any[] = []
     let recentShares: any[] = []
 
     try {
-      recentDocuments = await prisma.document.findMany({
-        where: userFilter,
-        select: {
-          id: true,
-          title: true,
-          createdAt: true,
-          updatedAt: true,
-          currentVersion: { select: { fileName: true, fileType: true } },
-          author: { select: { name: true, email: true } }
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 10
-      })
+      const { data, error } = await supabase
+        .from('documents')
+        .select(`
+          id,
+          title,
+          createdAt,
+          updatedAt,
+          currentVersion:document_versions!inner(fileName, fileType),
+          author:users!inner(name, email)
+        `)
+        .order('updatedAt', { ascending: false })
+        .limit(10)
+      
+      if (error) {
+        console.error('Erreur récupération documents:', error)
+      } else {
+        recentDocuments = data || []
+      }
     } catch (error) {
       console.error('Erreur récupération documents:', error)
     }
 
     try {
-      recentFolders = await prisma.folder.findMany({
-        where: userFilter,
-        select: { 
-          id: true, 
-          name: true, 
-          createdAt: true, 
-          updatedAt: true,
-          author: { select: { name: true, email: true } }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 5
-      })
+      const { data, error } = await supabase
+        .from('folders')
+        .select(`
+          id,
+          name,
+          createdAt,
+          updatedAt,
+          author:users!inner(name, email)
+        `)
+        .order('createdAt', { ascending: false })
+        .limit(5)
+      
+      if (error) {
+        console.error('Erreur récupération dossiers:', error)
+      } else {
+        recentFolders = data || []
+      }
     } catch (error) {
       console.error('Erreur récupération dossiers:', error)
     }
 
+    // Note: document_share n'existe peut-être pas encore, on skip pour l'instant
     try {
-      recentShares = await prisma.documentShare.findMany({
-        where: { userId: userId },
-        include: {
-          document: { 
-            select: { 
-              title: true, 
-              currentVersion: { select: { fileName: true, fileType: true } } 
-            } 
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 5
-      })
+      // Vérifier si la table document_share existe
+      const { data, error } = await supabase
+        .from('document_shares')
+        .select('*')
+        .limit(1)
+      
+      if (!error && data) {
+        // Table existe, récupérer les partages
+        const { data: shares, error: sharesError } = await supabase
+          .from('document_shares')
+          .select(`
+            id,
+            userId,
+            documentId,
+            createdAt,
+            document:documents!inner(
+              title,
+              currentVersion:document_versions!inner(fileName, fileType)
+            )
+          `)
+          .order('createdAt', { ascending: false })
+          .limit(5)
+        
+        if (!sharesError) {
+          recentShares = shares || []
+        }
+      }
     } catch (error) {
       console.error('Erreur récupération partages:', error)
     }
@@ -90,12 +113,12 @@ export async function GET(request: NextRequest) {
         id: `doc-${doc.id}`,
         type: isNew ? 'document_created' : 'document_updated',
         action: isNew ? 'Nouveau document' : 'Document modifié',
-        target: doc.title || doc.currentVersion?.fileName || 'Sans titre',
+        target: doc.title || doc.currentVersion?.[0]?.fileName || 'Sans titre',
         targetId: doc.id,
         timestamp: doc.updatedAt,
         metadata: {
-          fileType: doc.currentVersion?.fileType || 'unknown',
-          author: doc.author?.name || doc.author?.email || 'Inconnu'
+          fileType: doc.currentVersion?.[0]?.fileType || 'unknown',
+          author: doc.author?.[0]?.name || doc.author?.[0]?.email || 'Inconnu'
         }
       })
     })
@@ -110,7 +133,7 @@ export async function GET(request: NextRequest) {
         targetId: folder.id,
         timestamp: folder.createdAt,
         metadata: {
-          author: folder.author?.name || folder.author?.email || 'Inconnu'
+          author: folder.author?.[0]?.name || folder.author?.[0]?.email || 'Inconnu'
         }
       })
     })
@@ -121,11 +144,11 @@ export async function GET(request: NextRequest) {
         id: `share-${share.id}`,
         type: 'document_shared',
         action: 'Document partagé avec vous',
-        target: share.document.title || share.document.currentVersion?.fileName || 'Sans titre',
+        target: share.document?.title || share.document?.currentVersion?.[0]?.fileName || 'Sans titre',
         targetId: share.documentId,
         timestamp: share.createdAt,
         metadata: {
-          fileType: share.document.currentVersion?.fileType || 'unknown'
+          fileType: share.document?.currentVersion?.[0]?.fileType || 'unknown'
         }
       })
     })

@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
 
   try {
     console.log('📊 Dashboard stats - Début')
     
+    const supabase = getSupabaseAdmin()
+    
     // Pour l'instant, retourner les stats pour tous les utilisateurs (ADMIN)
     // En production, vous pourriez vérifier l'authentification côté client
     
-    // Construire les conditions de filtrage (tous les utilisateurs pour l'instant)
-    const userFilter = {} // Admin voit tout
-
     // Récupérer les statistiques de base avec gestion d'erreur
     let totalDocuments = 0
     let totalFolders = 0
@@ -19,46 +18,72 @@ export async function GET(request: NextRequest) {
     let totalSize = 0
 
     try {
-      totalDocuments = await prisma.document.count({
-        where: userFilter
-      })
+      const { count, error } = await supabase
+        .from('documents')
+        .select('*', { count: 'exact', head: true })
+      
+      if (error) {
+        console.error('Erreur comptage documents:', error)
+      } else {
+        totalDocuments = count || 0
+      }
     } catch (error) {
       console.error('Erreur comptage documents:', error)
     }
 
     try {
-      totalFolders = await prisma.folder.count({
-        where: userFilter
-      })
+      const { count, error } = await supabase
+        .from('folders')
+        .select('*', { count: 'exact', head: true })
+      
+      if (error) {
+        console.error('Erreur comptage dossiers:', error)
+      } else {
+        totalFolders = count || 0
+      }
     } catch (error) {
       console.error('Erreur comptage dossiers:', error)
     }
 
     try {
-      totalUsers = await prisma.user.count()
+      const { count, error } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+      
+      if (error) {
+        console.error('Erreur comptage utilisateurs:', error)
+      } else {
+        totalUsers = count || 0
+      }
     } catch (error) {
       console.error('Erreur comptage utilisateurs:', error)
     }
 
     // Calculer la taille totale de manière simple
     try {
-      const documents = await prisma.document.findMany({
-        where: userFilter,
-        select: { id: true }
-      })
+      const { data: documents, error } = await supabase
+        .from('documents')
+        .select('id')
       
-      for (const doc of documents) {
-        try {
-          const version = await prisma.documentVersion.findFirst({
-            where: { documentId: doc.id },
-            select: { fileSize: true },
-            orderBy: { versionNumber: 'desc' }
-          })
-          if (version?.fileSize) {
-            totalSize += version.fileSize
+      if (!error && documents) {
+        for (const doc of documents) {
+          try {
+            const { data: versions, error: versionError } = await supabase
+              .from('document_versions')
+              .select('fileSize')
+              .eq('documentId', doc.id)
+              .order('versionNumber', { ascending: false })
+              .limit(1)
+            
+            if (!versionError && versions && versions.length > 0) {
+              const version = versions[0]
+              if (version.fileSize) {
+                totalSize += version.fileSize
+              }
+            }
+          } catch (versionError) {
+            console.error('Erreur récupération version pour document:', doc.id, versionError)
           }
-        } catch (versionError) {
-          console.error('Erreur récupération version pour document:', doc.id, versionError)
         }
       }
     } catch (sizeError) {

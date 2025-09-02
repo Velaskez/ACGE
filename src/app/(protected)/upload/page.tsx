@@ -57,14 +57,24 @@ export default function UploadPage() {
         fileCount: files.length
       }))
 
+      console.log('Client: Sending upload request to /api/upload')
       const response = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        body: formData
       })
+
+      console.log(`Client: Received response status: ${response.status} ${response.statusText}`)
+      console.log(`Client: Response headers:`, Object.fromEntries(response.headers.entries()))
 
       const text = await response.text()
       let result: any = {}
-      try { result = text ? JSON.parse(text) : {} } catch {}
+      try { 
+        result = text ? JSON.parse(text) : {} 
+        console.log('Client: Parsed response body:', result)
+      } catch (parseError) {
+        console.error('Client: Error parsing response JSON:', parseError, 'Raw text:', text)
+        result = {}
+      }
 
       if (!response.ok) {
         const serverError = result?.error || 'Erreur lors de l\'upload'

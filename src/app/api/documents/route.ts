@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
 
@@ -99,59 +99,57 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer les documents avec une requête simple
-    let documents = []
+    let documents: any[] = []
     let totalCount = 0
 
     try {
       // Requête complète avec toutes les données nécessaires
-      documents = await prisma.document.findMany({
-        where,
-        include: {
-          author: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          folder: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
-          tags: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
-          currentVersion: {
-            select: {
-              id: true,
-              fileName: true,
-              fileSize: true,
-              fileType: true,
-              versionNumber: true,
-              createdAt: true
-            }
-          },
-          _count: {
-            select: {
-              versions: true,
-              comments: true,
-              shares: true
-            }
-          }
-        },
-        orderBy: {
-          [sortBy]: sortOrder
-        },
-        skip: offset,
-        take: limit
-      })
+      const admin = getSupabaseAdmin()
+      let query = admin
+        .from('documents')
+        .select(`
+          id,
+          title,
+          description,
+          category,
+          isPublic:is_public,
+          createdAt:created_at,
+          updatedAt:updated_at,
+          author:authorId(id, name, email),
+          folder:folderId(id, name),
+          currentVersion:current_version_id(*),
+          tags:tags(id, name)
+        `, { count: 'exact' })
 
-      totalCount = await prisma.document.count({ where })
+      // Filtres
+      if (where.authorId) query = query.eq('authorId', where.authorId)
+      if (where.folderId === null) query = query.is('folderId', null)
+      if (typeof where.folderId === 'string') query = query.eq('folderId', where.folderId)
+      if (where.createdAt?.gte) query = query.gte('created_at', where.createdAt.gte.toISOString())
+      if (where.createdAt?.lte) query = query.lte('created_at', where.createdAt.lte.toISOString())
+
+      // Recherche textuelle basique (title/description)
+      if (where.OR) {
+        // Simplification: apply ilike on title/description
+        const text = search as string
+        if (text) {
+          query = query.or(`title.ilike.%${text}%,description.ilike.%${text}%`)
+        }
+      }
+
+      // Filtre type fichier/tailles basique via currentVersion
+      if (fileType) query = query.ilike('current_version_file_type', `%${fileType}%` as any)
+      if (minSize) query = query.gte('current_version_file_size', parseInt(minSize))
+      if (maxSize) query = query.lte('current_version_file_size', parseInt(maxSize))
+
+      // Tri + pagination
+      query = query.order(sortBy === 'updatedAt' ? 'updated_at' : sortBy, { ascending: sortOrder === 'asc' })
+      query = query.range(offset, offset + limit - 1)
+
+      const { data, error, count } = await query
+      if (error) throw error
+      documents = data || []
+      totalCount = count || 0
 
     } catch (dbError) {
       console.error('Erreur base de données documents:', dbError)

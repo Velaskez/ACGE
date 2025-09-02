@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 type CreateFolderBody = {
   name?: string
@@ -51,35 +51,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Empêcher les doublons (par utilisateur et parentId)
-    const existing = await prisma.folder.findFirst({
-      where: {
-        name,
-        parentId: parentId === null ? null : parentId,
-        authorId: userId,
-      },
-      select: { id: true }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: existing, error: existingErr } = await admin
+      .from('folders')
+      .select('id')
+      .eq('name', name)
+      .eq('authorId', userId)
+      .eq('parentId', parentId === null ? null : parentId)
+      .maybeSingle()
+
+    if (existingErr && existingErr.code !== 'PGRST116') {
+      throw existingErr
+    }
 
     if (existing) {
       return NextResponse.json({ error: 'Un dossier portant ce nom existe déjà' }, { status: 409 })
     }
 
     // Création du dossier (version simplifiée pour compatibilité)
-    const created = await prisma.folder.create({
-      data: {
+    const { data: created, error: insertErr } = await admin
+      .from('folders')
+      .insert({
         name,
         description,
         parentId: parentId === null ? null : parentId,
-        authorId: userId,
-      },
-      select: { 
-        id: true, 
-        name: true,
-        description: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    })
+        authorId: userId
+      })
+      .select('id, name, description, createdAt:created_at, updatedAt:updated_at')
+      .single()
+
+    if (insertErr) {
+      throw insertErr
+    }
 
     return NextResponse.json({ folder: created }, { status: 201 })
   } catch (error) {
@@ -104,32 +107,31 @@ export async function GET(request: NextRequest) {
     const userFilter = userRole === 'ADMIN' ? {} : { authorId: userId }
 
     // Récupérer les dossiers avec une requête simple
-    let folders = []
+    let folders: any[] = []
     try {
-      folders = await prisma.folder.findMany({
-        where: userFilter,
-        select: {
-          id: true,
-          name: true,
-          createdAt: true,
-          updatedAt: true,
-          authorId: true
-        },
-        orderBy: {
-          name: 'asc'
-        }
-      })
+      const admin = getSupabaseAdmin()
+      const query = admin
+        .from('folders')
+        .select('id, name, authorId, createdAt:created_at, updatedAt:updated_at')
+        .order('name', { ascending: true })
+      const { data, error } = userRole === 'ADMIN'
+        ? await query
+        : await query.eq('authorId', userId)
+      if (error) throw error
+      folders = data || []
 
       // Ajouter les compteurs manuellement pour éviter les problèmes de relations
       for (const folder of folders) {
         try {
-          const documentCount = await prisma.document.count({
-            where: { folderId: folder.id }
-          })
+          const { count: documentCount } = await admin
+            .from('documents')
+            .select('id', { count: 'exact', head: true })
+            .eq('folderId', folder.id)
           
-          const childrenCount = await prisma.folder.count({
-            where: { parentId: folder.id }
-          })
+          const { count: childrenCount } = await admin
+            .from('folders')
+            .select('id', { count: 'exact', head: true })
+            .eq('parentId', folder.id)
 
           folder._count = {
             documents: documentCount,
@@ -138,10 +140,11 @@ export async function GET(request: NextRequest) {
 
           // Ajouter les informations de l'auteur
           try {
-            const author = await prisma.user.findUnique({
-              where: { id: folder.authorId },
-              select: { name: true, email: true }
-            })
+            const { data: author } = await admin
+              .from('users')
+              .select('name, email')
+              .eq('id', folder.authorId)
+              .maybeSingle()
             folder.author = author || { name: 'Utilisateur inconnu', email: 'unknown@example.com' }
           } catch (authorError) {
             console.error('Erreur récupération auteur:', authorError)

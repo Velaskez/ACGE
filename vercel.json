@@ -4,6 +4,13 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
+  "env": {
+    "DATABASE_URL": "postgresql://postgres.wodyrsasfqfoqdydrfew:Reviti2025%40@aws-0-eu-west-3.pooler.supabase.com:6543/postgres",
+    "DIRECT_URL": "postgresql://postgres.wodyrsasfqfoqdydrfew:Reviti2025%40@aws-0-eu-west-3.pooler.supabase.com:5432/postgres",
+    "NEXTAUTH_URL": "https://acge-gabon.com",
+    "NEXTAUTH_SECRET": "votre_secret_production_securise_changez_ceci",
+    "NEXT_PUBLIC_API_URL": "https://acge-gabon.com"
+  },
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30

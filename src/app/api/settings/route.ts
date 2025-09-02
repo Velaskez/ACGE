@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 // GET - Récupérer les paramètres de l'utilisateur connecté
 export async function GET(request: NextRequest) {
@@ -17,10 +17,12 @@ export async function GET(request: NextRequest) {
     const userId = decoded.userId
 
     // Vérifier que l'utilisateur existe
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: user } = await admin
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle()
 
     if (!user) {
       return NextResponse.json(
@@ -30,53 +32,35 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer les paramètres utilisateur avec SQL direct
-    const settings = await prisma.$queryRaw`
-      SELECT 
-        "emailNotifications",
-        "pushNotifications",
-        language,
-        timezone,
-        "sessionTimeout",
-        "passwordExpiry",
-        theme
-      FROM user_settings 
-      WHERE "userId" = ${userId}
-    ` as any[]
+    const { data: settings, error: settingsErr } = await admin
+      .from('user_settings')
+      .select('emailNotifications:email_notifications, pushNotifications:push_notifications, language, timezone, sessionTimeout:session_timeout, passwordExpiry:password_expiry, theme')
+      .eq('userId', userId)
 
-    // Si l'utilisateur n'a pas de paramètres, les créer avec les valeurs par défaut
-    if (settings.length === 0) {
-      await prisma.$executeRaw`
-        INSERT INTO user_settings (
-          "userId", 
-          "emailNotifications", 
-          "pushNotifications", 
-          language, 
-          timezone, 
-          "sessionTimeout", 
-          "passwordExpiry", 
-          theme
-        ) VALUES (
-          ${userId}, 
-          true, 
-          false, 
-          'fr', 
-          'Africa/Libreville', 
-          15, 
-          90, 
-          'system'
-        )
-      `
-
+    // Si la table n'existe pas ou autre erreur, renvoyer des valeurs par défaut sans écrire en base
+    if (settingsErr) {
       return NextResponse.json({
         settings: {
           emailNotifications: true,
           pushNotifications: false,
           language: 'fr',
           timezone: 'Africa/Libreville',
-          security: {
-            sessionTimeout: 15,
-            passwordExpiry: 90
-          },
+          security: { sessionTimeout: 15, passwordExpiry: 90 },
+          theme: 'system'
+        }
+      })
+    }
+
+    // Si l'utilisateur n'a pas de paramètres, les créer avec les valeurs par défaut
+    if (!settings || settings.length === 0) {
+      // Aucun paramètre trouvé: renvoyer des valeurs par défaut sans tenter d'insérer
+      return NextResponse.json({
+        settings: {
+          emailNotifications: true,
+          pushNotifications: false,
+          language: 'fr',
+          timezone: 'Africa/Libreville',
+          security: { sessionTimeout: 15, passwordExpiry: 90 },
           theme: 'system'
         }
       })
@@ -170,10 +154,12 @@ export async function PUT(request: NextRequest) {
     }
 
     // Vérifier que l'utilisateur existe
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: user } = await admin
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle()
 
     if (!user) {
       return NextResponse.json(
@@ -183,53 +169,28 @@ export async function PUT(request: NextRequest) {
     }
 
     // Mettre à jour ou créer les paramètres utilisateur avec SQL direct
-    await prisma.$executeRaw`
-      INSERT INTO user_settings (
-        "userId", 
-        "emailNotifications", 
-        "pushNotifications", 
-        language, 
-        timezone, 
-        "sessionTimeout", 
-        "passwordExpiry", 
-        theme,
-        "updatedAt"
-      ) VALUES (
-        ${userId}, 
-        ${settings.emailNotifications ?? true}, 
-        ${settings.pushNotifications ?? false}, 
-        ${settings.language || 'fr'}, 
-        ${settings.timezone || 'Africa/Libreville'}, 
-        ${settings.security?.sessionTimeout || 15}, 
-        ${settings.security?.passwordExpiry || 90}, 
-        ${settings.theme || 'system'},
-        NOW()
-      ) ON CONFLICT ("userId") DO UPDATE SET
-        "emailNotifications" = EXCLUDED."emailNotifications",
-        "pushNotifications" = EXCLUDED."pushNotifications",
-        language = EXCLUDED.language,
-        timezone = EXCLUDED.timezone,
-        "sessionTimeout" = EXCLUDED."sessionTimeout",
-        "passwordExpiry" = EXCLUDED."passwordExpiry",
-        theme = EXCLUDED.theme,
-        "updatedAt" = NOW()
-    `
+    const upsertPayload = {
+      userId,
+      email_notifications: settings.emailNotifications ?? true,
+      push_notifications: settings.pushNotifications ?? false,
+      language: settings.language || 'fr',
+      timezone: settings.timezone || 'Africa/Libreville',
+      session_timeout: settings.security?.sessionTimeout || 15,
+      password_expiry: settings.security?.passwordExpiry || 90,
+      theme: settings.theme || 'system'
+    }
+    const { error: upsertErr } = await admin
+      .from('user_settings')
+      .upsert(upsertPayload, { onConflict: 'userId' })
+    if (upsertErr) throw upsertErr
 
     // Récupérer les paramètres mis à jour
-    const updatedSettings = await prisma.$queryRaw`
-      SELECT 
-        "emailNotifications",
-        "pushNotifications",
-        language,
-        timezone,
-        "sessionTimeout",
-        "passwordExpiry",
-        theme
-      FROM user_settings 
-      WHERE "userId" = ${userId}
-    ` as any[]
+    const { data: updatedSettings } = await admin
+      .from('user_settings')
+      .select('emailNotifications:email_notifications, pushNotifications:push_notifications, language, timezone, sessionTimeout:session_timeout, passwordExpiry:password_expiry, theme')
+      .eq('userId', userId)
 
-    const userSettings = updatedSettings[0]
+    const userSettings = updatedSettings![0]
 
     return NextResponse.json({
       message: 'Paramètres mis à jour avec succès',

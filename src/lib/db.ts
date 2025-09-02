@@ -1,66 +1,28 @@
-import { PrismaClient } from '@prisma/client'
+// Fichier de compatibilité pour maintenir les imports existants
+// TODO: Migrer progressivement vers Supabase
 
-const resolveDatabaseUrl = (): string => {
-  let url = process.env.DATABASE_URL || 'file:./prisma/dev.db'
-  
-  // Ajouter des paramètres pour éviter les problèmes de prepared statements
-  if (url.includes('postgresql://')) {
-    const separator = url.includes('?') ? '&' : '?'
-    url += `${separator}pgbouncer=true&connection_limit=1&pool_timeout=0&prepared_statements=false`
-  }
-  
-  console.log('🔗 Database URL:', url)
-  return url
+// Interface compatible avec Prisma pour la transition
+export interface PrismaClient {
+  user: any
+  document: any
+  folder: any
+  notification: any
+  documentVersion: any
+  documentShare: any
+  // Ajouter d'autres modèles selon les besoins
 }
 
-const databaseUrl = resolveDatabaseUrl()
+// Client factice pour éviter les erreurs d'import
+// Les vrais endpoints devraient utiliser Supabase via @/lib/supabase-server
+export const prisma: PrismaClient = {
+  user: {},
+  document: {},
+  folder: {},
+  notification: {},
+  documentVersion: {},
+  documentShare: {},
+} as any
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined }
-
-// Fonction pour créer une nouvelle instance Prisma avec gestion des erreurs
-function createPrismaClient(): PrismaClient {
-  return new PrismaClient({ 
-    datasources: { 
-      db: { 
-        url: databaseUrl
-      } 
-    },
-    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-    // Configuration spéciale pour éviter les problèmes de prepared statements
-    __internal: {
-      engine: {
-        enableEngineDebugMode: false
-      }
-    }
-  })
-}
-
-// Instance globale unique
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
-
-// Gestion des erreurs de connexion
-globalForPrisma.prisma = prisma
-
-// Fonction de reconnexion en cas d'erreur
-const handleConnectionError = async () => {
-  try {
-    await prisma.$disconnect()
-    console.log('🔄 Tentative de reconnexion...')
-    await prisma.$connect()
-    console.log('✅ Reconnexion réussie')
-  } catch (error) {
-    console.error('❌ Échec de la reconnexion:', error)
-  }
-}
-
-// Initialize connection on startup
-prisma.$connect()
-  .then(() => {
-    console.log('✅ Prisma connected successfully to:', databaseUrl)
-  })
-  .catch((error) => {
-    console.error('❌ Prisma connection failed:', error)
-    console.error('Database URL was:', databaseUrl)
-    // Tentative de reconnexion automatique
-    handleConnectionError()
-  })
+// Note: Ce fichier est temporaire pour maintenir la compatibilité
+// Les nouveaux endpoints devraient utiliser Supabase via @/lib/supabase-server
+// Pour migrer un endpoint, remplacez l'import de @/lib/db par @/lib/supabase-server

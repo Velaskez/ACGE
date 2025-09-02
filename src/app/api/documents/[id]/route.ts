@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 // DELETE - Supprimer un document
 export async function DELETE(
@@ -17,26 +17,14 @@ export async function DELETE(
     // En production, vous pourriez vérifier l'authentification côté client
     
     // Récupérer le document avec toutes ses versions
-    const document = await prisma.document.findFirst({
-      where: {
-        id: documentId
-      },
-      include: {
-        versions: {
-          select: {
-            filePath: true,
-            fileName: true
-          }
-        },
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: document, error } = await admin
+      .from('documents')
+      .select('id, title, author:authorId(id, name, email), versions:file_versions(filePath:file_path, fileName:file_name)')
+      .eq('id', documentId)
+      .maybeSingle()
+
+    if (error) throw error
 
     if (!document) {
       
@@ -61,9 +49,12 @@ export async function DELETE(
 
     // Supprimer l'enregistrement en base de données
     // Prisma supprimera automatiquement les versions grâce aux relations CASCADE
-    await prisma.document.delete({
-      where: { id: documentId }
-    })
+    const { error: deleteErr } = await admin
+      .from('documents')
+      .delete()
+      .eq('id', documentId)
+      .single()
+    if (deleteErr) throw deleteErr
 
     console.log('✅ Document supprimé avec succès')
     
@@ -104,32 +95,14 @@ export async function GET(
     const documentId = resolvedParams.id
 
     // Récupérer le document
-    const document = await prisma.document.findFirst({
-      where: {
-        id: documentId
-      },
-      include: {
-        currentVersion: true,
-        _count: {
-          select: {
-            versions: true
-          }
-        },
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        folder: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: document, error } = await admin
+      .from('documents')
+      .select('id, title, description, category, isPublic:is_public, folder:folderId(id, name), author:authorId(id, name, email), currentVersion:current_version_id(*), versions:versions(count))')
+      .eq('id', documentId)
+      .maybeSingle()
+
+    if (error) throw error
 
     if (!document) {
       
@@ -190,25 +163,12 @@ export async function PUT(
     }
 
     // Vérifier que le document existe
-    const existingDocument = await prisma.document.findFirst({
-      where: {
-        id: documentId
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        folder: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: existingDocument } = await admin
+      .from('documents')
+      .select('id, title, author:authorId(id, name), folder:folderId(id, name)')
+      .eq('id', documentId)
+      .maybeSingle()
 
     if (!existingDocument) {
       return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
@@ -220,9 +180,11 @@ export async function PUT(
 
     // Vérifier le dossier si spécifié
     if (folderId && folderId !== 'root') {
-      const folder = await prisma.folder.findFirst({
-        where: { id: folderId }
-      })
+      const { data: folder } = await admin
+        .from('folders')
+        .select('id, name')
+        .eq('id', folderId)
+        .maybeSingle()
       if (!folder) {
         return NextResponse.json({ error: 'Dossier spécifié non trouvé' }, { status: 400 })
       }
@@ -246,31 +208,14 @@ export async function PUT(
     }
 
     // Mettre à jour le document
-    const updatedDocument = await prisma.document.update({
-      where: { id: documentId },
-      data: updateData,
-      include: {
-        currentVersion: true,
-        _count: {
-          select: {
-            versions: true
-          }
-        },
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        folder: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    })
+    const { data: updatedDocument, error: updateErr } = await admin
+      .from('documents')
+      .update(updateData)
+      .eq('id', documentId)
+      .select('id, title, description, category, isPublic:is_public, currentVersion:current_version_id(*), author:authorId(id, name, email), folder:folderId(id, name)')
+      .single()
+
+    if (updateErr) throw updateErr
 
     console.log('✅ Document modifié avec succès')
     console.log(`📄 Nouveau titre: ${updatedDocument.title}`)

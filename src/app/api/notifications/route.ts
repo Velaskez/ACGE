@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
   try {
     // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('auth-token')?.value || 
+                  request.headers.get('authorization')?.replace('Bearer ', '')
 
     if (!token) {
       return NextResponse.json(
@@ -35,32 +36,25 @@ export async function GET(request: NextRequest) {
 
     try {
       // Récupérer les notifications
-      const [notifications, total] = await Promise.all([
-        prisma.notification.findMany({
-          where,
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
-          }
-        }),
-        prisma.notification.count({ where })
-      ])
+      const admin = getSupabaseAdmin()
+      let query = admin
+        .from('notifications')
+        .select('id, title, message, type, isRead:is_read, createdAt:created_at, user:userId(id, name, email)', { count: 'exact' })
+        .eq('userId', where.userId)
+        .order('created_at', { ascending: false })
+        .range(skip, skip + limit - 1)
+
+      if (unreadOnly) query = query.eq('is_read', true as any).not('is_read', 'is', null) // ensure boolean filter
+
+      const { data: notifications, error, count: total } = await query
+      if (error) throw error
 
       // Calculer le nombre de notifications non lues
-      const unreadCount = await prisma.notification.count({
-        where: {
-          userId: userId,
-          isRead: false
-        }
-      })
+      const { count: unreadCount } = await admin
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('userId', userId)
+        .eq('is_read', false as any)
 
       return NextResponse.json({
         notifications,
@@ -99,7 +93,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('auth-token')?.value || 
+                  request.headers.get('authorization')?.replace('Bearer ', '')
 
     if (!token) {
       return NextResponse.json(
@@ -133,9 +128,12 @@ export async function POST(request: NextRequest) {
 
     try {
       // Vérifier que l'utilisateur cible existe
-      const targetUser = await prisma.user.findUnique({
-        where: { id: targetUserId }
-      })
+      const admin = getSupabaseAdmin()
+      const { data: targetUser } = await admin
+        .from('users')
+        .select('id')
+        .eq('id', targetUserId)
+        .maybeSingle()
 
       if (!targetUser) {
         return NextResponse.json(
@@ -145,25 +143,20 @@ export async function POST(request: NextRequest) {
       }
 
       // Créer la notification
-      const notification = await prisma.notification.create({
-        data: {
+      const { data: notification, error } = await admin
+        .from('notifications')
+        .insert({
           title,
           message,
           type,
           userId: targetUserId,
           data: data || {},
-          isRead: false
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        }
-      })
+          is_read: false
+        })
+        .select('id, title, message, type, isRead:is_read, createdAt:created_at, user:userId(id, name, email)')
+        .single()
+
+      if (error) throw error
 
       return NextResponse.json(notification, { status: 201 })
     } catch (dbError) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { verify } from 'jsonwebtoken'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 interface DecodedToken {
   userId: string
@@ -46,27 +46,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            documents: true,
-            folders: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    const admin = getSupabaseAdmin()
+    const { data, error } = await admin
+      .from('users')
+      .select('id, name, email, role, createdAt, updatedAt')
+      .order('updatedAt', { ascending: false })
 
-    return NextResponse.json({ users })
+    if (error) {
+      throw error
+    }
+
+    return NextResponse.json({ users: data })
 
   } catch (error) {
     console.error('Erreur lors de la récupération des utilisateurs:', error)
@@ -122,11 +112,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier si l'email existe déjà
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: existingCheck, error: checkErr } = await admin
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
 
-    if (existingUser) {
+    if (checkErr) {
+      throw checkErr
+    }
+
+    if (existingCheck) {
       return NextResponse.json(
         { error: 'Un utilisateur avec cet email existe déjà' },
         { status: 400 }
@@ -137,26 +134,20 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     // Créer l'utilisateur
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true
-      }
-    })
+    const { data: created, error: insertErr } = await admin
+      .from('users')
+      .insert({ name, email, password: hashedPassword, role })
+      .select('id, name, email, role, createdAt:created_at')
+      .single()
+
+    if (insertErr) {
+      throw insertErr
+    }
 
     return NextResponse.json(
       { 
         message: 'Utilisateur créé avec succès',
-        user 
+        user: created 
       },
       { status: 201 }
     )

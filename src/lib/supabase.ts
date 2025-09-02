@@ -4,33 +4,24 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// Vérification des variables d'environnement
+// Journalisation de la config
 console.log('🔍 Configuration Supabase:')
 console.log('NEXT_PUBLIC_SUPABASE_URL:', !!supabaseUrl)
 console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', !!supabaseAnonKey)
 console.log('SUPABASE_SERVICE_ROLE_KEY:', !!supabaseServiceKey)
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Variables Supabase manquantes:')
-  console.error('NEXT_PUBLIC_SUPABASE_URL:', !!supabaseUrl)
-  console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', !!supabaseAnonKey)
-  throw new Error('Variables d\'environnement Supabase manquantes')
-}
+// Client public: peut être indisponible côté serveur si variables publiques manquantes
+export const supabase = (supabaseUrl && supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
-// Client public
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-// Client admin pour les opérations côté serveur
-export const supabaseAdmin = supabaseServiceKey 
+// Client admin pour les opérations côté serveur (prioritaire pour nos API)
+export const supabaseAdmin = (supabaseUrl && supabaseServiceKey)
   ? createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
+      auth: { autoRefreshToken: false, persistSession: false }
     })
   : null
 
-// Vérification de la configuration
-if (!supabaseAdmin) {
-  console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY manquante - Uploads non disponibles')
+if (!supabase && !supabaseAdmin) {
+  console.warn('⚠️ Aucun client Supabase initialisé: variables manquantes')
 }

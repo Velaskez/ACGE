@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 type UpdateFolderBody = {
   name?: string
@@ -20,42 +20,34 @@ export async function GET(
     const folderId = resolvedParams.id
 
     // Récupérer le dossier avec ses détails
-    const folder = await prisma.folder.findFirst({
-      where: {
-        id: folderId
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        parentId: true,
-        createdAt: true,
-        updatedAt: true,
-        authorId: true,
-        _count: {
-          select: {
-            documents: true,
-            children: true
-          }
-        },
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: folder, error } = await admin
+      .from('folders')
+      .select('id, name, description, parentId, createdAt:created_at, updatedAt:updated_at, authorId')
+      .eq('id', folderId)
+      .maybeSingle()
+
+    if (error) throw error
 
     if (!folder) {
       
       return NextResponse.json({ error: 'Dossier non trouvé' }, { status: 404 })
     }
 
+    // Récupérer compteurs et auteur
+    const [{ count: documentsCount }, { count: childrenCount }, { data: author }] = await Promise.all([
+      admin.from('documents').select('id', { head: true, count: 'exact' }).eq('folderId', folderId),
+      admin.from('folders').select('id', { head: true, count: 'exact' }).eq('parentId', folderId),
+      admin.from('users').select('id, name, email').eq('id', folder.authorId).maybeSingle()
+    ])
+
     return NextResponse.json({
       success: true,
-      folder
+      folder: {
+        ...folder,
+        _count: { documents: documentsCount || 0, children: childrenCount || 0 },
+        author
+      }
     })
   } catch (error) {
     console.error('❌ Erreur lors de la récupération du dossier:', error)
@@ -93,11 +85,12 @@ export async function PUT(
     }
 
     // Vérifier que le dossier existe
-    const existingFolder = await prisma.folder.findFirst({
-      where: {
-        id: folderId
-      }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: existingFolder } = await admin
+      .from('folders')
+      .select('id, authorId, parentId')
+      .eq('id', folderId)
+      .maybeSingle()
 
     if (!existingFolder) {
       
@@ -119,14 +112,14 @@ export async function PUT(
       }
       
       // Vérifier qu'il n'y a pas de doublon (sauf le dossier actuel)
-      const duplicate = await prisma.folder.findFirst({
-        where: {
-          name,
-          parentId: body.parentId ?? existingFolder.parentId,
-          authorId: existingFolder.authorId,
-          id: { not: folderId }
-        }
-      })
+      const { data: duplicate } = await admin
+        .from('folders')
+        .select('id')
+        .eq('name', name)
+        .eq('authorId', existingFolder.authorId)
+        .eq('parentId', body.parentId ?? existingFolder.parentId)
+        .neq('id', folderId)
+        .maybeSingle()
       
       if (duplicate) {
         
@@ -145,18 +138,14 @@ export async function PUT(
     }
 
     // Mettre à jour le dossier
-    const updatedFolder = await prisma.folder.update({
-      where: { id: folderId },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        parentId: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    })
+    const { data: updatedFolder, error: updateErr } = await admin
+      .from('folders')
+      .update(updateData)
+      .eq('id', folderId)
+      .select('id, name, description, parentId, createdAt:created_at, updatedAt:updated_at')
+      .single()
+
+    if (updateErr) throw updateErr
 
     return NextResponse.json({ 
       success: true,
@@ -189,22 +178,14 @@ export async function DELETE(
     const folderId = resolvedParams.id
 
     // Vérifier que le dossier existe
-    const folder = await prisma.folder.findFirst({
-      where: {
-        id: folderId
-      },
-      include: {
-        documents: true,
-        children: true,
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: folder, error } = await admin
+      .from('folders')
+      .select('id, name, authorId')
+      .eq('id', folderId)
+      .maybeSingle()
+
+    if (error) throw error
 
     if (!folder) {
       
@@ -217,7 +198,12 @@ export async function DELETE(
     console.log(`📁 Sous-dossiers: ${folder.children.length}`)
 
     // Vérifier si le dossier contient des documents ou des sous-dossiers
-    if (folder.documents.length > 0) {
+    const { count: documentsCount } = await admin
+      .from('documents')
+      .select('id', { head: true, count: 'exact' })
+      .eq('folderId', folderId)
+
+    if ((documentsCount || 0) > 0) {
       
       return NextResponse.json({ 
         success: false,
@@ -225,7 +211,12 @@ export async function DELETE(
       }, { status: 400 })
     }
 
-    if (folder.children.length > 0) {
+    const { count: childrenCount } = await admin
+      .from('folders')
+      .select('id', { head: true, count: 'exact' })
+      .eq('parentId', folderId)
+
+    if ((childrenCount || 0) > 0) {
       
       return NextResponse.json({ 
         success: false,
@@ -234,21 +225,19 @@ export async function DELETE(
     }
 
     // Supprimer le dossier
-    await prisma.folder.delete({
-      where: { id: folderId }
-    })
+    const { error: deleteErr } = await admin
+      .from('folders')
+      .delete()
+      .eq('id', folderId)
+      .single()
+    if (deleteErr) throw deleteErr
 
     console.log('✅ Dossier supprimé avec succès')
     
     return NextResponse.json({
       success: true,
       message: 'Dossier supprimé avec succès',
-      deletedFolder: {
-        id: folderId,
-        name: folder.name,
-        documentsCount: folder.documents.length,
-        childrenCount: folder.children.length
-      }
+      deletedFolder: { id: folderId, name: folder.name }
     })
   } catch (error) {
     console.error('❌ Erreur lors de la suppression du dossier:', error)

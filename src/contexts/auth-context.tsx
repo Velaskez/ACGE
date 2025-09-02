@@ -83,7 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('🔒 Non authentifié (401) - normal au chargement')
         setUser(null)
       } else {
-        console.log('❌ Erreur HTTP:', response.status)
+        const text = await response.text()
+        console.log('❌ Erreur HTTP:', response.status, text.slice(0, 200))
         setUser(null)
       }
     } catch (error) {
@@ -134,8 +135,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return true
         }
       } else {
-        const errorData = await response.json()
-        console.log('❌ Erreur login:', errorData)
+        const errorText = await response.text()
+        console.log('❌ Erreur login (texte):', errorText.slice(0, 200))
       }
 
       return false
@@ -169,7 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔄 Rafraîchissement des données utilisateur...')
       const response = await fetch('/api/auth/me', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
       })
       console.log('📡 Status refreshUser:', response.status)
       

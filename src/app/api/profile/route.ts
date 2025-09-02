@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
 import { verify } from 'jsonwebtoken'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 // GET - Récupérer le profil de l'utilisateur connecté
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('auth-token')?.value || 
+                  request.headers.get('authorization')?.replace('Bearer ', '')
     if (!token) {
       return NextResponse.json(
         { error: 'Non authentifié' },
@@ -14,26 +14,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
+    let decoded: any
+    try {
+      decoded = verify(token, process.env.NEXTAUTH_SECRET || 'dev-secret') as any
+    } catch {
+      return NextResponse.json(
+        { error: 'Session expirée ou invalide' },
+        { status: 401 }
+      )
+    }
+
     const userId = decoded.userId
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            documents: true,
-            folders: true
-          }
-        }
-      }
-    })
+    const supabase = getSupabaseAdmin()
+
+    // Récupérer l'utilisateur
+    const { data: user, error: userErr } = await supabase
+      .from('users')
+      .select('id, name, email, role, createdAt, updatedAt')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (userErr) {
+      throw userErr
+    }
 
     if (!user) {
       return NextResponse.json(
@@ -42,10 +46,43 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ user })
+    // Compter les documents de l'utilisateur (si le schéma le permet)
+    let documentsCount = 0
+    try {
+      const { count, error } = await supabase
+        .from('documents')
+        .select('*', { count: 'exact', head: true })
+        .eq('authorId', userId)
+      if (!error && typeof count === 'number') documentsCount = count
+    } catch {}
+
+    // Compter les dossiers de l'utilisateur
+    let foldersCount = 0
+    try {
+      const { count, error } = await supabase
+        .from('folders')
+        .select('*', { count: 'exact', head: true })
+        .eq('authorId', userId)
+      if (!error && typeof count === 'number') foldersCount = count
+    } catch {}
+
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        _count: {
+          documents: documentsCount,
+          folders: foldersCount
+        }
+      }
+    })
 
   } catch (error) {
-    console.error('Erreur lors de la récupération du profil:', error)
+    console.error('Erreur profil utilisateur:', error)
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }
@@ -56,7 +93,8 @@ export async function GET(request: NextRequest) {
 // PUT - Mettre à jour le profil de l'utilisateur connecté
 export async function PUT(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value
+    const token = request.cookies.get('auth-token')?.value || 
+                  request.headers.get('authorization')?.replace('Bearer ', '')
     if (!token) {
       return NextResponse.json(
         { error: 'Non authentifié' },
@@ -78,14 +116,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Vérifier si l'email existe déjà (sauf pour l'utilisateur actuel)
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        email,
-        id: { not: userId }
-      }
-    })
+    const existingUser = await supabase.from('users').select('*').eq('email', email).neq('id', userId).single()
 
-    if (existingUser) {
+    if (existingUser.error) {
       return NextResponse.json(
         { error: 'Un utilisateur avec cet email existe déjà' },
         { status: 400 }
@@ -115,12 +148,9 @@ export async function PUT(request: NextRequest) {
       }
 
       // Récupérer l'utilisateur avec le mot de passe actuel
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { password: true }
-      })
+      const user = await supabase.from('users').select('password').eq('id', userId).single()
 
-      if (!user) {
+      if (user.error) {
         return NextResponse.json(
           { error: 'Utilisateur non trouvé' },
           { status: 404 }
@@ -128,7 +158,7 @@ export async function PUT(request: NextRequest) {
       }
 
       // Vérifier le mot de passe actuel
-      const isPasswordValid = await bcrypt.compare(currentPassword, user.password)
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.data.password)
       if (!isPasswordValid) {
         return NextResponse.json(
           { error: 'Mot de passe actuel incorrect' },
@@ -141,24 +171,23 @@ export async function PUT(request: NextRequest) {
     }
 
     // Mettre à jour l'utilisateur
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            documents: true,
-            folders: true
-          }
-        }
-      }
-    })
+    const { data: updatedUser, error: updateErr } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', userId)
+      .select('id, name, email, role, createdAt, updatedAt')
+      .single()
+
+    if (updateErr) {
+      throw updateErr
+    }
+
+    if (!updatedUser) {
+      return NextResponse.json(
+        { error: 'Utilisateur non trouvé' },
+        { status: 404 }
+      )
+    }
 
     return NextResponse.json({
       message: 'Profil mis à jour avec succès',

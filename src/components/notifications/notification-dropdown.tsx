@@ -125,63 +125,26 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
 
   const getNotificationIcon = (type: NotificationType) => {
     const iconClass = "h-4 w-4"
-    const bgClass = "p-1.5 rounded-md"
     
     switch (type) {
       case 'WELCOME':
-        return (
-          <div className={`${bgClass} bg-blue-100`}>
-            <User className={`${iconClass} text-blue-600`} />
-          </div>
-        )
+        return <User className={`${iconClass} text-primary`} />
       case 'DOCUMENT_SHARED':
-        return (
-          <div className={`${bgClass} bg-green-100`}>
-            <Share2 className={`${iconClass} text-green-600`} />
-          </div>
-        )
+        return <Share2 className={`${iconClass} text-primary`} />
       case 'VERSION_ADDED':
-        return (
-          <div className={`${bgClass} bg-purple-100`}>
-            <FileText className={`${iconClass} text-purple-600`} />
-          </div>
-        )
+        return <FileText className={`${iconClass} text-primary`} />
       case 'VERSION_RESTORED':
-        return (
-          <div className={`${bgClass} bg-orange-100`}>
-            <RotateCcw className={`${iconClass} text-orange-600`} />
-          </div>
-        )
+        return <RotateCcw className={`${iconClass} text-primary`} />
       case 'DOCUMENT_DELETED':
-        return (
-          <div className={`${bgClass} bg-red-100`}>
-            <Trash2 className={`${iconClass} text-red-600`} />
-          </div>
-        )
+        return <Trash2 className={`${iconClass} text-destructive`} />
       case 'FOLDER_SHARED':
-        return (
-          <div className={`${bgClass} bg-indigo-100`}>
-            <FolderOpen className={`${iconClass} text-indigo-600`} />
-          </div>
-        )
+        return <FolderOpen className={`${iconClass} text-primary`} />
       case 'COMMENT_ADDED':
-        return (
-          <div className={`${bgClass} bg-yellow-100`}>
-            <MessageSquare className={`${iconClass} text-yellow-600`} />
-          </div>
-        )
+        return <MessageSquare className={`${iconClass} text-primary`} />
       case 'SYSTEM':
-        return (
-          <div className={`${bgClass} bg-gray-100`}>
-            <Wrench className={`${iconClass} text-gray-600`} />
-          </div>
-        )
+        return <Wrench className={`${iconClass} text-muted-foreground`} />
       default:
-        return (
-          <div className={`${bgClass} bg-muted`}>
-            <AlertCircle className={`${iconClass} text-muted-foreground`} />
-          </div>
-        )
+        return <AlertCircle className={`${iconClass} text-muted-foreground`} />
     }
   }
 
@@ -224,7 +187,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
             {unreadCount > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs"
+                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center text-xs min-w-[20px]"
               >
                 {unreadCount > 99 ? '99+' : unreadCount}
               </Badge>
@@ -233,85 +196,100 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <div className="flex items-center justify-between p-2">
-          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            {unreadCount > 0 && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={markAllAsRead}
-                className="text-xs"
-              >
-                <CheckCheck className="h-3 w-3 mr-1" />
-                Tout marquer comme lu
-              </Button>
-            )}
+        <div className="flex items-center justify-between p-4">
+          <DropdownMenuLabel className="text-base font-semibold">Notifications</DropdownMenuLabel>
+          {unreadCount > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={markAllAsRead}
+              className="text-xs h-auto p-2"
+            >
+              <CheckCheck className="h-3 w-3 mr-1" />
+              Tout marquer comme lu
+            </Button>
+          )}
         </div>
         
         <Separator />
 
         <ScrollArea className="h-96">
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="ml-2 text-sm text-primary">Chargement...</span>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="ml-3 text-sm text-muted-foreground">Chargement...</span>
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Bell className="h-8 w-8 text-primary mb-2" />
-              <p className="text-sm text-primary">Aucune notification</p>
-              <p className="text-xs text-primary">Vous êtes à jour !</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Bell className="h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-sm font-medium text-foreground">Aucune notification</p>
+              <p className="text-xs text-muted-foreground mt-1">Vous êtes à jour !</p>
             </div>
           ) : (
-            <div className="space-y-1 p-1">
+            <div className="space-y-0">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 group ${
-                    !notification.isRead ? 'bg-blue-50 border-l-2 border-l-blue-500' : ''
+                  className={`group cursor-pointer transition-all duration-200 hover:bg-accent/50 ${
+                    !notification.isRead 
+                      ? 'bg-primary/5 border-l-2 border-l-primary' 
+                      : 'border-l-2 border-l-transparent'
                   }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <h4 className={`text-sm font-medium truncate ${
-                            !notification.isRead ? 'text-primary' : 'text-primary'
-                          }`}>
-                            {notification.title}
-                          </h4>
-                          <Badge variant="outline" className="text-xs mt-1">
-                            {getTypeLabel(notification.type)}
-                          </Badge>
+                  <div className="p-4">
+                    <div className="flex items-start gap-3">
+                      {/* Icône */}
+                      <div className="flex-shrink-0 mt-0.5">
+                        <div className="p-2 rounded-lg bg-accent/50">
+                          {getNotificationIcon(notification.type)}
                         </div>
-                        
-                        {!notification.isRead && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              markAsRead(notification.id)
-                            }}
-                            className="h-auto p-1 opacity-0 group-hover:opacity-100"
-                          >
-                            <Check className="h-3 w-3" />
-                          </Button>
-                        )}
                       </div>
                       
-                      <p className="text-xs text-primary mt-2 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      
-                      <p className="text-xs text-primary mt-1">
-                        {formatRelativeTime(notification.createdAt.toString())}
-                      </p>
+                      {/* Contenu */}
+                      <div className="flex-1 min-w-0 space-y-2">
+                        {/* En-tête avec titre et badge */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <h4 className={`text-sm font-medium leading-tight ${
+                              !notification.isRead ? 'text-foreground' : 'text-foreground'
+                            }`}>
+                              {notification.title}
+                            </h4>
+                            <Badge 
+                              variant="secondary" 
+                              className="text-xs mt-1.5 bg-muted text-muted-foreground"
+                            >
+                              {getTypeLabel(notification.type)}
+                            </Badge>
+                          </div>
+                          
+                          {/* Bouton marquer comme lu */}
+                          {!notification.isRead && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                markAsRead(notification.id)
+                              }}
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Check className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* Message */}
+                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                          {notification.message}
+                        </p>
+                        
+                        {/* Timestamp */}
+                        <p className="text-xs text-muted-foreground/70">
+                          {formatRelativeTime(notification.createdAt.toString())}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -323,10 +301,10 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
         {notifications.length > 0 && (
           <>
             <Separator />
-            <div className="p-2">
+            <div className="p-3">
               <Button 
                 variant="ghost" 
-                className="w-full text-sm"
+                className="w-full text-sm h-auto py-2"
                 onClick={() => window.location.href = '/notifications'}
               >
                 Voir toutes les notifications
