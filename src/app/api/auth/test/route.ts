@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     
     // Vérifier les cookies
     const cookies = request.cookies
-    console.log('🍪 Cookies reçus:', Array.from(cookies.entries()))
+    console.log('🍪 Cookies reçus:', Object.fromEntries(cookies.getAll().map(c => [c.name, c.value])))
     
     const authToken = cookies.get('auth-token')
     console.log('🔑 Auth token présent:', !!authToken)

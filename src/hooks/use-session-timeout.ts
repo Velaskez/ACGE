@@ -19,9 +19,17 @@ export function useSessionTimeout({ enabled = true }: UseSessionTimeoutProps) {
       const response = await fetch('/api/settings')
       if (response.ok) {
         const data = await response.json()
-        const newTimeout = data.settings.security.sessionTimeout
-        console.log(`🔄 Session timeout mis à jour: ${sessionTimeout} → ${newTimeout} minutes`)
-        setSessionTimeout(newTimeout)
+        
+        // Vérifier que la structure des données est correcte
+        if (data.settings && data.settings.security && typeof data.settings.security.sessionTimeout === 'number') {
+          const newTimeout = data.settings.security.sessionTimeout
+          console.log(`🔄 Session timeout mis à jour: ${sessionTimeout} → ${newTimeout} minutes`)
+          setSessionTimeout(newTimeout)
+        } else {
+          console.warn('⚠️ Structure des paramètres de session invalide, utilisation de la valeur par défaut')
+        }
+      } else {
+        console.warn('⚠️ Impossible de charger les paramètres de session, utilisation de la valeur par défaut')
       }
     } catch (error) {
       console.error('Erreur lors du chargement des paramètres de session:', error)

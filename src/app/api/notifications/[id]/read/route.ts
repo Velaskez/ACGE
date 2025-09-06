@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function PUT(
   request: NextRequest,
@@ -34,11 +34,14 @@ export async function PUT(
     }
 
     // Vérifier que la notification existe et appartient à l'utilisateur
-    const notification = await prisma.notification.findUnique({
-      where: { id: notificationId }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: notification, error: notifError } = await admin
+      .from('notifications')
+      .select('id, user_id, is_read')
+      .eq('id', notificationId)
+      .maybeSingle()
 
-    if (!notification) {
+    if (notifError || !notification) {
       return NextResponse.json(
         { error: 'Notification non trouvée' },
         { status: 404 }
@@ -46,7 +49,7 @@ export async function PUT(
     }
 
     // Vérifier les permissions (admin ou propriétaire de la notification)
-    if (userRole !== 'ADMIN' && notification.userId !== userId) {
+    if (userRole !== 'ADMIN' && notification.user_id !== userId) {
       return NextResponse.json(
         { error: 'Accès non autorisé' },
         { status: 403 }
@@ -54,19 +57,31 @@ export async function PUT(
     }
 
     // Mettre à jour la notification
-    const updatedNotification = await prisma.notification.update({
-      where: { id: notificationId },
-      data: { isRead },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
+    const { data: updatedNotification, error: updateError } = await admin
+      .from('notifications')
+      .update({ is_read: isRead })
+      .eq('id', notificationId)
+      .select(`
+        id,
+        title,
+        message,
+        is_read,
+        created_at,
+        users!fk_notifications_user_id (
+          id,
+          name,
+          email
+        )
+      `)
+      .single()
+
+    if (updateError) {
+      console.error('Erreur mise à jour notification:', updateError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la mise à jour de la notification' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(updatedNotification)
 

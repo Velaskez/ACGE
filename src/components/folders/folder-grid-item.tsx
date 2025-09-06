@@ -18,7 +18,7 @@ import {
   Eye,
   FileText,
 } from 'lucide-react'
-import { Folder } from '@/hooks/use-folders'
+import { Folder } from '@/types/folder'
 
 interface FolderGridItemProps {
   folder: Folder

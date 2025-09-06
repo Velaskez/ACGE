@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 import { SearchSuggestion } from '@/components/ui/search-suggestions'
+import { searchCache, generateSearchKey, invalidateSearchCache } from '@/lib/search-cache'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,131 +14,59 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ suggestions: [] })
     }
 
+    // Vérifier le cache d'abord
+    const cacheKey = generateSearchKey(query || '', type, limit)
+    const cachedSuggestions = searchCache.get<SearchSuggestion[]>(cacheKey)
+    
+    if (cachedSuggestions) {
+      console.log(`🎯 Suggestions servies depuis le cache: ${query}`)
+      return NextResponse.json({ suggestions: cachedSuggestions })
+    }
+
     const suggestions: SearchSuggestion[] = []
+    const startTime = Date.now()
 
-    // Rechercher dans les documents
+    // Rechercher en parallèle pour de meilleures performances
+    const searchPromises: Promise<void>[] = []
+
+    // Rechercher dans les documents avec recherche full-text optimisée
     if (!type || type === 'all' || type === 'documents') {
-      const documents = await prisma.document.findMany({
-        where: {
-          OR: [
-            { title: { contains: query, mode: 'insensitive' } },
-            { description: { contains: query, mode: 'insensitive' } },
-            { currentVersion: { fileName: { contains: query, mode: 'insensitive' } } }
-          ]
-        },
-        include: {
-          currentVersion: true,
-          author: true
-        },
-        take: Math.ceil(limit / 2),
-        orderBy: { updatedAt: 'desc' }
-      })
-
-      documents.forEach(doc => {
-        suggestions.push({
-          id: `doc-${doc.id}`,
-          text: doc.title,
-          type: 'document',
-          metadata: {
-            title: doc.title,
-            description: doc.description || undefined,
-            fileType: doc.currentVersion?.fileType,
-            fileSize: doc.currentVersion?.fileSize
-          }
+      searchPromises.push(
+        searchDocuments(query, Math.ceil(limit / 2)).then(docs => {
+          docs.forEach(doc => suggestions.push(doc))
         })
-      })
+      )
     }
 
     // Rechercher dans les dossiers
     if (!type || type === 'all' || type === 'folders') {
-      const folders = await prisma.folder.findMany({
-        where: {
-          OR: [
-            { name: { contains: query, mode: 'insensitive' } },
-            { description: { contains: query, mode: 'insensitive' } }
-          ]
-        },
-        include: {
-          _count: {
-            select: { documents: true }
-          }
-        },
-        take: Math.ceil(limit / 3),
-        orderBy: { updatedAt: 'desc' }
-      })
-
-      folders.forEach(folder => {
-        suggestions.push({
-          id: `folder-${folder.id}`,
-          text: folder.name,
-          type: 'folder',
-          metadata: {
-            title: folder.name,
-            description: folder.description || undefined,
-            documentCount: folder._count.documents
-          }
+      searchPromises.push(
+        searchFolders(query, Math.ceil(limit / 3)).then(folders => {
+          folders.forEach(folder => suggestions.push(folder))
         })
-      })
+      )
     }
 
     // Rechercher dans les tags (si la table existe)
     if (!type || type === 'all' || type === 'tags') {
-      try {
-        const tags = await prisma.tag.findMany({
-          where: {
-            name: { contains: query, mode: 'insensitive' }
-          },
-          include: {
-            _count: {
-              select: { documents: true }
-            }
-          },
-          take: Math.ceil(limit / 4),
-          orderBy: { _count: { documents: 'desc' } }
+      searchPromises.push(
+        searchTags(query, Math.ceil(limit / 4)).then(tags => {
+          tags.forEach(tag => suggestions.push(tag))
         })
-
-        tags.forEach(tag => {
-          suggestions.push({
-            id: `tag-${tag.id}`,
-            text: tag.name,
-            type: 'tag',
-            metadata: {
-              title: tag.name,
-              tagCount: tag._count.documents
-            }
-          })
-        })
-      } catch (error) {
-        // Table tags n'existe peut-être pas, on ignore
-        console.log('Table tags non disponible')
-      }
+      )
     }
 
     // Rechercher dans les utilisateurs
     if (!type || type === 'all' || type === 'users') {
-      const users = await prisma.user.findMany({
-        where: {
-          OR: [
-            { name: { contains: query, mode: 'insensitive' } },
-            { email: { contains: query, mode: 'insensitive' } }
-          ]
-        },
-        take: Math.ceil(limit / 4),
-        orderBy: { name: 'asc' }
-      })
-
-      users.forEach(user => {
-        suggestions.push({
-          id: `user-${user.id}`,
-          text: user.name || user.email,
-          type: 'user',
-          metadata: {
-            title: user.name || user.email,
-            description: user.email
-          }
+      searchPromises.push(
+        searchUsers(query, Math.ceil(limit / 4)).then(users => {
+          users.forEach(user => suggestions.push(user))
         })
-      })
+      )
     }
+
+    // Exécuter toutes les recherches en parallèle
+    await Promise.all(searchPromises)
 
     // Trier et limiter les résultats
     const sortedSuggestions = suggestions
@@ -161,6 +90,12 @@ export async function GET(request: NextRequest) {
       })
       .slice(0, limit)
 
+    // Mettre en cache les résultats
+    searchCache.set(cacheKey, sortedSuggestions, 5 * 60 * 1000) // 5 minutes
+
+    const duration = Date.now() - startTime
+    console.log(`🔍 Recherche terminée en ${duration}ms: ${sortedSuggestions.length} suggestions pour "${query}"`)
+
     return NextResponse.json({ suggestions: sortedSuggestions })
 
   } catch (error) {
@@ -169,5 +104,130 @@ export async function GET(request: NextRequest) {
       { error: 'Erreur lors de la récupération des suggestions' },
       { status: 500 }
     )
+  }
+}
+
+/**
+ * Recherche optimisée dans les documents
+ */
+async function searchDocuments(query: string, limit: number): Promise<SearchSuggestion[]> {
+  try {
+    const admin = getSupabaseAdmin()
+    
+    // Utiliser la fonction de recherche full-text si disponible
+    const { data: documents } = await admin
+      .rpc('search_documents_optimized', {
+        search_query: query,
+        limit_count: limit,
+        offset_count: 0
+      })
+      .limit(limit)
+
+    return documents?.map(doc => ({
+      id: `doc-${doc.id}`,
+      text: doc.title,
+      type: 'document' as const,
+      metadata: {
+        title: doc.title,
+        description: doc.description || undefined,
+        fileType: undefined, // À récupérer séparément si nécessaire
+        fileSize: undefined
+      }
+    })) || []
+  } catch (error) {
+    console.error('Erreur recherche documents:', error)
+    return []
+  }
+}
+
+/**
+ * Recherche optimisée dans les dossiers
+ */
+async function searchFolders(query: string, limit: number): Promise<SearchSuggestion[]> {
+  try {
+    const admin = getSupabaseAdmin()
+    
+    const { data: folders } = await admin
+      .from('folders')
+      .select(`
+        id,
+        name,
+        description,
+        updated_at
+      `)
+      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+      .limit(limit)
+      .order('updated_at', { ascending: false })
+
+    return folders?.map(folder => ({
+      id: `folder-${folder.id}`,
+      text: folder.name,
+      type: 'folder' as const,
+      metadata: {
+        title: folder.name,
+        description: folder.description || undefined,
+        documentCount: 0 // TODO: Ajouter le comptage des documents
+      }
+    })) || []
+  } catch (error) {
+    console.error('Erreur recherche dossiers:', error)
+    return []
+  }
+}
+
+/**
+ * Recherche optimisée dans les tags
+ */
+async function searchTags(query: string, limit: number): Promise<SearchSuggestion[]> {
+  try {
+    const admin = getSupabaseAdmin()
+    
+    const { data: tags } = await admin
+      .from('tags')
+      .select('id, name')
+      .ilike('name', `%${query}%`)
+      .limit(limit)
+
+    return tags?.map(tag => ({
+      id: `tag-${tag.id}`,
+      text: tag.name,
+      type: 'tag' as const,
+      metadata: {
+        title: tag.name,
+        tagCount: 0 // TODO: Ajouter le comptage des documents
+      }
+    })) || []
+  } catch (error) {
+    console.log('Table tags non disponible')
+    return []
+  }
+}
+
+/**
+ * Recherche optimisée dans les utilisateurs
+ */
+async function searchUsers(query: string, limit: number): Promise<SearchSuggestion[]> {
+  try {
+    const admin = getSupabaseAdmin()
+    
+    const { data: users } = await admin
+      .from('users')
+      .select('id, name, email')
+      .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+      .limit(limit)
+      .order('name', { ascending: true })
+
+    return users?.map(user => ({
+      id: `user-${user.id}`,
+      text: user.name || user.email,
+      type: 'user' as const,
+      metadata: {
+        title: user.name || user.email,
+        description: user.email
+      }
+    })) || []
+  } catch (error) {
+    console.error('Erreur recherche utilisateurs:', error)
+    return []
   }
 }

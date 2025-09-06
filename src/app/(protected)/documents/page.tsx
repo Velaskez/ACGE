@@ -43,6 +43,7 @@ import { DocumentPreviewModal } from '@/components/documents/document-preview-mo
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentVersionHistory } from '@/components/documents/document-version-history'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
+import { DocumentDeleteConfirmation } from '@/components/documents/document-delete-confirmation'
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
 import { DocumentsFilters, type DocumentFilters } from '@/components/documents/documents-filters'
 import { ActiveFiltersDisplay } from '@/components/documents/active-filters-display'
@@ -60,32 +61,7 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 
-interface DocumentItem {
-  id: string
-  title: string
-  description?: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  tags: Array<{ id: string; name: string }>
-  folder?: { id: string; name: string }
-  author: { id: string; name: string; email: string }
-  currentVersion?: {
-    id: string
-    versionNumber: number
-    fileName: string
-    fileSize: number
-    fileType: string
-    filePath: string
-    changeLog?: string
-    createdAt: string
-  }
-  _count?: {
-    versions: number
-    comments?: number
-    shares?: number
-  }
-}
+import { DocumentItem } from '@/types/document'
 
 interface DossierComptable {
   id: string
@@ -143,6 +119,7 @@ export default function DocumentsPage() {
   const [showPreview, setShowPreview] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState<DocumentFilters>({
     sortBy: 'updatedAt',
@@ -477,10 +454,14 @@ export default function DocumentsPage() {
   }
 
   const handleDelete = async (documentId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) {
-      return
+    const documentToDelete = documents.find(doc => doc.id === documentId)
+    if (documentToDelete) {
+      setSelectedDocument(documentToDelete)
+      setShowDeleteConfirmation(true)
     }
+  }
 
+  const confirmDelete = async (documentId: string) => {
     try {
       const response = await fetch(`/api/documents/${documentId}`, {
         method: 'DELETE'
@@ -488,11 +469,14 @@ export default function DocumentsPage() {
 
       if (response.ok) {
         setDocuments(prev => prev.filter(doc => doc.id !== documentId))
+        setShowDeleteConfirmation(false)
+        setSelectedDocument(null)
       } else {
-        setError('Erreur lors de la suppression')
+        const data = await response.json()
+        throw new Error(data.error || 'Erreur lors de la suppression')
       }
     } catch (error) {
-      setError('Erreur de connexion')
+      throw error // Re-throw pour que le composant puisse gérer l'erreur
     }
   }
 
@@ -718,7 +702,7 @@ export default function DocumentsPage() {
           </Card>
         ) : (
           /* Vue en grille */
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-1">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 p-1">
             {filteredDocuments.length > 0 ? (
               filteredDocuments.map((document) => (
                 <DocumentGridItem
@@ -791,6 +775,19 @@ export default function DocumentsPage() {
         />
       )}
 
+      {/* Modal de confirmation de suppression */}
+      {showDeleteConfirmation && selectedDocument && (
+        <DocumentDeleteConfirmation
+          document={selectedDocument}
+          isOpen={showDeleteConfirmation}
+          onClose={() => {
+            setShowDeleteConfirmation(false)
+            setSelectedDocument(null)
+          }}
+          onConfirm={confirmDelete}
+        />
+      )}
+
       {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="mt-6">
@@ -800,6 +797,7 @@ export default function DocumentsPage() {
                 <PaginationPrevious 
                   onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
                   className={pagination.page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  size="default"
                 />
               </PaginationItem>
               
@@ -811,6 +809,7 @@ export default function DocumentsPage() {
                       onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
                       isActive={pagination.page === pageNum}
                       className="cursor-pointer"
+                      size="default"
                     >
                       {pageNum}
                     </PaginationLink>
@@ -828,6 +827,7 @@ export default function DocumentsPage() {
                 <PaginationNext 
                   onClick={() => setPagination(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
                   className={pagination.page === pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  size="default"
                 />
               </PaginationItem>
             </PaginationContent>

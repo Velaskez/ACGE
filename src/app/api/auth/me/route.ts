@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     try {
       // Vérifier le token JWT
-      const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'dev-secret') as any
+      const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
       
       return NextResponse.json({
         success: true,

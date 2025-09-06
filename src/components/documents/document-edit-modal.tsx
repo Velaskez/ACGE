@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { ModalWrapper } from '@/components/ui/modal-wrapper'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,38 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
-interface DocumentItem {
-  id: string
-  title: string
-  description?: string
-  category?: string
-  isPublic: boolean
-  folderId?: string | null
-  createdAt: string
-  updatedAt: string
-  currentVersion?: {
-    id: string
-    versionNumber: number
-    fileName: string
-    fileSize: number
-    fileType: string
-    filePath: string
-    changeLog?: string
-    createdAt: string
-  }
-  _count?: {
-    versions: number
-  }
-  author?: {
-    name: string
-    email: string
-  }
-  folder?: {
-    id: string
-    name: string
-  }
-}
+import { DocumentItem } from '@/types/document'
+import { DocumentEditForm } from './document-edit-form'
 
 interface FolderItem {
   id: string
@@ -201,8 +172,9 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto">
+    <ModalWrapper isOpen={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto">
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -323,191 +295,22 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
             </Button>
           </div>
 
-          {/* Formulaire d'édition */}
-          <div className="space-y-6">
-            {/* Titre */}
-            <div className="space-y-2">
-              <Label htmlFor="title" className="text-sm font-medium flex items-center gap-2">
-                <span>Titre *</span>
-                <Badge variant="outline" className="text-xs">Obligatoire</Badge>
-              </Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleChange('title', e.target.value)}
-                placeholder="Titre du document"
-                required
-                disabled={isLoading}
-                className="text-base"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-medium">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-                placeholder="Description du document (optionnel)"
-                rows={3}
-                disabled={isLoading}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground">
-                {formData.description.length}/500 caractères
-              </p>
-            </div>
-
-            {/* Catégorie */}
-            <div className="space-y-2">
-              <Label htmlFor="category" className="text-sm font-medium flex items-center gap-2">
-                <span>Catégorie</span>
-                <Badge variant="outline" className="text-xs">Optionnel</Badge>
-              </Label>
-              <Select 
-                value={formData.category} 
-                onValueChange={(value) => handleChange('category', value)}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sélectionner une catégorie" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Aucune catégorie</span>
-                    </div>
-                  </SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.value} value={category.value}>
-                      <div className="flex items-center gap-2">
-                        <span>{category.label}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Emplacement */}
-            <div className="space-y-2">
-              <Label htmlFor="folderId" className="text-sm font-medium flex items-center gap-2">
-                <FolderOpen className="h-4 w-4" />
-                Emplacement
-              </Label>
-              <Select 
-                value={formData.folderId} 
-                onValueChange={(value) => handleChange('folderId', value)}
-                disabled={isLoading || foldersLoading}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={foldersLoading ? "Chargement..." : "Sélectionner un dossier"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="root">
-                    <div className="flex items-center gap-2">
-                      <Folder className="h-4 w-4 text-primary" />
-                      <span>Racine (aucun dossier)</span>
-                    </div>
-                  </SelectItem>
-                  {folders.map((folder) => (
-                    <SelectItem key={folder.id} value={folder.id}>
-                      <div className="flex items-center gap-2">
-                        <FolderOpen className="h-4 w-4 text-primary" />
-                        <span className="truncate">{folder.name}</span>
-                        {folder.description && (
-                          <span className="text-xs text-primary ml-auto">
-                            ({folder.description.slice(0, 20)}{folder.description.length > 20 ? '...' : ''})
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              {/* Indicateur de changement d'emplacement */}
-              {formData.folderId !== 'root' && document.folder && formData.folderId !== document.folderId && (
-                <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <AlertCircle className="h-4 w-4 text-yellow-600" />
-                  <p className="text-xs text-yellow-800">
-                    Sera déplacé vers : <strong>{folders.find(f => f.id === formData.folderId)?.name}</strong>
-                  </p>
-                </div>
-              )}
-              {formData.folderId === 'root' && document.folder && (
-                <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <AlertCircle className="h-4 w-4 text-yellow-600" />
-                  <p className="text-xs text-yellow-800">
-                    Sera déplacé vers la racine depuis : <strong>{document.folder.name}</strong>
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Visibilité */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Visibilité</Label>
-              <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                <input
-                  type="checkbox"
-                  id="isPublic"
-                  checked={formData.isPublic}
-                  onChange={(e) => handleChange('isPublic', e.target.checked)}
-                  disabled={isLoading}
-                  className="mt-1 rounded border-gray-300"
-                />
-                <div className="space-y-1">
-                  <Label htmlFor="isPublic" className="text-sm font-medium leading-relaxed">
-                    Document public
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Visible par tous les utilisateurs de la plateforme
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <DialogFooter className="flex-col-reverse sm:flex-row gap-3 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose} 
-              disabled={isLoading}
-              className="w-full sm:w-auto"
-            >
-              Annuler
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isLoading || !formData.title.trim()}
-              className="w-full sm:w-auto"
-            >
-              {isLoading ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
-                  <span className="hidden sm:inline">Enregistrement...</span>
-                  <span className="sm:hidden">Envoi...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Enregistrer les modifications
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+          <DocumentEditForm
+            document={document}
+            onSubmit={handleSubmit}
+            onCancel={onClose}
+            isLoading={isLoading}
+          />
         </form>
       </DialogContent>
     </Dialog>
+    </ModalWrapper>
   )
 }

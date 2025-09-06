@@ -40,9 +40,16 @@ import {
   Shield, 
   User, 
   UserCheck,
-  AlertTriangle 
+  AlertTriangle,
+  CheckCircle,
+  Circle,
+  ArrowRight,
+  ArrowLeft,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { Role } from '@/types'
+import { UserForm } from '@/components/users/user-form'
 
 interface User {
   id: string
@@ -163,7 +170,7 @@ export default function UsersPage() {
       name: '',
       email: '',
       password: '',
-      role: 'USER'
+      role: 'AGENT_COMPTABLE'
     })
   }
 
@@ -219,7 +226,7 @@ export default function UsersPage() {
                 Nouvel utilisateur
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>
                   {editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
@@ -231,104 +238,23 @@ export default function UsersPage() {
                   }
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nom complet</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">
-                    {editingUser ? 'Nouveau mot de passe (optionnel)' : 'Mot de passe'}
-                  </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    required={!editingUser}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role">Rôle</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value: Role) => setFormData(prev => ({ ...prev, role: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ADMIN">
-                        <div className="flex items-center gap-2">
-                          <Shield className="w-4 h-4" />
-                          Administrateur
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="SECRETAIRE">
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          Secrétaire
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="CONTROLEUR_BUDGETAIRE">
-                        <div className="flex items-center gap-2">
-                          <Shield className="w-4 h-4" />
-                          Contrôleur Budgétaire
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="ORDONNATEUR">
-                        <div className="flex items-center gap-2">
-                          <UserCheck className="w-4 h-4" />
-                          Ordonnateur
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="AGENT_COMPTABLE">
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          Agent Comptable
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={isLoading} className="flex-1">
-                    {isLoading ? 'Enregistrement...' : (editingUser ? 'Modifier' : 'Créer')}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Annuler
-                  </Button>
-                </div>
-              </form>
+              
+              {error && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              
+              <UserForm
+                user={editingUser}
+                onSubmit={handleSubmit}
+                onCancel={() => {
+                  setIsDialogOpen(false)
+                  setEditingUser(null)
+                  resetForm()
+                }}
+                isLoading={isLoading}
+              />
             </DialogContent>
           </Dialog>
         </div>

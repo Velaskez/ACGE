@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { useModal } from '@/contexts/modal-context'
 import { Search, Settings, LogOut, User, Menu, X } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -22,14 +23,22 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const { user, logout } = useAuth()
+  const { hideHeader } = useModal()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
 
-  // Hook pour les suggestions de recherche
-  const { suggestions, isLoading: suggestionsLoading } = useSearchSuggestions(searchQuery, { 
-    debounceMs: 300, 
+  // Hook pour les suggestions de recherche optimisé
+  const { 
+    suggestions, 
+    isLoading: suggestionsLoading, 
+    error: suggestionsError,
+    cacheStats 
+  } = useSearchSuggestions(searchQuery, { 
+    debounceMs: 200, // Réduit pour une meilleure réactivité
     minQueryLength: 2, 
-    maxSuggestions: 6 
+    maxSuggestions: 8, // Plus de suggestions
+    enableCache: true,
+    searchTypes: ['documents', 'folders', 'users'] // Types prioritaires
   })
 
   const handleSearch = (e: React.FormEvent) => {
@@ -58,7 +67,9 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[9999] bg-background border-b">
+    <header className={`fixed top-0 left-0 right-0 z-[9999] bg-background border-b transition-all duration-300 ${
+      hideHeader ? 'transform -translate-y-full opacity-0' : 'transform translate-y-0 opacity-100'
+    }`}>
       <div className="relative flex h-16 items-center px-2 sm:px-4">
         {/* Logo */}
         <div className={`flex items-center gap-2 sm:gap-4 ${searchOpen ? 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto' : ''}` }>
@@ -66,7 +77,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="md:hidden min-h-[44px] min-w-[44px]"
             onClick={() => onOpenMenu?.()}
             aria-label="Ouvrir le menu"
           >
@@ -77,9 +88,11 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
             <Image
               src="/TrésorPublicGabon.jpg"
               alt="Trésor Public Gabon"
-              width={40}
-              height={40}
-              className="rounded-lg object-contain shadow-sm sm:w-12 sm:h-12"
+              width={48}
+              height={48}
+              sizes="(max-width: 640px) 40px, 48px"
+              priority
+              className="rounded-lg object-contain shadow-sm w-10 h-10 sm:w-12 sm:h-12"
             />
             <h1 className="text-lg sm:text-xl font-semibold text-primary">ACGE</h1>
           </div>
@@ -105,7 +118,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           <Button
             variant="ghost"
             size="icon"
-            className="sm:hidden"
+            className="sm:hidden min-h-[44px] min-w-[44px]"
             onClick={() => setSearchOpen(true)}
             aria-label="Rechercher"
           >

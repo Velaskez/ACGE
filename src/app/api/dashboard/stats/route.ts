@@ -2,96 +2,43 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
-
   try {
     console.log('📊 Dashboard stats - Début')
     
-    const supabase = getSupabaseAdmin()
+    const admin = getSupabaseAdmin()
     
-    // Pour l'instant, retourner les stats pour tous les utilisateurs (ADMIN)
-    // En production, vous pourriez vérifier l'authentification côté client
-    
-    // Récupérer les statistiques de base avec gestion d'erreur
+    // Récupérer les statistiques depuis Supabase
     let totalDocuments = 0
     let totalFolders = 0
     let totalUsers = 0
-    let totalSize = 0
 
     try {
-      const { count, error } = await supabase
+      const { count: documentsCount } = await admin
         .from('documents')
         .select('*', { count: 'exact', head: true })
-      
-      if (error) {
-        console.error('Erreur comptage documents:', error)
-      } else {
-        totalDocuments = count || 0
-      }
+      totalDocuments = documentsCount || 0
     } catch (error) {
       console.error('Erreur comptage documents:', error)
     }
 
     try {
-      const { count, error } = await supabase
+      const { count: foldersCount } = await admin
         .from('folders')
         .select('*', { count: 'exact', head: true })
-      
-      if (error) {
-        console.error('Erreur comptage dossiers:', error)
-      } else {
-        totalFolders = count || 0
-      }
+      totalFolders = foldersCount || 0
     } catch (error) {
       console.error('Erreur comptage dossiers:', error)
     }
 
     try {
-      const { count, error } = await supabase
+      const { count: usersCount } = await admin
         .from('users')
         .select('*', { count: 'exact', head: true })
-      
-      if (error) {
-        console.error('Erreur comptage utilisateurs:', error)
-      } else {
-        totalUsers = count || 0
-      }
+      totalUsers = usersCount || 0
     } catch (error) {
       console.error('Erreur comptage utilisateurs:', error)
     }
 
-    // Calculer la taille totale de manière simple
-    try {
-      const { data: documents, error } = await supabase
-        .from('documents')
-        .select('id')
-      
-      if (!error && documents) {
-        for (const doc of documents) {
-          try {
-            const { data: versions, error: versionError } = await supabase
-              .from('document_versions')
-              .select('fileSize')
-              .eq('documentId', doc.id)
-              .order('versionNumber', { ascending: false })
-              .limit(1)
-            
-            if (!versionError && versions && versions.length > 0) {
-              const version = versions[0]
-              if (version.fileSize) {
-                totalSize += version.fileSize
-              }
-            }
-          } catch (versionError) {
-            console.error('Erreur récupération version pour document:', doc.id, versionError)
-          }
-        }
-      }
-    } catch (sizeError) {
-      console.error('Erreur calcul taille totale:', sizeError)
-      totalSize = 0
-    }
-
-    // Statistiques simplifiées
     const stats = {
       totalDocuments,
       totalFolders,
@@ -99,8 +46,8 @@ export async function GET(request: NextRequest) {
       activeUsers: totalUsers,
       monthlyGrowthPercentage: 0,
       spaceUsed: {
-        bytes: totalSize,
-        gb: Math.round((totalSize / (1024 * 1024 * 1024)) * 100) / 100,
+        bytes: 0,
+        gb: 0,
         percentage: 0,
         quota: 10 * 1024 * 1024 * 1024
       },
@@ -109,6 +56,8 @@ export async function GET(request: NextRequest) {
       documentsLastMonth: 0
     }
 
+    console.log('✅ Statistiques récupérées depuis Supabase:', stats)
+    
     return NextResponse.json(stats)
 
   } catch (error) {

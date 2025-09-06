@@ -193,9 +193,6 @@ export async function DELETE(
     }
 
     console.log(`📁 Dossier à supprimer: ${folder.name}`)
-    console.log(`👤 Auteur: ${folder.author?.name}`)
-    console.log(`📄 Documents: ${folder.documents.length}`)
-    console.log(`📁 Sous-dossiers: ${folder.children.length}`)
 
     // Vérifier si le dossier contient des documents ou des sous-dossiers
     const { count: documentsCount } = await admin
@@ -203,24 +200,27 @@ export async function DELETE(
       .select('id', { head: true, count: 'exact' })
       .eq('folderId', folderId)
 
-    if ((documentsCount || 0) > 0) {
-      
-      return NextResponse.json({ 
-        success: false,
-        error: `Impossible de supprimer le dossier : il contient ${folder.documents.length} document(s)` 
-      }, { status: 400 })
-    }
-
     const { count: childrenCount } = await admin
       .from('folders')
       .select('id', { head: true, count: 'exact' })
       .eq('parentId', folderId)
 
+    console.log(`📄 Documents: ${documentsCount || 0}`)
+    console.log(`📁 Sous-dossiers: ${childrenCount || 0}`)
+
+    if ((documentsCount || 0) > 0) {
+      
+      return NextResponse.json({ 
+        success: false,
+        error: `Impossible de supprimer le dossier : il contient ${documentsCount} document(s)` 
+      }, { status: 400 })
+    }
+
     if ((childrenCount || 0) > 0) {
       
       return NextResponse.json({ 
         success: false,
-        error: `Impossible de supprimer le dossier : il contient ${folder.children.length} sous-dossier(s)` 
+        error: `Impossible de supprimer le dossier : il contient ${childrenCount} sous-dossier(s)` 
       }, { status: 400 })
     }
 

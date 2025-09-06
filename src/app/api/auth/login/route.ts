@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
           name: user.name || user.email.split('@')[0],
           role: user.role || 'user'
         },
-        process.env.NEXTAUTH_SECRET || 'dev-secret',
+        process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development',
         { expiresIn: '7d' }
       )
 

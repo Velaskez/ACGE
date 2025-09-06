@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
           title,
           createdAt,
           updatedAt,
-          currentVersion:document_versions!inner(fileName, fileType),
-          author:users!inner(name, email)
+          current_version_id,
+          author_id
         `)
         .order('updatedAt', { ascending: false })
         .limit(10)
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
           name,
           createdAt,
           updatedAt,
-          author:users!inner(name, email)
+          author_id
         `)
         .order('createdAt', { ascending: false })
         .limit(5)
@@ -75,15 +75,11 @@ export async function GET(request: NextRequest) {
           .from('document_shares')
           .select(`
             id,
-            userId,
-            documentId,
-            createdAt,
-            document:documents!inner(
-              title,
-              currentVersion:document_versions!inner(fileName, fileType)
-            )
+            user_id,
+            document_id,
+            created_at
           `)
-          .order('createdAt', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(5)
         
         if (!sharesError) {
@@ -92,6 +88,66 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       console.error('Erreur récupération partages:', error)
+    }
+
+    // Enrichir les données avec les informations des utilisateurs et versions
+    if (recentDocuments.length > 0) {
+      // Récupérer les informations des auteurs
+      const authorIds = [...new Set(recentDocuments.map(doc => doc.author_id).filter(Boolean))]
+      const { data: authors } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .in('id', authorIds)
+
+      const authorsMap = new Map()
+      if (authors) {
+        authors.forEach(author => {
+          authorsMap.set(author.id, author)
+        })
+      }
+
+      // Récupérer les versions actuelles
+      const versionIds = recentDocuments.map(doc => doc.current_version_id).filter(Boolean)
+      const { data: versions } = await supabase
+        .from('document_versions')
+        .select('id, file_name, file_type')
+        .in('id', versionIds)
+
+      const versionsMap = new Map()
+      if (versions) {
+        versions.forEach(version => {
+          versionsMap.set(version.id, version)
+        })
+      }
+
+      // Enrichir les documents
+      recentDocuments = recentDocuments.map(doc => ({
+        ...doc,
+        author: authorsMap.get(doc.author_id) ? [authorsMap.get(doc.author_id)] : [],
+        currentVersion: versionsMap.get(doc.current_version_id) ? [versionsMap.get(doc.current_version_id)] : []
+      }))
+    }
+
+    if (recentFolders.length > 0) {
+      // Récupérer les informations des auteurs des dossiers
+      const folderAuthorIds = [...new Set(recentFolders.map(folder => folder.author_id).filter(Boolean))]
+      const { data: folderAuthors } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .in('id', folderAuthorIds)
+
+      const folderAuthorsMap = new Map()
+      if (folderAuthors) {
+        folderAuthors.forEach(author => {
+          folderAuthorsMap.set(author.id, author)
+        })
+      }
+
+      // Enrichir les dossiers
+      recentFolders = recentFolders.map(folder => ({
+        ...folder,
+        author: folderAuthorsMap.get(folder.author_id) ? [folderAuthorsMap.get(folder.author_id)] : []
+      }))
     }
 
     // Combiner et trier toutes les activités par date

@@ -15,76 +15,59 @@ type CreateFolderBody = {
 }
 
 export async function POST(request: NextRequest) {
-
   try {
     console.log('📁 Création dossier - Début')
     
-    // Pour l'instant, utiliser un utilisateur admin par défaut
-    // En production, vous pourriez vérifier l'authentification côté client
-    
-    const userId = 'cmebotahv0000c17w3izkh2k9' // ID de l'admin existant
+    const body = await request.json()
+    const { name, description } = body
 
-    const raw = await request.text()
-    let body: CreateFolderBody = {}
-    try {
-      body = raw ? JSON.parse(raw) : {}
-    } catch {
-      return NextResponse.json({ error: 'Corps JSON invalide' }, { status: 400 })
-    }
-
-    const name = (body.name || '').trim()
-    const description = (body.description || '').trim() || undefined
-    const parentId = body.parentId ?? undefined
-    const numeroDossier = body.numeroDossier || undefined
-    const dateDepot = body.dateDepot || undefined
-    const posteComptableId = body.posteComptableId || undefined
-    const numeroNature = body.numeroNature || undefined
-    const natureDocumentId = body.natureDocumentId || undefined
-    const objetOperation = (body.objetOperation || '').trim() || undefined
-    const beneficiaire = (body.beneficiaire || '').trim() || undefined
-
-    if (!name) {
+    if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Le nom du dossier est requis' }, { status: 400 })
     }
     if (name.length > 100) {
       return NextResponse.json({ error: 'Nom trop long (max 100 caractères)' }, { status: 400 })
     }
 
-    // Empêcher les doublons (par utilisateur et parentId)
     const admin = getSupabaseAdmin()
-    const { data: existing, error: existingErr } = await admin
+    
+    // Vérifier si le dossier existe déjà
+    const { data: existing } = await admin
       .from('folders')
       .select('id')
-      .eq('name', name)
-      .eq('authorId', userId)
-      .eq('parentId', parentId === null ? null : parentId)
+      .eq('name', name.trim())
       .maybeSingle()
-
-    if (existingErr && existingErr.code !== 'PGRST116') {
-      throw existingErr
-    }
 
     if (existing) {
       return NextResponse.json({ error: 'Un dossier portant ce nom existe déjà' }, { status: 409 })
     }
 
-    // Création du dossier (version simplifiée pour compatibilité)
-    const { data: created, error: insertErr } = await admin
+    // Créer le dossier dans Supabase (même logique que test-folders qui fonctionne)
+    const now = new Date().toISOString()
+    const { data: newFolder, error: insertError } = await admin
       .from('folders')
       .insert({
-        name,
-        description,
-        parentId: parentId === null ? null : parentId,
-        authorId: userId
+        id: 'folder_' + Date.now(),
+        name: name.trim(),
+        description: description?.trim() || null,
+        authorId: 'cmebotahv0000c17w3izkh2k9',
+        createdAt: now,
+        updatedAt: now
       })
-      .select('id, name, description, createdAt:created_at, updatedAt:updated_at')
+      .select('*')
       .single()
 
-    if (insertErr) {
-      throw insertErr
+    if (insertError) {
+      console.error('❌ Erreur insertion dossier:', insertError)
+      return NextResponse.json({
+        error: insertError.message,
+        code: insertError.code,
+        details: insertError.details
+      }, { status: 500 })
     }
 
-    return NextResponse.json({ folder: created }, { status: 201 })
+    console.log('✅ Dossier créé dans Supabase:', newFolder.name)
+    
+    return NextResponse.json({ folder: newFolder }, { status: 201 })
   } catch (error) {
     console.error('Erreur lors de la création du dossier:', error)
     
@@ -93,84 +76,34 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-
   try {
     console.log('📁 Récupération dossiers - Début')
     
-    // Pour l'instant, retourner tous les dossiers (ADMIN)
-    // En production, vous pourriez vérifier l'authentification côté client
+    // Utiliser Supabase pour la récupération persistante
+    const admin = getSupabaseAdmin()
     
-    const userId = 'cmebotahv0000c17w3izkh2k9' // ID de l'admin existant
-    const userRole = 'ADMIN' // Admin voit tout
+    // Récupérer les dossiers depuis Supabase (même logique que test-get-folders qui fonctionne)
+    const { data: folders, error } = await admin
+      .from('folders')
+      .select('*')
+      .order('name', { ascending: true })
 
-    // Construire les conditions de filtrage selon le rôle
-    const userFilter = userRole === 'ADMIN' ? {} : { authorId: userId }
-
-    // Récupérer les dossiers avec une requête simple
-    let folders: any[] = []
-    try {
-      const admin = getSupabaseAdmin()
-      const query = admin
-        .from('folders')
-        .select('id, name, authorId, createdAt:created_at, updatedAt:updated_at')
-        .order('name', { ascending: true })
-      const { data, error } = userRole === 'ADMIN'
-        ? await query
-        : await query.eq('authorId', userId)
-      if (error) throw error
-      folders = data || []
-
-      // Ajouter les compteurs manuellement pour éviter les problèmes de relations
-      for (const folder of folders) {
-        try {
-          const { count: documentCount } = await admin
-            .from('documents')
-            .select('id', { count: 'exact', head: true })
-            .eq('folderId', folder.id)
-          
-          const { count: childrenCount } = await admin
-            .from('folders')
-            .select('id', { count: 'exact', head: true })
-            .eq('parentId', folder.id)
-
-          folder._count = {
-            documents: documentCount,
-            children: childrenCount
-          }
-
-          // Ajouter les informations de l'auteur
-          try {
-            const { data: author } = await admin
-              .from('users')
-              .select('name, email')
-              .eq('id', folder.authorId)
-              .maybeSingle()
-            folder.author = author || { name: 'Utilisateur inconnu', email: 'unknown@example.com' }
-          } catch (authorError) {
-            console.error('Erreur récupération auteur:', authorError)
-            folder.author = { name: 'Utilisateur inconnu', email: 'unknown@example.com' }
-          }
-        } catch (countError) {
-          console.error('Erreur comptage pour dossier:', folder.id, countError)
-          folder._count = { documents: 0, children: 0 }
-          folder.author = { name: 'Utilisateur inconnu', email: 'unknown@example.com' }
-        }
-      }
-
-    } catch (dbError) {
-      console.error('Erreur base de données dossiers:', dbError)
+    if (error) {
+      console.error('❌ Erreur récupération dossiers:', error)
       return NextResponse.json({
         folders: [],
-        error: 'Erreur temporaire de la base de données'
-      })
+        error: error.message,
+        code: error.code
+      }, { status: 500 })
     }
 
-    return NextResponse.json({ folders })
+    console.log(`📁 ${folders?.length || 0} dossiers trouvés dans Supabase`)
+    
+    return NextResponse.json({ folders: folders || [] })
 
   } catch (error) {
     console.error('Erreur API dossiers:', error)
 
-    // Toujours retourner du JSON valide
     return NextResponse.json({
       folders: [],
       error: 'Erreur interne du serveur'

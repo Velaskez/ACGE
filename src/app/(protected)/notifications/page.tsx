@@ -153,11 +153,7 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter(n => !n.isRead).length
 
   return (
-    <MainLayout
-      title="Notifications"
-      description="Consultez vos notifications et restez informé des dernières activités"
-      icon={Bell}
-    >
+    <MainLayout>
       <div className="space-y-6">
         {/* En-tête avec actions */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

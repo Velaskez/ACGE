@@ -47,7 +47,7 @@ export function DocumentsToolbar({
   enableSuggestions = true,
 }: DocumentsToolbarProps) {
   return (
-    <ContentToolbar
+          <ContentToolbar<SortField>
       searchQuery={searchQuery}
       onSearchQueryChange={onSearchQueryChange}
       onSearchSelect={onSearchSelect}

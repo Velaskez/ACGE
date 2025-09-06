@@ -91,9 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('❌ Erreur lors de la vérification de l\'authentification:', error)
       
       // Gérer spécifiquement les erreurs de timeout et de réseau
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.log('⏰ Timeout lors de la vérification d\'auth')
-      } else if (error.message.includes('Failed to fetch')) {
+      } else if (error instanceof Error && error.message.includes('Failed to fetch')) {
         console.log('🌐 Erreur réseau - serveur peut-être indisponible')
         
         // Retry après un délai si c'est une erreur réseau

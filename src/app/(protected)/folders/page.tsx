@@ -17,6 +17,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import {
   DropdownMenu,
@@ -38,6 +45,8 @@ import {
 import { useFolders } from '@/hooks/use-folders'
 import { FoldersToolbar } from '@/components/folders/folders-toolbar'
 import { FolderGridItem } from '@/components/folders/folder-grid-item'
+import { FolderCreationForm } from '@/components/folders/folder-creation-form'
+import { ModalWrapper } from '@/components/ui/modal-wrapper'
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
 import { DocumentGridItem } from '@/components/documents/document-grid-item'
 import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
@@ -315,21 +324,25 @@ export default function FoldersPage() {
     return items
   }, [folders, query, sortField, sortOrder])
 
-  const handleCreateFolder = async () => {
-    if (!name.trim()) return
+  const handleCreateFolder = async (formData?: any) => {
+    // Si formData est fourni, utiliser les données du formulaire stepper
+    const data = formData || {
+      name,
+      description,
+      numeroDossier,
+      numeroNature,
+      objetOperation,
+      beneficiaire,
+      posteComptableId,
+      natureDocumentId,
+      dateDepot
+    }
+
+    if (!data.name?.trim()) return
+
     try {
       setCreating(true)
-      console.log('🔄 Création dossier en cours...', { 
-        name: name.trim(), 
-        description: description.trim(),
-        numeroDossier,
-        dateDepot,
-        posteComptableId,
-        numeroNature,
-        natureDocumentId,
-        objetOperation,
-        beneficiaire
-      })
+      console.log('🔄 Création dossier en cours...', data)
       
       const url = editingFolder ? `/api/folders/${editingFolder.id}` : '/api/folders'
       const method = editingFolder ? 'PUT' : 'POST'
@@ -338,23 +351,23 @@ export default function FoldersPage() {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          name: name.trim(), 
-          description: description.trim() || undefined,
-          numeroDossier: numeroDossier || generateNumeroDossier(),
-          dateDepot: dateDepot || new Date().toISOString().split('T')[0],
-          posteComptableId: posteComptableId || undefined,
-          numeroNature: numeroNature || undefined,
-          natureDocumentId: natureDocumentId || undefined,
-          objetOperation: objetOperation || undefined,
-          beneficiaire: beneficiaire || undefined
+          name: data.name.trim(), 
+          description: data.description?.trim() || undefined,
+          numeroDossier: data.numeroDossier || generateNumeroDossier(),
+          dateDepot: data.dateDepot || new Date().toISOString().split('T')[0],
+          posteComptableId: data.posteComptableId || undefined,
+          numeroNature: data.numeroNature || undefined,
+          natureDocumentId: data.natureDocumentId || undefined,
+          objetOperation: data.objetOperation || undefined,
+          beneficiaire: data.beneficiaire || undefined
         })
       })
       
       console.log('📡 Réponse API:', res.status, res.statusText)
       
       if (res.ok) {
-        const data = await res.json()
-        console.log('✅ Dossier créé:', data)
+        const responseData = await res.json()
+        console.log('✅ Dossier créé:', responseData)
         
         setOpen(false)
         setName('')
@@ -735,147 +748,34 @@ export default function FoldersPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={refresh} className="w-full sm:w-auto">Rafraîchir</Button>
-            <Dialog open={open} onOpenChange={handleCloseDialog}>
-              <DialogTrigger asChild>
-                <Button className="w-full sm:w-auto">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouveau dossier
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{editingFolder ? 'Modifier le dossier' : 'CRÉATION DU DOSSIER'}</DialogTitle>
-                  <DialogDescription>Créez un dossier comptable avec toutes les informations requises.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-6 py-4">
-                  {/* Champs auto-générés */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-primary">Champs auto-générés</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="numero-dossier">Numéro dossier</Label>
-                        <Input 
-                          id="numero-dossier" 
-                          value={numeroDossier || generateNumeroDossier()} 
-                          onChange={(e) => setNumeroDossier(e.target.value)} 
-                          placeholder="DOSS-ACGE-2023042"
-                          readOnly={!numeroDossier}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="date-depot">Date dépôt</Label>
-                        <Input 
-                          id="date-depot" 
-                          type="date" 
-                          value={dateDepot || new Date().toISOString().split('T')[0]} 
-                          onChange={(e) => setDateDepot(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Champs sélectionnables */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-primary">Champs sélectionnables</h3>
-                    <div className="space-y-2">
-                      <Label htmlFor="poste-comptable">Poste comptable</Label>
-                      <select 
-                        id="poste-comptable"
-                        value={posteComptableId}
-                        onChange={(e) => setPosteComptableId(e.target.value)}
-                        className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
-                      >
-                        <option value="">Sélectionner un poste comptable</option>
-                        {postesComptables.map((poste) => (
-                          <option key={poste.id} value={poste.id}>
-                            {poste.numero} - {poste.intitule}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Champs manuels */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-primary">Champs manuels</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="numero-nature">Numéro nature</Label>
-                        <Input 
-                          id="numero-nature" 
-                          value={numeroNature} 
-                          onChange={(e) => setNumeroNature(e.target.value)} 
-                          placeholder="01"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="nature-document">Nature document</Label>
-                        <select 
-                          id="nature-document"
-                          value={natureDocumentId}
-                          onChange={(e) => setNatureDocumentId(e.target.value)}
-                          className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
-                        >
-                          <option value="">Sélectionner une nature</option>
-                          {naturesDocuments.map((nature) => (
-                            <option key={nature.id} value={nature.id}>
-                              {nature.numero} - {nature.nom}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="objet-operation">Objet opération</Label>
-                      <Input 
-                        id="objet-operation" 
-                        value={objetOperation} 
-                        onChange={(e) => setObjetOperation(e.target.value)} 
-                        placeholder="Description de l'opération"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="beneficiaire">Bénéficiaire</Label>
-                      <Input 
-                        id="beneficiaire" 
-                        value={beneficiaire} 
-                        onChange={(e) => setBeneficiaire(e.target.value)} 
-                        placeholder="Nom du bénéficiaire"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Champs de base */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-primary">Informations générales</h3>
-                    <div className="space-y-2">
-                      <Label htmlFor="folder-name">Nom du dossier</Label>
-                      <Input 
-                        id="folder-name" 
-                        value={name} 
-                        onChange={(e) => setName(e.target.value)} 
-                        placeholder="Nom du dossier"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="folder-desc">Description (optionnel)</Label>
-                      <Input 
-                        id="folder-desc" 
-                        value={description} 
-                        onChange={(e) => setDescription(e.target.value)} 
-                        placeholder="Description complémentaire"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpen(false)} disabled={creating}>Annuler</Button>
-                  <Button onClick={handleCreateFolder} disabled={!name.trim() || creating}>
-                    {creating ? 'Création...' : 'Créer le dossier'}
+            <ModalWrapper isOpen={open} onOpenChange={handleCloseDialog}>
+              <Dialog open={open} onOpenChange={handleCloseDialog}>
+                <DialogTrigger asChild>
+                  <Button className="w-full sm:w-auto">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouveau dossier
                   </Button>
-                </DialogFooter>
+                </DialogTrigger>
+                <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-semibold">
+                    {editingFolder ? 'Modifier le dossier' : 'Création du dossier comptable'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Remplissez les informations requises pour créer un nouveau dossier comptable.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <FolderCreationForm
+                  postesComptables={postesComptables}
+                  naturesDocuments={naturesDocuments}
+                  onSubmit={handleCreateFolder}
+                  onCancel={() => setOpen(false)}
+                  isLoading={creating}
+                />
               </DialogContent>
             </Dialog>
+            </ModalWrapper>
           </div>
         </div>
 

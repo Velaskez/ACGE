@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 import { verify } from 'jsonwebtoken'
 
 interface DecodedToken {
@@ -62,11 +62,14 @@ export async function PUT(
     }
 
     // Vérifier si l'utilisateur existe
-    const existingUser = await prisma.user.findUnique({
-      where: { id: resolvedParams.id }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: existingUser, error: userError } = await admin
+      .from('users')
+      .select('id, email')
+      .eq('id', resolvedParams.id)
+      .maybeSingle()
 
-    if (!existingUser) {
+    if (userError || !existingUser) {
       return NextResponse.json(
         { error: 'Utilisateur non trouvé' },
         { status: 404 }
@@ -74,12 +77,12 @@ export async function PUT(
     }
 
     // Vérifier si l'email existe déjà (sauf pour l'utilisateur actuel)
-    const emailExists = await prisma.user.findFirst({
-      where: {
-        email,
-        id: { not: resolvedParams.id }
-      }
-    })
+    const { data: emailExists } = await admin
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .neq('id', resolvedParams.id)
+      .maybeSingle()
 
     if (emailExists) {
       return NextResponse.json(
@@ -108,18 +111,20 @@ export async function PUT(
     }
 
     // Mettre à jour l'utilisateur
-    const user = await prisma.user.update({
-      where: { id: resolvedParams.id },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    })
+    const { data: user, error: updateError } = await admin
+      .from('users')
+      .update(updateData)
+      .eq('id', resolvedParams.id)
+      .select('id, name, email, role, created_at, updated_at')
+      .single()
+
+    if (updateError) {
+      console.error('Erreur mise à jour utilisateur:', updateError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la mise à jour de l\'utilisateur' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(
       { 
@@ -171,11 +176,14 @@ export async function DELETE(
     }
 
     // Vérifier si l'utilisateur existe
-    const existingUser = await prisma.user.findUnique({
-      where: { id: resolvedParams.id }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: existingUser, error: userError } = await admin
+      .from('users')
+      .select('id')
+      .eq('id', resolvedParams.id)
+      .maybeSingle()
 
-    if (!existingUser) {
+    if (userError || !existingUser) {
       return NextResponse.json(
         { error: 'Utilisateur non trouvé' },
         { status: 404 }
@@ -183,9 +191,18 @@ export async function DELETE(
     }
 
     // Supprimer l'utilisateur
-    await prisma.user.delete({
-      where: { id: resolvedParams.id }
-    })
+    const { error: deleteError } = await admin
+      .from('users')
+      .delete()
+      .eq('id', resolvedParams.id)
+
+    if (deleteError) {
+      console.error('Erreur suppression utilisateur:', deleteError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la suppression de l\'utilisateur' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(
       { message: 'Utilisateur supprimé avec succès' }

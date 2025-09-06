@@ -82,6 +82,28 @@ export default function SettingsPage() {
     }
   })
 
+  // Charger les paramètres depuis l'API
+  const loadSettings = async () => {
+    try {
+      const response = await fetch('/api/settings')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.settings && data.settings.security) {
+          setSettings(prev => ({
+            ...prev,
+            security: {
+              ...prev.security,
+              sessionTimeout: data.settings.security.sessionTimeout || 15,
+              passwordExpiry: data.settings.security.passwordExpiry || 90
+            }
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des paramètres:', error)
+    }
+  }
+
   // Gestion de l'affichage des mots de passe
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
@@ -157,7 +179,7 @@ export default function SettingsPage() {
       component: (
         <div className="flex items-center gap-2">
           <Select
-            value={settings.security.sessionTimeout.toString()}
+            value={settings?.security?.sessionTimeout?.toString() || '15'}
             onValueChange={(value) => handleSecurityChange('sessionTimeout', parseInt(value))}
           >
             <SelectTrigger className="w-48">
@@ -403,6 +425,7 @@ export default function SettingsPage() {
   // Charger les paramètres au montage
   useEffect(() => {
     fetchSettings()
+    loadSettings() // Charger aussi les paramètres de sécurité
   }, [])
 
   // Écouter les changements de paramètres via un événement personnalisé

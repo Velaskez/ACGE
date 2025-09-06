@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verify } from 'jsonwebtoken'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 // DELETE - Supprimer un document
@@ -6,54 +7,66 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-
   try {
     console.log('🗑️ Suppression document - Début')
+    
+    // Vérifier l'authentification
+    const token = request.cookies.get('auth-token')?.value
+
+    if (!token) {
+      console.log('❌ Pas de token d\'authentification')
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
+    const userId = decoded.userId
+    const userRole = decoded.role
+    console.log('✅ Utilisateur authentifié:', userId, 'Rôle:', userRole)
     
     const resolvedParams = await params
     const documentId = resolvedParams.id
     
-    // Pour l'instant, permettre la suppression à tous les admins
-    // En production, vous pourriez vérifier l'authentification côté client
-    
-    // Récupérer le document avec toutes ses versions
+    // Récupérer le document de base
     const admin = getSupabaseAdmin()
     const { data: document, error } = await admin
       .from('documents')
-      .select('id, title, author:authorId(id, name, email), versions:file_versions(filePath:file_path, fileName:file_name)')
+      .select('id, title, authorId, folderId')
       .eq('id', documentId)
       .maybeSingle()
 
     if (error) throw error
 
     if (!document) {
-      
+      console.log('❌ Document non trouvé')
       return NextResponse.json(
         { error: 'Document non trouvé' },
         { status: 404 }
       )
     }
 
-    console.log(`📄 Document à supprimer: ${document.title}`)
-    console.log(`👤 Auteur: ${document.author?.name}`)
-    console.log(`📁 Versions: ${document.versions.length}`)
-
-    // Supprimer les fichiers stockés (si stockage local)
-    for (const version of document.versions) {
-      const filePathMeta = version.filePath || ''
-      console.log(`🗂️ Fichier à supprimer: ${filePathMeta}`)
-      
-      // Note: Pour Supabase Storage, vous pourriez ajouter ici la suppression des fichiers
-      // await supabase.storage.from('documents').remove([filePathMeta])
+    // Vérifier les permissions (admin ou propriétaire)
+    if (userRole !== 'admin' && document.authorId !== userId) {
+      console.log('❌ Accès refusé - pas le propriétaire')
+      return NextResponse.json(
+        { error: 'Accès refusé - vous ne pouvez supprimer que vos propres documents' },
+        { status: 403 }
+      )
     }
 
+    console.log(`📄 Document à supprimer: ${document.title}`)
+    console.log(`👤 Auteur: ${document.authorId}`)
+    console.log(`📁 Dossier: ${document.folderId}`)
+
     // Supprimer l'enregistrement en base de données
-    // Prisma supprimera automatiquement les versions grâce aux relations CASCADE
+    // Les versions seront supprimées automatiquement grâce aux contraintes CASCADE
     const { error: deleteErr } = await admin
       .from('documents')
       .delete()
       .eq('id', documentId)
-      .single()
+
     if (deleteErr) throw deleteErr
 
     console.log('✅ Document supprimé avec succès')
@@ -64,7 +77,8 @@ export async function DELETE(
       deletedDocument: {
         id: documentId,
         title: document.title,
-        versionsCount: document.versions.length
+        authorId: document.author_id,
+        folderId: document.folder_id
       }
     })
 
@@ -98,7 +112,7 @@ export async function GET(
     const admin = getSupabaseAdmin()
     const { data: document, error } = await admin
       .from('documents')
-      .select('id, title, description, category, isPublic:is_public, folder:folderId(id, name), author:authorId(id, name, email), currentVersion:current_version_id(*), versions:versions(count))')
+      .select('id, title, description, author_id, folder_id, created_at')
       .eq('id', documentId)
       .maybeSingle()
 

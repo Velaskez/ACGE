@@ -27,29 +27,7 @@ import {
   FolderOpen
 } from 'lucide-react'
 
-interface DocumentItem {
-  id: string
-  title: string
-  description?: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  tags: Array<{ id: string; name: string }>
-  folder?: { id: string; name: string }
-  author: { id: string; name: string; email: string }
-  currentVersion?: {
-    id: string
-    fileName: string
-    fileSize: number
-    fileType?: string
-    versionNumber: number
-  }
-  _count?: {
-    versions?: number
-    comments?: number
-    shares?: number
-  }
-}
+import { DocumentItem } from '@/types/document'
 
 interface DocumentGridItemProps {
   document: DocumentItem
@@ -183,7 +161,7 @@ export function DocumentGridItem({
           </div>
 
           {/* Tags */}
-          {document.tags.length > 0 && (
+          {document.tags && document.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {document.tags.slice(0, 2).map(tag => (
                 <Badge 

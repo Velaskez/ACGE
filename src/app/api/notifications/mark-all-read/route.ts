@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function PUT(request: NextRequest) {
   try {
@@ -19,19 +19,27 @@ export async function PUT(request: NextRequest) {
     const userRole = decoded.role
 
     // Marquer toutes les notifications non lues de l'utilisateur comme lues
-    const result = await prisma.notification.updateMany({
-      where: {
-        userId: userId,
-        isRead: false
-      },
-      data: {
-        isRead: true
-      }
-    })
+    const admin = getSupabaseAdmin()
+    const { data, error } = await admin
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', userId)
+      .eq('is_read', false)
+      .select('id')
+
+    if (error) {
+      console.error('Erreur marquage notifications:', error)
+      return NextResponse.json(
+        { error: 'Erreur lors du marquage des notifications' },
+        { status: 500 }
+      )
+    }
+
+    const updatedCount = data?.length || 0
 
     return NextResponse.json({
-      message: `${result.count} notifications marquées comme lues`,
-      updatedCount: result.count
+      message: `${updatedCount} notifications marquées comme lues`,
+      updatedCount
     })
 
   } catch (error) {

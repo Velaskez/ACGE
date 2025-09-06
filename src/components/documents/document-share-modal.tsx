@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ModalWrapper } from '@/components/ui/modal-wrapper'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,17 +40,7 @@ import {
   Lock,
   Info
 } from 'lucide-react'
-
-interface DocumentItem {
-  id: string
-  title: string
-  isPublic: boolean
-  author?: {
-    id: string
-    name: string
-    email: string
-  }
-}
+import { DocumentItem } from '@/types/document'
 
 interface ShareItem {
   id: string
@@ -214,8 +205,9 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto">
+    <ModalWrapper isOpen={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto">
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -508,5 +500,6 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
         </div>
       </DialogContent>
     </Dialog>
+    </ModalWrapper>
   )
 }

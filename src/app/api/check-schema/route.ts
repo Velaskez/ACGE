@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     
     // Vérifier l'état des tables
     const tables = ['users', 'documents', 'folders', 'notifications']
-    const tableStatus = {}
+    const tableStatus: Record<string, any> = {}
     
     for (const table of tables) {
       try {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Vérifier les politiques RLS
-    const rlsStatus = {}
+    const rlsStatus: Record<string, any> = {}
     for (const table of tables) {
       try {
         const { data, error } = await supabase

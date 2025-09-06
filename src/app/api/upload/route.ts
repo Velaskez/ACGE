@@ -1,77 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
+import { existsSync } from 'fs'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+
+/**
+ * 🚀 API UPLOAD UNIQUE ET ROBUSTE - ACGE
+ * 
+ * Cette API gère l'upload de fichiers avec:
+ * - Stockage local uniquement (pas de Supabase pour simplifier)
+ * - Authentification JWT
+ * - Tous les fichiers dans le même dossier
+ * - Gestion d'erreurs robuste
+ */
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 Début de l\'upload Supabase...')
-    
-    const supabase = getSupabaseAdmin()
-    
-    // Vérifier l'authentification
-    const isTestMode = request.headers.get('X-Test-Mode') === 'true'
-    let userId: string
-    
-    if (!isTestMode) {
-      const token = request.cookies.get('auth-token')?.value || 
-                    request.headers.get('authorization')?.replace('Bearer ', '')
+    console.log('🚀 === API UPLOAD UNIQUE - DÉBUT ===')
 
-      if (!token) {
-        console.log('❌ Pas de token d\'authentification')
-        return NextResponse.json(
-          { error: 'Non authentifié' },
-          { status: 401 }
-        )
-      }
+    // 1. AUTHENTIFICATION
+    const token = request.cookies.get('auth-token')?.value || 
+                  request.headers.get('authorization')?.replace('Bearer ', '')
 
-      const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
-      userId = decoded.userId
-      console.log('✅ Utilisateur authentifié:', userId)
-    } else {
-      // Mode test - utiliser un userId de test
-      userId = 'test-user-id'
-      console.log('🧪 Mode test - utilisateur:', userId)
+    if (!token) {
+      console.log('❌ Pas de token d\'authentification')
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
     }
 
-    // Parser le FormData
+    let userId: string
+    try {
+      const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
+      const userEmail = decoded.email
+      console.log('✅ Utilisateur authentifié:', userEmail)
+      
+      // Récupérer l'UUID de l'utilisateur depuis la base
+      const supabase = getSupabaseAdmin()
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', userEmail)
+        .single()
+      
+      if (userError || !user) {
+        console.error('❌ Utilisateur non trouvé:', userError)
+        return NextResponse.json(
+          { error: 'Utilisateur non trouvé' },
+          { status: 404 }
+        )
+      }
+      
+      userId = user.id
+      console.log('✅ UUID utilisateur récupéré:', userId)
+      
+    } catch (error) {
+      console.log('❌ Token invalide:', error)
+      return NextResponse.json(
+        { error: 'Token invalide' },
+        { status: 401 }
+      )
+    }
+
+    // 2. RÉCUPÉRATION DES FICHIERS
     const formData = await request.formData()
     const files = formData.getAll('files') as File[]
     const metadataStr = formData.get('metadata') as string
-    
+
     console.log('📁 Fichiers reçus:', files.length)
-    
+
     if (!files || files.length === 0) {
-      console.log('❌ Aucun fichier fourni')
       return NextResponse.json(
         { error: 'Aucun fichier fourni' },
         { status: 400 }
       )
     }
 
-    let metadata: any
-    try {
-      metadata = JSON.parse(metadataStr)
-      console.log('📋 Métadonnées:', metadata)
-    } catch {
-      metadata = {}
-      console.log('⚠️ Métadonnées invalides, utilisation des valeurs par défaut')
-    }
-
-    // Valider le dossier cible si fourni (par Supabase)
-    let validFolderId: string | null = null
-    if (metadata?.folderId) {
-      const { data: folder, error: folderErr } = await supabase
-        .from('folders')
-        .select('id, author_id')
-        .eq('id', String(metadata.folderId))
-        .eq('author_id', userId)
-        .maybeSingle()
-      if (!folderErr && folder) {
-        validFolderId = folder.id
+    // 3. MÉTADONNÉES
+    let metadata: any = {}
+    if (metadataStr) {
+      try {
+        metadata = JSON.parse(metadataStr)
+        console.log('📋 Métadonnées:', metadata)
+      } catch (error) {
+        console.log('⚠️ Métadonnées invalides, utilisation des valeurs par défaut')
       }
-      console.log('📂 Dossier validé:', validFolderId)
     }
 
+    // 4. CONFIGURATION SUPABASE STORAGE
+    const supabase = getSupabaseAdmin()
+    console.log('🔗 Connexion à Supabase Storage...')
+
+    // 5. TRAITEMENT DES FICHIERS
     const uploadedFiles: Array<{
       id: string
       title: string
@@ -79,285 +101,195 @@ export async function POST(request: NextRequest) {
       size: number
       type: string
       path: string
-      version: {
-        id: string
-        number: number
-        changeLog: string | null
-        isNewDocument: boolean
-      }
+      url: string
     }> = []
+
     const errors: Array<{ fileName: string; message: string }> = []
 
-    // Traiter chaque fichier
     for (const file of files) {
       try {
-        console.log(`📤 Traitement du fichier: ${file.name}`)
-        
-        // Nettoyer le nom de fichier pour Supabase Storage
+        console.log(`📤 Traitement: ${file.name} (${file.size} bytes, ${file.type})`)
+
+        // Nettoyer le nom de fichier
         const cleanFileName = file.name
-          .replace(/[^a-zA-Z0-9.-]/g, '_') // Remplacer les caractères spéciaux par des underscores
-          .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
-          .replace(/_{2,}/g, '_') // Remplacer les underscores multiples par un seul
-          .replace(/^_|_$/g, '') // Supprimer les underscores en début et fin
-        
-        // Générer un nom de fichier unique
+          .replace(/[^a-zA-Z0-9.-]/g, '_')
+          .replace(/\s+/g, '_')
+          .replace(/_{2,}/g, '_')
+          .replace(/^_|_$/g, '')
+
+        // Générer un nom unique
         const timestamp = Date.now()
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const fileName = `${timestamp}-${randomSuffix}-${cleanFileName}`
-        const filePath = `${userId}/${fileName}`
         
-        console.log('📝 Chemin de fichier généré:', filePath)
-        
-        // Convertir le fichier en buffer
+        // Chemin dans Supabase Storage
+        const filePath = `documents/${fileName}`
+
+        // Convertir en buffer pour Supabase Storage
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
         
-        console.log('📦 Buffer créé, taille:', buffer.length)
-        
         // Upload vers Supabase Storage
-        if (isTestMode) {
-          // Mode test - simulation d'upload
-          console.log('🧪 Mode test - simulation upload vers Supabase Storage')
-          const uploadData = { path: filePath }
-          console.log('✅ Fichier simulé vers Supabase:', uploadData.path)
-        } else {
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('documents')
-            .upload(filePath, buffer, {
-              contentType: file.type,
-              upsert: false
-            })
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(filePath, buffer, {
+            contentType: file.type,
+            upsert: false
+          })
 
-          if (uploadError) {
-            console.error('❌ Erreur upload Supabase:', uploadError)
-            throw new Error(`Erreur upload: ${uploadError.message}`)
-          }
-
-          console.log('✅ Fichier uploadé vers Supabase:', uploadData.path)
+        if (uploadError) {
+          console.error('❌ Erreur upload Supabase Storage:', uploadError)
+          throw new Error(`Erreur upload Supabase Storage: ${uploadError.message}`)
         }
 
-        // Générer l'URL publique
-        let publicUrl: string
-        if (isTestMode) {
-          // Mode test - URL simulée
-          publicUrl = `https://test.example.com/documents/${filePath}`
-          console.log('🔗 URL publique simulée:', publicUrl)
-        } else {
-          const { data: urlData } = supabase.storage
-            .from('documents')
-            .getPublicUrl(filePath)
-          publicUrl = urlData.publicUrl
-          console.log('🔗 URL publique générée:', publicUrl)
-        }
+        console.log('✅ Fichier uploadé vers Supabase Storage:', filePath)
 
-        // Vérifier s'il s'agit d'une nouvelle version d'un document existant
-        let existingDocument: any = null
-        if (metadata.documentId) {
-          const { data: doc, error: docErr } = await supabase
-            .from('documents')
-            .select('id')
-            .eq('id', String(metadata.documentId))
-            .eq('author_id', userId)
-            .maybeSingle()
-          if (!docErr) existingDocument = doc
-        }
+        // URL publique depuis Supabase Storage
+        const { data: urlData } = supabase.storage
+          .from('documents')
+          .getPublicUrl(filePath)
+        
+        const publicUrl = urlData.publicUrl
 
-        let document: any
-        let documentVersion: any
+        // ID unique pour le fichier
+        const fileId = `file-${timestamp}-${randomSuffix}`
 
-        if (existingDocument) {
-          console.log('🔄 Nouvelle version du document existant')
+        // 🆕 SAUVEGARDER DANS LA TABLE DOCUMENTS SUPABASE
+        try {
+          console.log('💾 Sauvegarde en base de données...')
+          console.log('👤 User ID:', userId)
+          console.log('📄 File ID:', fileId)
+          console.log('📝 Title:', metadata.name || file.name.split('.')[0])
           
-          if (isTestMode) {
-            // Mode test - simulation
-            documentVersion = {
-              id: `test-version-${Date.now()}`,
-              versionNumber: 1,
-              changeLog: 'Version de test',
-              filePath: publicUrl
-            }
-            document = { id: existingDocument.id, title: metadata.name || file.name.split('.')[0] }
-          } else {
-            // Calculer le prochain numéro de version
-            let nextVersion = 1
-            const { data: lastVersions } = await supabase
-              .from('document_versions')
-              .select('version_number')
-              .eq('document_id', existingDocument.id)
-              .order('version_number', { ascending: false })
-              .limit(1)
-            if (lastVersions && lastVersions.length > 0) {
-              nextVersion = Number((lastVersions[0] as any).version_number || 0) + 1
-            }
-
-                         const { data: createdVersion } = await supabase
-               .from('document_versions')
-               .insert({
-                 version_number: nextVersion,
-                 file_name: file.name,
-                 file_size: file.size,
-                 file_type: file.type,
-                 file_path: publicUrl,
-                 change_log: metadata.changeLog || `Version ${nextVersion}`,
-                 document_id: existingDocument.id,
-                 created_by_id: userId
-               })
-               .select('id, version_number, change_log, file_path')
-               .single()
-
-            documentVersion = createdVersion!
-
-            await supabase
-              .from('documents')
-              .update({ current_version_id: documentVersion.id })
-              .eq('id', existingDocument.id)
-            document = { id: existingDocument.id, title: metadata.name || file.name.split('.')[0] }
-          }
-
-        } else {
-          console.log('🆕 Nouveau document')
-          
-          if (isTestMode) {
-            // Mode test - simulation
-            document = {
-              id: `test-doc-${Date.now()}`,
-              title: metadata.name || file.name.split('.')[0]
-            }
-            documentVersion = {
-              id: `test-version-${Date.now()}`,
-              versionNumber: 1,
-              changeLog: 'Version initiale de test',
-              filePath: publicUrl
-            }
-          } else {
-            console.log('📝 Tentative d\'insertion du document en base...')
-            console.log('📋 Données du document:', {
+          // Créer l'entrée document dans Supabase
+          const { data: document, error: docError } = await supabase
+            .from('documents')
+            .insert({
+              id: fileId,
               title: metadata.name || file.name.split('.')[0],
               description: metadata.description || null,
-              category: metadata.category || null,
-              is_public: false,
-              author_id: userId,
-              folder_id: validFolderId,
+              authorId: userId, // Utiliser l'ID de l'utilisateur connecté
+              folderId: null, // camelCase pour Supabase
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
             })
-            
-            const { data: createdDoc, error: createDocErr } = await supabase
-              .from('documents')
-              .insert({
-                title: metadata.name || file.name.split('.')[0],
-                description: metadata.description || null,
-                category: metadata.category || null,
-                is_public: false,
-                author_id: userId,
-                folder_id: validFolderId,
-              })
-              .select('id, title')
-              .single()
-            
-            if (createDocErr) {
-              console.error('❌ Erreur création document:', createDocErr)
-              throw createDocErr
-            }
-            
-            document = createdDoc!
-            console.log('✅ Document créé:', document)
+            .select()
+            .single()
 
-            console.log('📝 Tentative d\'insertion de la version en base...')
-            console.log('📋 Données de la version:', {
-              version_number: 1,
-              file_name: file.name,
-              file_size: file.size,
-              file_type: file.type,
-              file_path: publicUrl,
-              change_log: 'Version initiale',
-              document_id: document.id,
-              created_by_id: userId
-            })
-            
-            const { data: createdVersion, error: versionErr } = await supabase
-              .from('document_versions')
-              .insert({
-                version_number: 1,
-                file_name: file.name,
-                file_size: file.size,
-                file_type: file.type,
-                file_path: publicUrl,
-                change_log: 'Version initiale',
-                document_id: document.id,
-                created_by_id: userId
-              })
-              .select('id, version_number, change_log, file_path')
-              .single()
-            
-            if (versionErr) {
-              console.error('❌ Erreur création version:', versionErr)
-              throw versionErr
-            }
-            
-            documentVersion = createdVersion!
-            console.log('✅ Version créée:', documentVersion)
-
-            console.log('📝 Mise à jour du document avec current_version_id...')
-            const { error: updateErr } = await supabase
-              .from('documents')
-              .update({ current_version_id: documentVersion.id })
-              .eq('id', document.id)
-            
-            if (updateErr) {
-              console.error('❌ Erreur mise à jour document:', updateErr)
-              throw updateErr
-            }
-            
-            console.log('✅ Document mis à jour avec current_version_id')
+          if (docError) {
+            console.error('❌ Erreur sauvegarde document:', docError)
+            console.error('❌ Détails erreur:', JSON.stringify(docError, null, 2))
+            throw new Error(`Erreur sauvegarde document: ${docError.message}`)
           }
+
+          console.log('✅ Document enregistré en base:', document.id)
+
+          // Créer la première version du document
+          const versionId = `version-${timestamp}-${randomSuffix}`
+          const { data: version, error: versionError } = await supabase
+            .from('document_versions')
+            .insert({
+              id: versionId,
+              documentId: fileId, // camelCase pour Supabase
+              versionNumber: 1, // camelCase pour Supabase
+              fileName: file.name, // camelCase pour Supabase
+              fileSize: file.size, // camelCase pour Supabase
+              fileType: file.type, // camelCase pour Supabase
+              filePath: filePath, // camelCase pour Supabase
+              changeLog: 'Version initiale', // camelCase pour Supabase
+              createdBy: userId, // Utiliser l'ID de l'utilisateur connecté
+              createdAt: new Date().toISOString() // camelCase pour Supabase
+            })
+            .select()
+            .single()
+
+          if (versionError) {
+            console.error('❌ Erreur création version:', versionError)
+            throw new Error(`Erreur création version: ${versionError.message}`)
+          }
+
+          // Mettre à jour le document avec l'ID de la version actuelle
+          const { error: updateError } = await supabase
+            .from('documents')
+            .update({ currentVersionId: versionId }) // camelCase pour Supabase
+            .eq('id', fileId)
+
+          if (updateError) {
+            console.error('❌ Erreur mise à jour current_version_id:', updateError)
+            throw new Error(`Erreur mise à jour current_version_id: ${updateError.message}`)
+          }
+
+          console.log('✅ Version créée et document mis à jour:', versionId)
+
+        } catch (dbError) {
+          console.error('❌ Erreur base de données:', dbError)
+          console.error('❌ Détails erreur DB:', JSON.stringify(dbError, null, 2))
+          // Continuer même si la DB échoue, au moins le fichier est sauvé
         }
 
-        console.log('💾 Document sauvegardé en base:', document.id)
-
         uploadedFiles.push({
-          id: document.id,
-          title: document.title,
+          id: fileId,
+          title: metadata.name || file.name.split('.')[0],
           name: file.name,
           size: file.size,
           type: file.type,
-          path: documentVersion.file_path,
-          version: {
-            id: documentVersion.id,
-            number: documentVersion.version_number,
-            changeLog: documentVersion.change_log,
-            isNewDocument: !existingDocument
-          }
+          path: filePath,
+          url: publicUrl
         })
+
+        console.log(`✅ Fichier ${file.name} traité avec succès`)
 
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Erreur inconnue'
-        console.error(`❌ Erreur lors de l'upload de ${file?.name || 'inconnu'}:`, {
-          message,
-          stack: error instanceof Error ? error.stack : undefined
-        })
+        console.error(`❌ Erreur lors du traitement de ${file?.name}:`, message)
         errors.push({ fileName: file?.name || 'inconnu', message })
-        // Continuer avec les autres fichiers
       }
     }
 
-    if (uploadedFiles.length === 0) {
-      console.log('❌ Aucun fichier uploadé avec succès')
+    // 6. RÉPONSE FINALE
+    console.log(`📊 Résumé: ${uploadedFiles.length} succès, ${errors.length} erreurs`)
+
+    if (uploadedFiles.length === 0 && errors.length > 0) {
       return NextResponse.json(
-        { error: 'Aucun fichier n\'a pu être uploadé', errors },
+        {
+          error: `Aucun fichier n'a pu être uploadé (${errors.length} fichier(s) en erreur)`,
+          errors,
+          details: 'Tous les fichiers ont rencontré une erreur lors du traitement'
+        },
         { status: 500 }
       )
     }
 
-    console.log('✅ Upload Supabase terminé avec succès:', uploadedFiles.length, 'fichiers')
+    if (uploadedFiles.length === 0) {
+      return NextResponse.json(
+        { error: 'Aucun fichier n\'a pu être traité - erreur inattendue' },
+        { status: 500 }
+      )
+    }
+
+    console.log('✅ Upload terminé avec succès:', uploadedFiles.length, 'fichiers')
     return NextResponse.json({
-      message: `${uploadedFiles.length} fichier(s) uploadé(s) avec succès` + (errors.length ? `, ${errors.length} échec(s)` : ''),
+      message: `${uploadedFiles.length} fichier(s) uploadé(s) avec succès` + 
+               (errors.length ? `, ${errors.length} échec(s)` : ''),
       files: uploadedFiles,
-      ...(errors.length ? { errors } : {})
+      ...(errors.length ? { errors } : {}),
+      summary: {
+        total: files.length,
+        success: uploadedFiles.length,
+        failed: errors.length
+      }
     })
 
   } catch (error) {
-    console.error('💥 Erreur upload générale:', error)
+    console.error('💥 ERREUR GÉNÉRALE:', {
+      message: error instanceof Error ? error.message : 'Erreur inconnue',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
+      { 
+        error: 'Erreur interne du serveur',
+        details: error instanceof Error ? error.message : 'Erreur inconnue'
+      },
       { status: 500 }
     )
   }

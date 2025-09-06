@@ -23,7 +23,7 @@ interface SortOption {
   label: string
 }
 
-interface ContentToolbarProps {
+interface ContentToolbarProps<T = string> {
   searchQuery: string
   onSearchQueryChange: (value: string) => void
   onSearchSelect?: (suggestion: SearchSuggestion) => void
@@ -31,10 +31,10 @@ interface ContentToolbarProps {
   searchPlaceholder?: string
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
-  sortField: string
+  sortField: T
   sortOrder: SortOrder
   sortOptions: SortOption[]
-  onSortFieldChange: (field: string) => void
+  onSortFieldChange: (field: T) => void
   onSortOrderChange: (order: SortOrder) => void
   onOpenFilters?: () => void
   showFilters?: boolean
@@ -42,7 +42,7 @@ interface ContentToolbarProps {
   enableSuggestions?: boolean
 }
 
-export function ContentToolbar({
+export function ContentToolbar<T = string>({
   searchQuery,
   onSearchQueryChange,
   onSearchSelect,
@@ -59,7 +59,7 @@ export function ContentToolbar({
   showFilters = true,
   className,
   enableSuggestions = true,
-}: ContentToolbarProps) {
+}: ContentToolbarProps<T>) {
   // Hook pour les suggestions si activées
   const { suggestions, isLoading: suggestionsLoading } = enableSuggestions 
     ? useSearchSuggestions(searchQuery, { debounceMs: 300, minQueryLength: 2, maxSuggestions: 8 })

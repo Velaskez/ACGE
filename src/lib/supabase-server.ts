@@ -11,7 +11,7 @@ export async function selectUsersMinimal() {
   const admin = getSupabaseAdmin()
   return admin
     .from('users')
-    .select('id, name, email, role, createdAt:created_at, updatedAt:updated_at')
+    .select('id, name, email, role, created_at, updated_at')
     .order('created_at', { ascending: false })
     .limit(1000)
 }

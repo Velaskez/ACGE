@@ -44,7 +44,7 @@ export function FoldersToolbar({
   enableSuggestions = true,
 }: FoldersToolbarProps) {
   return (
-    <ContentToolbar
+          <ContentToolbar<SortField>
       searchQuery={searchQuery}
       onSearchQueryChange={onSearchQueryChange}
       onSearchSelect={onSearchSelect}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ModalWrapper } from '@/components/ui/modal-wrapper'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -32,32 +33,7 @@ import {
   FolderOpen,
   Info
 } from 'lucide-react'
-
-interface DocumentItem {
-  id: string
-  title: string
-  description?: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  currentVersion?: {
-    id: string
-    versionNumber: number
-    fileName: string
-    fileSize: number
-    fileType: string
-    filePath: string
-    changeLog?: string
-    createdAt: string
-  }
-  _count?: {
-    versions: number
-  }
-  author?: {
-    name: string
-    email: string
-  }
-}
+import { DocumentItem } from '@/types/document'
 
 interface DocumentPreviewModalProps {
   document: DocumentItem
@@ -376,12 +352,13 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent 
-        showCloseButton={false}
-        className={`w-full max-w-5xl mx-auto transition-all duration-300 ${
-          isFullscreen ? 'max-h-[98vh] w-[98vw]' : 'max-h-[85vh]'
-        } overflow-hidden flex flex-col`}>
+    <ModalWrapper isOpen={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent 
+          showCloseButton={false}
+          className={`w-full max-w-5xl mx-auto transition-all duration-300 ${
+            isFullscreen ? 'max-h-[98vh] w-[98vw]' : 'max-h-[85vh]'
+          } overflow-hidden flex flex-col`}>
         <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -523,5 +500,6 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
         </div>
       </DialogContent>
     </Dialog>
+    </ModalWrapper>
   )
 }

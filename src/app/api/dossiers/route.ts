@@ -1,44 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
   try {
     console.log('📋 Récupération des dossiers comptables')
     
-    const dossiers = await prisma.dossier.findMany({
-      include: {
-        posteComptable: true,
-        natureDocument: true,
-        secretaire: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        validations: {
-          include: {
-            validateur: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    const admin = getSupabaseAdmin()
+    
+    // Récupérer les dossiers comptables
+    const { data: dossiers, error: dossiersError } = await admin
+      .from('dossiers')
+      .select(`
+        *,
+        poste_comptable:posteComptableId(*),
+        nature_document:natureDocumentId(*),
+        secretaire:secretaireId(id, name, email)
+      `)
+      .order('created_at', { ascending: false })
 
-    console.log(`📋 ${dossiers.length} dossiers comptables trouvés`)
+    if (dossiersError) {
+      throw dossiersError
+    }
+
+    console.log(`📋 ${dossiers?.length || 0} dossiers comptables trouvés`)
     
     return NextResponse.json({ 
       success: true, 
-      dossiers,
-      count: dossiers.length 
+      dossiers: dossiers || [],
+      count: dossiers?.length || 0
     })
 
   } catch (error) {
@@ -81,10 +70,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const admin = getSupabaseAdmin()
+
     // Vérifier si le numéro de dossier existe déjà
-    const existingDossier = await prisma.dossier.findUnique({
-      where: { numeroDossier }
-    })
+    const { data: existingDossier, error: checkError } = await admin
+      .from('dossiers')
+      .select('id')
+      .eq('numeroDossier', numeroDossier)
+      .maybeSingle()
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw checkError
+    }
 
     if (existingDossier) {
       return NextResponse.json(
@@ -97,28 +94,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Créer le nouveau dossier
-    const newDossier = await prisma.dossier.create({
-      data: {
+    const { data: newDossier, error: insertError } = await admin
+      .from('dossiers')
+      .insert({
         numeroDossier,
         numeroNature,
         objetOperation,
         beneficiaire,
-        posteComptableId: posteComptableId || 'default-poste-id', // ID par défaut temporaire
-        natureDocumentId: natureDocumentId || 'default-nature-id', // ID par défaut temporaire
-        secretaireId: secretaireId || 'cmecmvbvy0000c1ecbq58lmtm' // ID admin par défaut
-      },
-      include: {
-        posteComptable: true,
-        natureDocument: true,
-        secretaire: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
+        posteComptableId: posteComptableId || 'default-poste-id',
+        natureDocumentId: natureDocumentId || 'default-nature-id',
+        secretaireId: secretaireId || 'cmecmvbvy0000c1ecbq58lmtm'
+      })
+      .select(`
+        *,
+        poste_comptable:posteComptableId(*),
+        nature_document:natureDocumentId(*),
+        secretaire:secretaireId(id, name, email)
+      `)
+      .single()
+
+    if (insertError) {
+      throw insertError
+    }
 
     console.log('✅ Dossier comptable créé:', newDossier.numeroDossier)
     

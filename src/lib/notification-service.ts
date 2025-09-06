@@ -1,4 +1,4 @@
-import { prisma } from './db'
+import { getSupabaseAdmin } from './supabase-server'
 import type { NotificationType } from '@/types'
 
 interface CreateNotificationData {
@@ -15,17 +15,25 @@ export class NotificationService {
    */
   static async create(notificationData: CreateNotificationData) {
     try {
-      const notification = await prisma.notification.create({
-        data: {
+      const admin = getSupabaseAdmin()
+      const { data: notification, error } = await admin
+        .from('notifications')
+        .insert({
           type: notificationData.type,
           title: notificationData.title,
           message: notificationData.message,
-          userId: notificationData.userId,
+          user_id: notificationData.userId,
           data: notificationData.data || null
-        }
-      })
+        })
+        .select()
+        .single()
       
-      console.log(`Notification créée: ${notification.type} pour utilisateur ${notification.userId}`)
+      if (error) {
+        console.error('Erreur création notification:', error)
+        return null
+      }
+      
+      console.log(`Notification créée: ${notification.type} pour utilisateur ${notification.user_id}`)
       return notification
     } catch (error) {
       console.error('Erreur lors de la création de notification:', error)
@@ -38,18 +46,25 @@ export class NotificationService {
    */
   static async createMany(notifications: CreateNotificationData[]) {
     try {
-      const createdNotifications = await prisma.notification.createMany({
-        data: notifications.map(n => ({
+      const admin = getSupabaseAdmin()
+      const { data: createdNotifications, error } = await admin
+        .from('notifications')
+        .insert(notifications.map(n => ({
           type: n.type,
           title: n.title,
           message: n.message,
-          userId: n.userId,
+          user_id: n.userId,
           data: n.data || null
-        }))
-      })
+        })))
+        .select()
       
-      console.log(`${createdNotifications.count} notifications créées en lot`)
-      return createdNotifications
+      if (error) {
+        console.error('Erreur création notifications en lot:', error)
+        return null
+      }
+      
+      console.log(`${createdNotifications?.length || 0} notifications créées en lot`)
+      return { count: createdNotifications?.length || 0 }
     } catch (error) {
       console.error('Erreur lors de la création en lot:', error)
       return null
@@ -77,10 +92,12 @@ export class NotificationService {
    * Notification pour partage de document
    */
   static async notifyDocumentShared(documentId: string, documentTitle: string, sharedByUserId: string, sharedWithUserId: string, permission: string) {
-    const sharedByUser = await prisma.user.findUnique({
-      where: { id: sharedByUserId },
-      select: { name: true }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: sharedByUser } = await admin
+      .from('users')
+      .select('name')
+      .eq('id', sharedByUserId)
+      .maybeSingle()
 
     return this.create({
       type: 'DOCUMENT_SHARED',
@@ -100,10 +117,12 @@ export class NotificationService {
    * Notification pour nouvelle version de document
    */
   static async notifyVersionAdded(documentId: string, documentTitle: string, versionNumber: number, createdByUserId: string, sharedWithUserIds: string[]) {
-    const createdByUser = await prisma.user.findUnique({
-      where: { id: createdByUserId },
-      select: { name: true }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: createdByUser } = await admin
+      .from('users')
+      .select('name')
+      .eq('id', createdByUserId)
+      .maybeSingle()
 
     const notifications = sharedWithUserIds.map(userId => ({
       type: 'VERSION_ADDED' as NotificationType,
@@ -125,10 +144,12 @@ export class NotificationService {
    * Notification pour version restaurée
    */
   static async notifyVersionRestored(documentId: string, documentTitle: string, versionNumber: number, restoredByUserId: string, sharedWithUserIds: string[]) {
-    const restoredByUser = await prisma.user.findUnique({
-      where: { id: restoredByUserId },
-      select: { name: true }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: restoredByUser } = await admin
+      .from('users')
+      .select('name')
+      .eq('id', restoredByUserId)
+      .maybeSingle()
 
     const notifications = sharedWithUserIds.map(userId => ({
       type: 'VERSION_RESTORED' as NotificationType,
@@ -150,10 +171,12 @@ export class NotificationService {
    * Notification pour suppression de document
    */
   static async notifyDocumentDeleted(documentTitle: string, deletedByUserId: string, sharedWithUserIds: string[]) {
-    const deletedByUser = await prisma.user.findUnique({
-      where: { id: deletedByUserId },
-      select: { name: true }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: deletedByUser } = await admin
+      .from('users')
+      .select('name')
+      .eq('id', deletedByUserId)
+      .maybeSingle()
 
     const notifications = sharedWithUserIds.map(userId => ({
       type: 'DOCUMENT_DELETED' as NotificationType,
@@ -174,10 +197,12 @@ export class NotificationService {
    * Notification pour nouveau commentaire
    */
   static async notifyCommentAdded(documentId: string, documentTitle: string, commentId: string, authorId: string, sharedWithUserIds: string[]) {
-    const author = await prisma.user.findUnique({
-      where: { id: authorId },
-      select: { name: true }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: author } = await admin
+      .from('users')
+      .select('name')
+      .eq('id', authorId)
+      .maybeSingle()
 
     const notifications = sharedWithUserIds.map(userId => ({
       type: 'COMMENT_ADDED' as NotificationType,
@@ -199,10 +224,12 @@ export class NotificationService {
    * Notification pour partage de dossier
    */
   static async notifyFolderShared(folderId: string, folderName: string, sharedByUserId: string, sharedWithUserId: string, permission: string) {
-    const sharedByUser = await prisma.user.findUnique({
-      where: { id: sharedByUserId },
-      select: { name: true }
-    })
+    const admin = getSupabaseAdmin()
+    const { data: sharedByUser } = await admin
+      .from('users')
+      .select('name')
+      .eq('id', sharedByUserId)
+      .maybeSingle()
 
     return this.create({
       type: 'FOLDER_SHARED',
@@ -238,15 +265,24 @@ export class NotificationService {
    */
   static async getDocumentSharedUsers(documentId: string, excludeUserId?: string): Promise<string[]> {
     try {
-      const shares = await prisma.documentShare.findMany({
-        where: {
-          documentId,
-          userId: excludeUserId ? { not: excludeUserId } : undefined
-        },
-        select: { userId: true }
-      })
+      const admin = getSupabaseAdmin()
+      let query = admin
+        .from('document_shares')
+        .select('user_id')
+        .eq('document_id', documentId)
+      
+      if (excludeUserId) {
+        query = query.neq('user_id', excludeUserId)
+      }
+      
+      const { data: shares, error } = await query
+      
+      if (error) {
+        console.error('Erreur récupération partages:', error)
+        return []
+      }
 
-      return shares.map(share => share.userId)
+      return shares?.map(share => share.user_id) || []
     } catch (error) {
       console.error('Erreur lors de la récupération des utilisateurs partagés:', error)
       return []
@@ -272,13 +308,19 @@ export class NotificationService {
    */
   static async markAsRead(notificationId: string, userId: string) {
     try {
-      const notification = await prisma.notification.update({
-        where: {
-          id: notificationId,
-          userId: userId
-        },
-        data: { isRead: true }
-      })
+      const admin = getSupabaseAdmin()
+      const { data: notification, error } = await admin
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+        .eq('user_id', userId)
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('Erreur marquage notification:', error)
+        return null
+      }
       
       return notification
     } catch (error) {
@@ -292,13 +334,22 @@ export class NotificationService {
    */
   static async markAllAsRead(userId: string) {
     try {
-      const result = await prisma.notification.updateMany({
-        where: { userId, isRead: false },
-        data: { isRead: true }
-      })
+      const admin = getSupabaseAdmin()
+      const { data, error } = await admin
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+        .eq('is_read', false)
+        .select('id')
       
-      console.log(`${result.count} notifications marquées comme lues pour l'utilisateur ${userId}`)
-      return result
+      if (error) {
+        console.error('Erreur marquage global:', error)
+        return null
+      }
+      
+      const count = data?.length || 0
+      console.log(`${count} notifications marquées comme lues pour l'utilisateur ${userId}`)
+      return { count }
     } catch (error) {
       console.error('Erreur lors du marquage global:', error)
       return null

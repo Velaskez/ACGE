@@ -413,4 +413,25 @@
   .truncate-2 {
     @apply line-clamp-2;
   }
+
+  /* Amélioration de l'UX mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .safe-area-inset {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Animation de chargement responsive */
+  .skeleton-responsive {
+    @apply animate-pulse bg-muted rounded;
+  }
+
+  /* Amélioration des focus pour accessibilité */
+  .focus-visible-enhanced:focus-visible {
+    @apply ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
 }

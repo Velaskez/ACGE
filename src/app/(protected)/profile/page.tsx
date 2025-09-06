@@ -29,6 +29,7 @@ import {
   Edit3
 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ProfileForm } from '@/components/profile/profile-form'
 
 interface UserProfile {
   id: string
@@ -270,11 +271,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <MainLayout
-      title="Mon Profil"
-      description="Gérez vos informations personnelles et votre sécurité"
-      icon={User}
-    >
+    <MainLayout>
       {isLoading ? (
         <div className="space-y-8 animate-pulse">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -486,171 +483,14 @@ export default function ProfilePage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-8">
-                    {/* Informations personnelles */}
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                        <div className="w-1 h-6 bg-primary rounded-full"></div>
-                        Informations personnelles
-                      </h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <Label htmlFor="name" className="text-sm font-medium text-foreground">
-                            Nom complet
-                          </Label>
-                          <Input
-                            id="name"
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => handleInputChange('name', e.target.value)}
-                            placeholder="Votre nom complet"
-                            className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary"
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-3">
-                          <Label htmlFor="email" className="text-sm font-medium text-foreground">
-                            Adresse email
-                          </Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => handleInputChange('email', e.target.value)}
-                            placeholder="votre@email.com"
-                            className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary"
-                            required
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <Separator className="my-8" />
-
-                    {/* Changement de mot de passe */}
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Key className="h-5 w-5 text-primary" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-foreground">Changer le mot de passe</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                        Laissez vide si vous ne souhaitez pas changer votre mot de passe
-                      </p>
-
-                      <div className="space-y-6">
-                        <div className="space-y-3">
-                          <Label htmlFor="currentPassword" className="text-sm font-medium text-foreground">
-                            Mot de passe actuel
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              id="currentPassword"
-                              type={showCurrentPassword ? "text" : "password"}
-                              value={formData.currentPassword}
-                              onChange={(e) => handleInputChange('currentPassword', e.target.value)}
-                              placeholder="Votre mot de passe actuel"
-                              className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary pr-10"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 hover:bg-muted"
-                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                            >
-                              {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-3">
-                            <Label htmlFor="newPassword" className="text-sm font-medium text-foreground">
-                              Nouveau mot de passe
-                            </Label>
-                            <div className="relative">
-                              <Input
-                                id="newPassword"
-                                type={showNewPassword ? "text" : "password"}
-                                value={formData.newPassword}
-                                onChange={(e) => handleInputChange('newPassword', e.target.value)}
-                                placeholder="Nouveau mot de passe (min. 6 caractères)"
-                                className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary pr-10"
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-0 top-0 h-full px-3 hover:bg-muted"
-                                onClick={() => setShowNewPassword(!showNewPassword)}
-                              >
-                                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3">
-                            <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
-                              Confirmer le nouveau mot de passe
-                            </Label>
-                            <div className="relative">
-                              <Input
-                                id="confirmPassword"
-                                type={showConfirmPassword ? "text" : "password"}
-                                value={formData.confirmPassword}
-                                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                                placeholder="Confirmer le nouveau mot de passe"
-                                className="input-enhanced transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary pr-10"
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-0 top-0 h-full px-3 hover:bg-muted"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              >
-                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Boutons */}
-                    <div className="flex justify-end gap-3 pt-6 border-t border-border">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleCancel}
-                        disabled={isSaving}
-                        className="btn-press transition-all duration-200 hover:bg-muted"
-                      >
-                        Annuler
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        disabled={isSaving || !isEditing}
-                        className="btn-press transition-all duration-200 hover:scale-105 disabled:hover:scale-100"
-                      >
-                        {isSaving ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Enregistrement...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="mr-2 h-4 w-4" />
-                            Enregistrer les modifications
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </form>
+                  {displayProfile && (
+                    <ProfileForm
+                      user={displayProfile}
+                      onSubmit={handleSubmit}
+                      onCancel={handleCancel}
+                      isLoading={isSaving}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </div>

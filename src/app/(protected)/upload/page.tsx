@@ -81,12 +81,24 @@ export default function UploadPage() {
         const details = Array.isArray(result?.errors) && result.errors.length
           ? ` (${result.errors.length} fichier(s) en erreur)`
           : ''
-        throw new Error(`${serverError}${details}`)
+        const errorDetails = result?.details ? ` - ${result.details}` : ''
+        throw new Error(`${serverError}${details}${errorDetails}`)
       }
 
       // Cas de succès avec erreurs partielles côté serveur
       if (Array.isArray(result?.errors) && result.errors.length) {
-        setError(`Upload partiel: ${result.errors.length} échec(s).`)
+        const errorDetails = result.errors.map((err: any) => 
+          `${err.fileName}: ${err.message}`
+        ).join('; ')
+        setError(`Upload partiel: ${result.errors.length} échec(s). Détails: ${errorDetails}`)
+      }
+
+      // Afficher le résumé de l'upload
+      if (result.summary) {
+        console.log('📊 Résumé upload:', result.summary)
+        if (result.summary.failed > 0) {
+          setError(`Upload terminé: ${result.summary.success} succès, ${result.summary.failed} échec(s)`)
+        }
       }
 
       setIsSuccess(true)

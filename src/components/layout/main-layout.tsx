@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
@@ -9,7 +10,8 @@ import { Sidebar } from './sidebar'
 import { useSessionTimeout } from '@/hooks/use-session-timeout'
 import { SessionWarning } from '@/components/ui/session-warning'
 import { useAuth } from '@/contexts/auth-context'
-import { useRouter } from 'next/navigation'
+import { useModal } from '@/contexts/modal-context'
+import { useModalDetection } from '@/hooks/use-modal-detection'
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -18,7 +20,11 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { logout } = useAuth()
+  const { hideHeader } = useModal()
   const router = useRouter()
+
+  // Détecter automatiquement les modals
+  useModalDetection()
 
   // Utiliser le hook de déconnexion automatique (qui gère lui-même les paramètres)
   const { getTimeUntilExpiration, extendSession, sessionTimeout } = useSessionTimeout({
@@ -55,7 +61,9 @@ export function MainLayout({ children }: MainLayoutProps) {
       </div>
 
       {/* Main content - responsive margin */}
-      <main className="pt-16 min-h-screen transition-all duration-200 md:ml-64 lg:ml-72 xl:ml-80">
+      <main className={`min-h-screen transition-all duration-300 md:ml-64 lg:ml-72 xl:ml-80 ${
+        hideHeader ? 'pt-0' : 'pt-16'
+      }`}>
         <div className="p-3 w-full sm:p-6">
           <div className="max-w-full overflow-x-hidden">
             {children}

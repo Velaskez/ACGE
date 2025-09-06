@@ -1,22 +1,5 @@
 import { useState, useEffect } from 'react'
-
-export interface Folder {
-  id: string
-  name: string
-  description?: string
-  createdAt: string
-  updatedAt: string
-  authorId: string
-  parentId?: string | null
-  _count: {
-    documents: number
-    children: number
-  }
-  author: {
-    name: string
-    email: string
-  }
-}
+import { Folder } from '@/types/folder'
 
 export interface FoldersStats {
   totalFolders: number
@@ -45,7 +28,12 @@ export function useFolders() {
       }
 
       const data = await response.json()
-      setFolders(data.folders || [])
+      // Ajouter documentCount basé sur _count.documents
+      const foldersWithCount = (data.folders || []).map((folder: any) => ({
+        ...folder,
+        documentCount: folder._count?.documents || 0
+      }))
+      setFolders(foldersWithCount)
       
       // Calculer les stats
       const totalFolders = data.folders?.length || 0

@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
-import { prisma } from '@/lib/db'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(
   request: NextRequest,
@@ -34,14 +28,26 @@ export async function GET(
     const documentId = params.id
     console.log('📄 Document ID:', documentId)
 
-    // Récupérer le document avec sa version actuelle
-    const document = await prisma.document.findUnique({
-      where: { id: documentId },
-      include: {
-        currentVersion: true,
-        author: true
-      }
-    })
+    // Récupérer le document avec sa version actuelle depuis Supabase
+    const admin = getSupabaseAdmin()
+    const { data: document, error: docError } = await admin
+      .from('documents')
+      .select(`
+        id,
+        title,
+        author_id,
+        current_version_id
+      `)
+      .eq('id', documentId)
+      .maybeSingle()
+
+    if (docError) {
+      console.error('❌ Erreur Supabase:', docError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la récupération du document', details: docError.message },
+        { status: 500 }
+      )
+    }
 
     if (!document) {
       console.log('❌ Document non trouvé')
@@ -54,26 +60,82 @@ export async function GET(
     console.log('📄 Document trouvé:', document.title)
 
     // Vérifier les permissions (admin ou propriétaire)
-    if (userRole !== 'ADMIN' && document.authorId !== userId) {
-      console.log('❌ Accès non autorisé - Utilisateur:', userId, 'Auteur:', document.authorId)
+    if (userRole !== 'ADMIN' && document.author_id !== userId) {
+      console.log('❌ Accès non autorisé - Utilisateur:', userId, 'Auteur:', document.author_id)
       return NextResponse.json(
         { error: 'Accès non autorisé' },
         { status: 403 }
       )
     }
 
-    if (!document.currentVersion) {
-      console.log('❌ Aucune version disponible')
-      return NextResponse.json(
-        { error: 'Aucune version disponible' },
-        { status: 404 }
-      )
+    let currentVersion = null
+
+    if (document.current_version_id) {
+      // Récupérer la version actuelle du document
+      const { data: version, error: versionError } = await admin
+        .from('document_versions')
+        .select(`
+          id,
+          file_name,
+          file_path,
+          file_type,
+          file_size
+        `)
+        .eq('id', document.current_version_id)
+        .maybeSingle()
+
+      if (versionError) {
+        console.error('❌ Erreur récupération version:', versionError)
+        return NextResponse.json(
+          { error: 'Erreur lors de la récupération de la version', details: versionError.message },
+          { status: 500 }
+        )
+      }
+
+      currentVersion = version
     }
 
-    console.log('📁 Fichier trouvé:', document.currentVersion.filePath)
+    // Si pas de version actuelle définie, récupérer la première version disponible
+    if (!currentVersion) {
+      console.log('⚠️ Aucune version actuelle définie, recherche de la première version...')
+      const { data: firstVersion, error: firstVersionError } = await admin
+        .from('document_versions')
+        .select(`
+          id,
+          file_name,
+          file_path,
+          file_type,
+          file_size
+        `)
+        .eq('document_id', documentId)
+        .order('version_number', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+      if (firstVersionError) {
+        console.error('❌ Erreur récupération première version:', firstVersionError)
+        return NextResponse.json(
+          { error: 'Erreur lors de la récupération de la version', details: firstVersionError.message },
+          { status: 500 }
+        )
+      }
+
+      if (!firstVersion) {
+        console.log('❌ Aucune version trouvée pour ce document')
+        return NextResponse.json(
+          { error: 'Ce document n\'a pas de fichier associé. Veuillez le re-télécharger.' },
+          { status: 404 }
+        )
+      }
+
+      currentVersion = firstVersion
+      console.log('✅ Première version trouvée:', currentVersion.id)
+    }
+
+    console.log('📁 Fichier trouvé:', currentVersion.file_path)
 
     // Traiter le chemin du fichier
-    let filePath = document.currentVersion.filePath
+    let filePath = currentVersion.file_path
     
     // Si le filePath est une URL complète, extraire le chemin relatif
     if (filePath.includes('supabase.co') || filePath.startsWith('http')) {
@@ -87,7 +149,7 @@ export async function GET(
     console.log('📂 Chemin final pour Supabase:', filePath)
 
     // Télécharger le fichier depuis Supabase Storage
-    const { data, error } = await supabase.storage
+    const { data, error } = await admin.storage
       .from('documents')
       .download(filePath)
 
@@ -107,16 +169,34 @@ export async function GET(
     // Retourner le fichier avec les bons headers
     return new NextResponse(arrayBuffer, {
       headers: {
-        'Content-Type': document.currentVersion.fileType || 'application/octet-stream',
-        'Content-Disposition': `inline; filename="${document.currentVersion.fileName}"`,
+        'Content-Type': currentVersion.file_type || 'application/octet-stream',
+        'Content-Disposition': `inline; filename="${currentVersion.file_name}"`,
         'Cache-Control': 'no-cache'
       }
     })
 
   } catch (error) {
     console.error('❌ Erreur téléchargement document:', error)
+    
+    let errorMessage = 'Erreur inconnue'
+    let errorDetails = null
+    
+    if (error instanceof Error) {
+      errorMessage = error.message
+      errorDetails = error.stack
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    } else if (error && typeof error === 'object') {
+      errorMessage = error.message || JSON.stringify(error)
+      errorDetails = error.stack || error.details
+    }
+    
     return NextResponse.json(
-      { error: 'Erreur interne du serveur', details: error instanceof Error ? error.message : 'Erreur inconnue' },
+      { 
+        error: 'Erreur interne du serveur', 
+        details: errorMessage,
+        stack: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+      },
       { status: 500 }
     )
   }
