@@ -34,12 +34,16 @@ const nextConfig: NextConfig = {
   // Configuration expérimentale
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    turbo: {
+      // Active des optimisations Turbopack sûres côté app router
+      // La persistance du cache est gérée par Next automatiquement
+    },
   },
   
   // Optimisations SWC (déprécié dans Next.js 15)
   // swcMinify: true,
   
-  // Configuration webpack
+  // Configuration webpack (compatibilité; Turbopack ignore ceci en dev)
   webpack: (config, { isServer, dev }) => {
     // Résoudre le problème du loader
     if (!isServer) {

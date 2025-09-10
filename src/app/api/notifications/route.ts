@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
-import { 
-  getUserNotifications, 
-  createNotification, 
-  markNotificationAsRead, 
-  markAllNotificationsAsRead, 
-  deleteNotification,
-  getUnreadCount 
-} from '@/lib/notifications-memory'
+import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { NotificationService } from '@/lib/notification-service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,39 +26,118 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const action = searchParams.get('action')
 
+    // Vérifier si Supabase est configuré
+    let admin
+    try {
+      admin = getSupabaseAdmin()
+    } catch (error) {
+      console.error('❌ Erreur configuration Supabase:', error)
+      
+      // En production, on peut choisir de retourner une erreur ou un fallback
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'Service temporairement indisponible' },
+          { status: 503 }
+        )
+      }
+      
+      // En développement, utiliser le mode fallback
+      console.log('⚠️ Supabase non configuré, utilisation du mode fallback')
+      return NextResponse.json({
+        notifications: [],
+        unreadCount: 0,
+        pagination: {
+          total: 0,
+          page: 1,
+          limit: 50,
+          totalPages: 0
+        }
+      })
+    }
+
     // Actions spéciales
     if (action === 'unread-count') {
-      const count = await getUnreadCount(userId)
-      return NextResponse.json({ count })
+      const { count } = await admin
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_read', false)
+      
+      return NextResponse.json({ count: count || 0 })
     }
 
     if (action === 'mark-all-read') {
-      const count = await markAllNotificationsAsRead(userId)
-      return NextResponse.json({ success: true, markedCount: count })
+      const { data, error } = await admin
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+        .eq('is_read', false)
+        .select('id')
+      
+      if (error) {
+        return NextResponse.json(
+          { error: 'Erreur lors du marquage global' },
+          { status: 500 }
+        )
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        markedCount: data?.length || 0 
+      })
     }
 
-    // Récupérer les notifications
-    const allNotifications = await getUserNotifications(userId, limit * 2) // Récupérer plus pour filtrer
-    
+    // Construire la requête de base
+    let query = admin
+      .from('notifications')
+      .select(`
+        id,
+        type,
+        title,
+        message,
+        is_read,
+        data,
+        created_at,
+        user_id
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
     // Filtrer les notifications non lues si demandé
-    const notifications = unreadOnly 
-      ? allNotifications.filter(n => !n.isRead)
-      : allNotifications
+    if (unreadOnly) {
+      query = query.eq('is_read', false)
+    }
+
+    // Récupérer toutes les notifications pour la pagination
+    const { data: allNotifications, error: fetchError } = await query
+
+    if (fetchError) {
+      console.error('Erreur récupération notifications:', fetchError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la récupération des notifications' },
+        { status: 500 }
+      )
+    }
 
     // Pagination
     const skip = (page - 1) * limit
-    const paginatedNotifications = notifications.slice(skip, skip + limit)
+    const paginatedNotifications = allNotifications?.slice(skip, skip + limit) || []
 
-    const unreadCount = await getUnreadCount(userId)
+    // Compter les notifications non lues
+    const { count: unreadCount } = await admin
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_read', false)
 
     return NextResponse.json({
       notifications: paginatedNotifications,
-      unreadCount,
+      unreadCount: unreadCount || 0,
       pagination: {
-        total: notifications.length,
+        total: allNotifications?.length || 0,
         page,
         limit,
-        totalPages: Math.ceil(notifications.length / limit)
+        totalPages: Math.ceil((allNotifications?.length || 0) / limit)
       }
     })
 
@@ -113,10 +186,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await createNotification({
+    const result = await NotificationService.create({
       title,
       message,
-      type: type || 'info',
+      type: type as any,
       userId: targetUserId,
       data: data || {}
     })
@@ -168,22 +241,39 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    let success = false
+    const admin = getSupabaseAdmin()
 
     if (action === 'mark-read') {
-      success = await markNotificationAsRead(notificationId, userId)
+      const { error } = await admin
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+        .eq('user_id', userId)
+
+      if (error) {
+        console.error('Erreur marquage notification:', error)
+        return NextResponse.json(
+          { error: 'Erreur lors du marquage' },
+          { status: 500 }
+        )
+      }
     } else if (action === 'delete') {
-      success = await deleteNotification(notificationId, userId)
+      const { error } = await admin
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId)
+        .eq('user_id', userId)
+
+      if (error) {
+        console.error('Erreur suppression notification:', error)
+        return NextResponse.json(
+          { error: 'Erreur lors de la suppression' },
+          { status: 500 }
+        )
+      }
     } else {
       return NextResponse.json(
         { error: 'Action non supportée' },
-        { status: 400 }
-      )
-    }
-
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Action échouée' },
         { status: 400 }
       )
     }

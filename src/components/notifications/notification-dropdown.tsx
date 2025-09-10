@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { formatRelativeTime } from '@/lib/utils'
+import { useAuth } from '@/contexts/auth-context'
 import {
   Bell,
   BellDot,
@@ -37,19 +38,23 @@ interface NotificationDropdownProps {
 }
 
 export function NotificationDropdown({ className }: NotificationDropdownProps) {
+  const { user, isLoading: authLoading } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [markingAsRead, setMarkingAsRead] = useState<string | null>(null)
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user) {
       fetchNotifications()
     }
-  }, [isOpen])
+  }, [isOpen, user])
 
   // Polling pour les nouvelles notifications (toutes les 30 secondes)
   useEffect(() => {
+    if (!user || authLoading) return
+    
     const interval = setInterval(() => {
       fetchUnreadCount()
     }, 30000)
@@ -58,16 +63,25 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
     fetchUnreadCount()
 
     return () => clearInterval(interval)
-  }, [])
+  }, [user, authLoading])
 
   const fetchNotifications = async () => {
+    if (!user) return
+    
     try {
       setIsLoading(true)
-      const response = await fetch('/api/notifications?limit=10')
+      const response = await fetch('/api/notifications?limit=10', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setNotifications(data.notifications || [])
         setUnreadCount(data.unreadCount || 0)
+      } else {
+        console.error('Erreur lors du chargement des notifications:', response.status)
       }
     } catch (error) {
       console.error('Erreur lors du chargement des notifications:', error)
@@ -77,11 +91,20 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
   }
 
   const fetchUnreadCount = async () => {
+    if (!user) return
+    
     try {
-      const response = await fetch('/api/notifications?unreadOnly=true&limit=1')
+      const response = await fetch('/api/notifications?unreadOnly=true&limit=1', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setUnreadCount(data.unreadCount || 0)
+      } else {
+        console.error('Erreur lors du chargement du compteur:', response.status)
       }
     } catch (error) {
       console.error('Erreur lors du chargement du compteur:', error)
@@ -89,9 +112,13 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
   }
 
   const markAsRead = async (notificationId: string) => {
+    if (markingAsRead === notificationId || !user) return // Éviter les appels multiples
+    
     try {
+      setMarkingAsRead(notificationId)
       const response = await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isRead: true })
       })
@@ -102,24 +129,40 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
           prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
         )
         setUnreadCount(prev => Math.max(0, prev - 1))
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Erreur lors du marquage:', errorData.error || 'Erreur inconnue')
+        // Optionnel : afficher une notification d'erreur à l'utilisateur
       }
     } catch (error) {
       console.error('Erreur lors du marquage:', error)
+      // Optionnel : afficher une notification d'erreur à l'utilisateur
+    } finally {
+      setMarkingAsRead(null)
     }
   }
 
   const markAllAsRead = async () => {
+    if (!user) return
+    
     try {
       const response = await fetch('/api/notifications/mark-all-read', {
-        method: 'PUT'
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
       })
 
       if (response.ok) {
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
         setUnreadCount(0)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Erreur lors du marquage global:', errorData.error || 'Erreur inconnue')
+        // Optionnel : afficher une notification d'erreur à l'utilisateur
       }
     } catch (error) {
       console.error('Erreur lors du marquage global:', error)
+      // Optionnel : afficher une notification d'erreur à l'utilisateur
     }
   }
 
@@ -163,15 +206,30 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
   }
 
   const handleNotificationClick = async (notification: Notification) => {
-    // Marquer comme lu
+    // Marquer comme lu si ce n'est pas déjà fait
     if (!notification.isRead) {
-      await markAsRead(notification.id)
+      try {
+        await markAsRead(notification.id)
+      } catch (error) {
+        console.error('Erreur lors du marquage automatique:', error)
+        // Continuer la navigation même si le marquage échoue
+      }
     }
 
     // Navigation contextuelle basée sur le type
     if (notification.data?.documentId) {
       window.location.href = `/documents?view=${notification.data.documentId}`
+    } else if (notification.data?.folderId) {
+      window.location.href = `/folders?view=${notification.data.folderId}`
+    } else {
+      // Navigation par défaut vers la page des notifications
+      window.location.href = '/notifications'
     }
+  }
+
+  // Ne pas afficher si l'utilisateur n'est pas authentifié
+  if (!user || authLoading) {
+    return null
   }
 
   return (
@@ -273,9 +331,14 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
                                 e.stopPropagation()
                                 markAsRead(notification.id)
                               }}
+                              disabled={markingAsRead === notification.id}
                               className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              <Check className="h-3 w-3" />
+                              {markingAsRead === notification.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Check className="h-3 w-3" />
+                              )}
                             </Button>
                           )}
                         </div>

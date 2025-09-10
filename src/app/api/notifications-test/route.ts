@@ -2,43 +2,42 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🧪 Mode test - Notifications simulées...')
+    console.log('🧪 Test de création de notifications')
     
     // Simuler des notifications de test
-    const notifications = [
+    const testNotifications = [
       {
-        id: 'notif-1',
-        title: 'Document uploadé',
-        message: 'Le document test.txt a été uploadé avec succès',
-        type: 'success',
+        id: 'test-1',
+        type: 'WELCOME',
+        title: 'Bienvenue !',
+        message: 'Bienvenue dans ACGE ! Votre compte a été créé avec succès.',
         isRead: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date(),
+        userId: 'test-user-1',
+        data: { source: 'test' }
       },
       {
-        id: 'notif-2',
-        title: 'Dossier créé',
-        message: 'Un nouveau dossier a été créé',
-        type: 'info',
-        isRead: true,
-        createdAt: new Date(Date.now() - 3600000).toISOString()
+        id: 'test-2',
+        type: 'DOCUMENT_SHARED',
+        title: 'Document partagé',
+        message: 'Un nouveau document a été partagé avec vous.',
+        isRead: false,
+        createdAt: new Date(),
+        userId: 'test-user-1',
+        data: { documentId: 'doc-123', source: 'test' }
       }
     ]
 
     return NextResponse.json({
-      notifications,
-      unreadCount: 1,
-      pagination: {
-        total: 2,
-        page: 1,
-        limit: 50,
-        totalPages: 1
-      }
+      success: true,
+      message: `${testNotifications.length} notifications de test simulées`,
+      notifications: testNotifications
     })
 
   } catch (error) {
-    console.error('💥 Erreur notifications test:', error)
+    console.error('Erreur création notifications de test:', error)
     return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
+      { error: 'Erreur lors de la création des notifications de test' },
       { status: 500 }
     )
   }
