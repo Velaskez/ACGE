@@ -1,23 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { DocumentNotifications } from '@/lib/notifications'
 
 /**
- * 🚀 API UPLOAD UNIQUE ET ROBUSTE - ACGE
+ * 🚀 API UPLOAD 100% SUPABASE - ACGE
  * 
  * Cette API gère l'upload de fichiers avec:
- * - Stockage local uniquement (pas de Supabase pour simplifier)
+ * - Stockage dans Supabase Storage
+ * - Métadonnées dans la base de données Supabase
  * - Authentification JWT
- * - Tous les fichiers dans le même dossier
- * - Gestion d'erreurs robuste
+ * - Notifications automatiques
  */
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 === API UPLOAD UNIQUE - DÉBUT ===')
+    console.log('🚀 === API UPLOAD SUPABASE - DÉBUT ===')
 
     // 1. AUTHENTIFICATION
     const token = request.cookies.get('auth-token')?.value || 
@@ -34,28 +32,8 @@ export async function POST(request: NextRequest) {
     let userId: string
     try {
       const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
-      const userEmail = decoded.email
-      console.log('✅ Utilisateur authentifié:', userEmail)
-      
-      // Récupérer l'UUID de l'utilisateur depuis la base
-      const supabase = getSupabaseAdmin()
-      const { data: user, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', userEmail)
-        .single()
-      
-      if (userError || !user) {
-        console.error('❌ Utilisateur non trouvé:', userError)
-        return NextResponse.json(
-          { error: 'Utilisateur non trouvé' },
-          { status: 404 }
-        )
-      }
-      
-      userId = user.id
-      console.log('✅ UUID utilisateur récupéré:', userId)
-      
+      userId = decoded.userId
+      console.log('✅ Utilisateur authentifié:', userId)
     } catch (error) {
       console.log('❌ Token invalide:', error)
       return NextResponse.json(
@@ -64,43 +42,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 2. RÉCUPÉRATION DES FICHIERS
+    // 2. CONNEXION SUPABASE
+    const supabase = getSupabaseAdmin()
+    if (!supabase) {
+      console.error('❌ Supabase non configuré')
+      return NextResponse.json(
+        { error: 'Service de stockage non disponible' },
+        { status: 500 }
+      )
+    }
+
+    // 3. RÉCUPÉRATION DES DONNÉES
     const formData = await request.formData()
     const files = formData.getAll('files') as File[]
     const metadataStr = formData.get('metadata') as string
+    const metadata = metadataStr ? JSON.parse(metadataStr) : {}
 
-    console.log('📁 Fichiers reçus:', files.length)
+    console.log(`📁 ${files.length} fichier(s) reçu(s)`)
+    console.log('📋 Métadonnées:', metadata)
 
-    if (!files || files.length === 0) {
+    if (files.length === 0) {
       return NextResponse.json(
         { error: 'Aucun fichier fourni' },
         { status: 400 }
       )
     }
 
-    // 3. MÉTADONNÉES
-    let metadata: any = {}
-    if (metadataStr) {
-      try {
-        metadata = JSON.parse(metadataStr)
-        console.log('📋 Métadonnées:', metadata)
-      } catch (error) {
-        console.log('⚠️ Métadonnées invalides, utilisation des valeurs par défaut')
-      }
-    }
-
-    // 4. CONFIGURATION SUPABASE STORAGE
-    const supabase = getSupabaseAdmin()
-    console.log('🔗 Connexion à Supabase Storage...')
-
-    // 5. TRAITEMENT DES FICHIERS
+    // 4. TRAITEMENT DES FICHIERS
     const uploadedFiles: Array<{
       id: string
       title: string
       name: string
       size: number
       type: string
-      path: string
       url: string
     }> = []
 
@@ -122,118 +96,82 @@ export async function POST(request: NextRequest) {
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const fileName = `${timestamp}-${randomSuffix}-${cleanFileName}`
         
-        // Chemin dans Supabase Storage
-        const filePath = `documents/${fileName}`
+        // Générer un UUID pour le document
+        const documentId = crypto.randomUUID()
 
-        // Convertir en buffer pour Supabase Storage
+        // ===== UPLOAD VERS SUPABASE STORAGE =====
+        console.log('☁️ Upload vers Supabase Storage...')
+        
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
         
-        // Upload vers Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        // Upload vers le bucket 'documents'
+        const { data: storageData, error: storageError } = await supabase.storage
           .from('documents')
-          .upload(filePath, buffer, {
+          .upload(fileName, buffer, {
             contentType: file.type,
             upsert: false
           })
 
-        if (uploadError) {
-          console.error('❌ Erreur upload Supabase Storage:', uploadError)
-          throw new Error(`Erreur upload Supabase Storage: ${uploadError.message}`)
+        if (storageError) {
+          console.error('❌ Erreur Supabase Storage:', storageError)
+          throw new Error(`Erreur stockage: ${storageError.message}`)
         }
 
-        console.log('✅ Fichier uploadé vers Supabase Storage:', filePath)
+        console.log('✅ Fichier uploadé dans Supabase Storage:', storageData.path)
 
-        // URL publique depuis Supabase Storage
-        const { data: urlData } = supabase.storage
+        // Obtenir l'URL publique
+        const { data: { publicUrl } } = supabase.storage
           .from('documents')
-          .getPublicUrl(filePath)
+          .getPublicUrl(fileName)
+
+        console.log('🔗 URL publique Supabase:', publicUrl)
+
+        // ===== SAUVEGARDE EN BASE DE DONNÉES =====
+        console.log('💾 Sauvegarde des métadonnées en base...')
         
-        const publicUrl = urlData.publicUrl
+        const { data: document, error: dbError } = await supabase
+          .from('documents')
+          .insert({
+            id: documentId,
+            title: metadata.name || file.name.split('.')[0],
+            description: metadata.description || '',
+            file_name: fileName,
+            file_size: file.size,
+            file_type: file.type,
+            file_path: storageData.path,
+            is_public: false,
+            author_id: userId,
+            folder_id: metadata.folderId || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            tags: metadata.tags || []
+          })
+          .select()
+          .single()
 
-        // ID unique pour le fichier
-        const fileId = `file-${timestamp}-${randomSuffix}`
-
-        // 🆕 SAUVEGARDER DANS LA TABLE DOCUMENTS SUPABASE
-        try {
-          console.log('💾 Sauvegarde en base de données...')
-          console.log('👤 User ID:', userId)
-          console.log('📄 File ID:', fileId)
-          console.log('📝 Title:', metadata.name || file.name.split('.')[0])
-          
-          // Créer l'entrée document dans Supabase
-          const { data: document, error: docError } = await supabase
-            .from('documents')
-            .insert({
-              id: fileId,
-              title: metadata.name || file.name.split('.')[0],
-              description: metadata.description || null,
-              authorId: userId, // Utiliser l'ID de l'utilisateur connecté
-              folderId: null, // camelCase pour Supabase
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            })
-            .select()
-            .single()
-
-          if (docError) {
-            console.error('❌ Erreur sauvegarde document:', docError)
-            console.error('❌ Détails erreur:', JSON.stringify(docError, null, 2))
-            throw new Error(`Erreur sauvegarde document: ${docError.message}`)
-          }
-
-          console.log('✅ Document enregistré en base:', document.id)
-
-          // Créer la première version du document
-          const versionId = `version-${timestamp}-${randomSuffix}`
-          const { data: version, error: versionError } = await supabase
-            .from('document_versions')
-            .insert({
-              id: versionId,
-              documentId: fileId, // camelCase pour Supabase
-              versionNumber: 1, // camelCase pour Supabase
-              fileName: file.name, // camelCase pour Supabase
-              fileSize: file.size, // camelCase pour Supabase
-              fileType: file.type, // camelCase pour Supabase
-              filePath: filePath, // camelCase pour Supabase
-              changeLog: 'Version initiale', // camelCase pour Supabase
-              createdBy: userId, // Utiliser l'ID de l'utilisateur connecté
-              createdAt: new Date().toISOString() // camelCase pour Supabase
-            })
-            .select()
-            .single()
-
-          if (versionError) {
-            console.error('❌ Erreur création version:', versionError)
-            throw new Error(`Erreur création version: ${versionError.message}`)
-          }
-
-          // Mettre à jour le document avec l'ID de la version actuelle
-          const { error: updateError } = await supabase
-            .from('documents')
-            .update({ currentVersionId: versionId }) // camelCase pour Supabase
-            .eq('id', fileId)
-
-          if (updateError) {
-            console.error('❌ Erreur mise à jour current_version_id:', updateError)
-            throw new Error(`Erreur mise à jour current_version_id: ${updateError.message}`)
-          }
-
-          console.log('✅ Version créée et document mis à jour:', versionId)
-
-        } catch (dbError) {
+        if (dbError) {
           console.error('❌ Erreur base de données:', dbError)
-          console.error('❌ Détails erreur DB:', JSON.stringify(dbError, null, 2))
-          // Continuer même si la DB échoue, au moins le fichier est sauvé
+          // Essayer de supprimer le fichier du storage si la DB échoue
+          await supabase.storage.from('documents').remove([fileName])
+          throw new Error(`Erreur base de données: ${dbError.message}`)
         }
+
+        console.log('✅ Document sauvegardé en base:', documentId)
+        
+        // Envoyer une notification
+        await DocumentNotifications.created(
+          documentId,
+          metadata.name || file.name.split('.')[0],
+          userId
+        )
 
         uploadedFiles.push({
-          id: fileId,
+          id: documentId,
           title: metadata.name || file.name.split('.')[0],
           name: file.name,
           size: file.size,
           type: file.type,
-          path: filePath,
           url: publicUrl
         })
 
@@ -246,15 +184,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 6. RÉPONSE FINALE
+    // 5. RÉPONSE FINALE
     console.log(`📊 Résumé: ${uploadedFiles.length} succès, ${errors.length} erreurs`)
 
     if (uploadedFiles.length === 0 && errors.length > 0) {
       return NextResponse.json(
         {
-          error: `Aucun fichier n'a pu être uploadé (${errors.length} fichier(s) en erreur)`,
+          error: `Aucun fichier n'a pu être uploadé`,
           errors,
-          details: 'Tous les fichiers ont rencontré une erreur lors du traitement'
+          details: 'Vérifiez que Supabase Storage est configuré correctement'
         },
         { status: 500 }
       )
@@ -262,12 +200,13 @@ export async function POST(request: NextRequest) {
 
     if (uploadedFiles.length === 0) {
       return NextResponse.json(
-        { error: 'Aucun fichier n\'a pu être traité - erreur inattendue' },
+        { error: 'Aucun fichier n\'a pu être traité' },
         { status: 500 }
       )
     }
 
     console.log('✅ Upload terminé avec succès:', uploadedFiles.length, 'fichiers')
+    
     return NextResponse.json({
       message: `${uploadedFiles.length} fichier(s) uploadé(s) avec succès` + 
                (errors.length ? `, ${errors.length} échec(s)` : ''),

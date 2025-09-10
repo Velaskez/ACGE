@@ -91,10 +91,19 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
   })
 
   const getIconColorClasses = (color: string) => {
-    // Toutes les icônes de navigation utilisent maintenant des couleurs neutres
-    return {
-      bg: 'bg-muted',
-      text: 'text-muted-foreground'
+    switch (color) {
+      case 'blue':
+        return { bg: 'icon-blue-bg', text: 'icon-blue-fg' }
+      case 'green':
+        return { bg: 'icon-green-bg', text: 'icon-green-fg' }
+      case 'purple':
+        return { bg: 'icon-purple-bg', text: 'icon-purple-fg' }
+      case 'orange':
+        return { bg: 'icon-orange-bg', text: 'icon-orange-fg' }
+      case 'red':
+        return { bg: 'icon-red-bg', text: 'icon-red-fg' }
+      default:
+        return { bg: 'bg-muted', text: 'text-muted-foreground' }
     }
   }
 
@@ -126,9 +135,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                             variant={pathname === item.href ? 'secondary' : 'ghost'}
                             className="w-full justify-start min-h-[40px]"
                           >
-                            <div className={`p-1.5 rounded-md mr-2 ${colorClasses.bg}`}>
-                              <item.icon className={`h-4 w-4 ${colorClasses.text}`} />
-                            </div>
+                            <item.icon className={`h-4 w-4 mr-2 ${colorClasses.text}`} />
                             <span className="truncate text-left flex-1">
                               {item.title}
                             </span>
@@ -184,9 +191,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                               className="w-full justify-start h-8 min-h-[32px]"
                               onClick={() => toggleFolder(folder.id)}
                             >
-                              <div className="p-1 rounded-md bg-muted mr-2">
-                                <FolderOpen className="h-3 w-3 text-muted-foreground" />
-                              </div>
+                              <FolderOpen className="h-3 w-3 icon-orange-fg mr-2" />
                               <span className="truncate text-left flex-1 text-sm">
                                 {folder.name}
                               </span>
@@ -234,9 +239,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
                   ) : (
                     // État vide
                     <div className="px-4 py-8 text-center">
-                      <div className="p-2 rounded-lg bg-muted mx-auto w-fit mb-2">
-                        <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                      </div>
+                      <FolderOpen className="h-4 w-4 icon-orange-fg mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground">
                         Aucun dossier récent
                       </p>

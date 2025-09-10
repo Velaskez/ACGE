@@ -44,45 +44,19 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useFolders } from '@/hooks/use-folders'
 import { FoldersToolbar } from '@/components/folders/folders-toolbar'
+import { FoldersFilters, FolderFilters } from '@/components/folders/folders-filters'
 import { FolderGridItem } from '@/components/folders/folder-grid-item'
 import { FolderCreationForm } from '@/components/folders/folder-creation-form'
 import { ModalWrapper } from '@/components/ui/modal-wrapper'
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
+import { DocumentsFilters, DocumentFilters } from '@/components/documents/documents-filters'
 import { DocumentGridItem } from '@/components/documents/document-grid-item'
 import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
-import { DocumentVersionHistory } from '@/components/documents/document-version-history'
 import { FolderOpen, Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, ArrowLeft, Download, Share2, Upload } from 'lucide-react'
 import { SearchSuggestion } from '@/components/ui/search-suggestions'
-
-// Types pour les documents - compatible avec les composants existants
-interface DocumentItem {
-  id: string
-  title: string
-  description?: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  tags: Array<{ id: string; name: string }>
-  folder?: { id: string; name: string }
-  author: { id: string; name: string; email: string }
-  currentVersion?: {
-    id: string
-    versionNumber: number
-    fileName: string
-    fileSize: number
-    fileType: string
-    filePath: string
-    changeLog?: string
-    createdAt: string
-  }
-  _count?: {
-    versions?: number
-    comments?: number
-    shares?: number
-  }
-}
+import { DocumentItem } from '@/types/document'
 
 export default function FoldersPage() {
   const searchParams = useSearchParams()
@@ -95,7 +69,7 @@ export default function FoldersPage() {
   const [name, setName] = React.useState('')
   const [description, setDescription] = React.useState('')
   const [creating, setCreating] = React.useState(false)
-  const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list')
+  const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('grid')
   const [sortField, setSortField] = React.useState<'name' | 'createdAt' | 'updatedAt' | 'documentCount'>('updatedAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
   const [editingFolder, setEditingFolder] = React.useState<any>(null)
@@ -152,7 +126,7 @@ export default function FoldersPage() {
   
   // États pour les documents (comme dans documents/page.tsx)
   const [documentSearchQuery, setDocumentSearchQuery] = React.useState('')
-  const [documentViewMode, setDocumentViewMode] = React.useState<'list' | 'grid'>('list')
+  const [documentViewMode, setDocumentViewMode] = React.useState<'list' | 'grid'>('grid')
   const [documentSortField, setDocumentSortField] = React.useState<'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'>('updatedAt')
   const [documentSortOrder, setDocumentSortOrder] = React.useState<'asc' | 'desc'>('desc')
   
@@ -161,7 +135,20 @@ export default function FoldersPage() {
   const [previewOpen, setPreviewOpen] = React.useState(false)
   const [editModalOpen, setEditModalOpen] = React.useState(false)
   const [shareModalOpen, setShareModalOpen] = React.useState(false)
-  const [versionHistoryOpen, setVersionHistoryOpen] = React.useState(false)
+
+  // États pour les filtres des dossiers
+  const [isFiltersOpen, setIsFiltersOpen] = React.useState(false)
+  const [folderFilters, setFolderFilters] = React.useState<FolderFilters>({
+    sortBy: 'updatedAt',
+    sortOrder: 'desc'
+  })
+
+  // États pour les filtres des documents dans un dossier
+  const [isDocumentFiltersOpen, setIsDocumentFiltersOpen] = React.useState(false)
+  const [documentFilters, setDocumentFilters] = React.useState<DocumentFilters>({
+    sortBy: 'updatedAt',
+    sortOrder: 'desc'
+  })
 
   // Fonction pour générer le numéro de dossier
   const generateNumeroDossier = () => {
@@ -205,40 +192,57 @@ export default function FoldersPage() {
   // Fonction pour charger les documents d'un dossier
   const loadFolderDocuments = React.useCallback(async (folderId: string) => {
     try {
+      console.log('📁 Chargement des documents du dossier:', folderId)
       setDocumentsLoading(true)
       setDocumentsError('')
       
       // Charger les détails du dossier
+      console.log('📁 Appel API dossier:', `/api/folders/${folderId}`)
       const folderRes = await fetch(`/api/folders/${folderId}`)
+      console.log('📁 Réponse API dossier:', folderRes.status, folderRes.ok)
+      
       if (folderRes.ok) {
         const folderData = await folderRes.json()
-        setCurrentFolder(folderData)
+        console.log('📁 Données dossier reçues:', folderData)
+        setCurrentFolder(folderData.folder || folderData)
+      } else {
+        const errorData = await folderRes.text()
+        console.error('❌ Erreur API dossier:', folderRes.status, errorData)
+        setDocumentsError(`Erreur lors du chargement du dossier (${folderRes.status})`)
       }
       
       // Charger les documents du dossier
+      console.log('📄 Appel API documents:', `/api/documents?folderId=${folderId}`)
       const documentsRes = await fetch(`/api/documents?folderId=${folderId}`)
+      console.log('📄 Réponse API documents:', documentsRes.status, documentsRes.ok)
+      
       if (documentsRes.ok) {
         const response = await documentsRes.json()
+        console.log('📄 Données documents reçues:', response)
         
         // L'API retourne { documents: [...], pagination: {...} }
         const documentsArray = response.documents || []
+        console.log('📄 Nombre de documents trouvés:', documentsArray.length)
         
         // Adapter les données pour correspondre à notre interface
         const adaptedDocuments = documentsArray.map((doc: any): DocumentItem => ({
           ...doc,
+          fileName: doc.fileName || doc.currentVersion?.fileName || 'document',
+          fileSize: doc.fileSize || doc.currentVersion?.fileSize || 0,
+          fileType: doc.fileType || doc.currentVersion?.fileType || 'unknown',
+          filePath: doc.filePath || doc.currentVersion?.filePath || '',
           tags: doc.tags || [],
           author: doc.author || { id: 'unknown', name: 'Utilisateur inconnu', email: 'unknown@example.com' },
-          currentVersion: doc.currentVersion ? {
-            ...doc.currentVersion,
-            fileType: doc.currentVersion.fileType || 'unknown',
-            filePath: doc.currentVersion.filePath || '',
-            createdAt: doc.currentVersion.createdAt || doc.createdAt
-          } : undefined
+          _count: {
+            comments: doc._count?.comments || 0,
+            shares: doc._count?.shares || 0
+          }
         }))
         setDocuments(adaptedDocuments)
+        setFilteredDocuments(adaptedDocuments)
       } else {
         const errorData = await documentsRes.text()
-        console.error('Erreur API documents:', documentsRes.status, errorData)
+        console.error('❌ Erreur API documents:', documentsRes.status, errorData)
         setDocumentsError(`Erreur lors du chargement des documents (${documentsRes.status})`)
       }
     } catch (error) {
@@ -250,55 +254,104 @@ export default function FoldersPage() {
 
   // Effet pour charger les documents quand un dossier est sélectionné
   React.useEffect(() => {
+    console.log('🔄 Effet de chargement - folderId:', folderId)
     if (folderId) {
+      console.log('🔄 Chargement des documents pour le dossier:', folderId)
       loadFolderDocuments(folderId)
     } else {
+      console.log('🔄 Pas de dossier sélectionné, réinitialisation')
       setCurrentFolder(null)
       setDocuments([])
+      setFilteredDocuments([])
       setDocumentsError('')
     }
   }, [folderId, loadFolderDocuments])
 
   // Filtrage et tri des documents
   React.useEffect(() => {
-    let filtered = documents.filter(doc => 
-      !documentSearchQuery || 
-      doc.title.toLowerCase().includes(documentSearchQuery.toLowerCase()) ||
-      doc.description?.toLowerCase().includes(documentSearchQuery.toLowerCase()) ||
-      doc.currentVersion?.fileName.toLowerCase().includes(documentSearchQuery.toLowerCase())
-    )
+    let filtered = documents.filter(doc => {
+      // Filtrage par recherche dans la toolbar
+      if (documentSearchQuery && 
+          !doc.title.toLowerCase().includes(documentSearchQuery.toLowerCase()) &&
+          !doc.description?.toLowerCase().includes(documentSearchQuery.toLowerCase()) &&
+          !doc.fileName?.toLowerCase().includes(documentSearchQuery.toLowerCase())) {
+        return false
+      }
+
+      // Filtrage par recherche dans les filtres
+      if (documentFilters.search && 
+          !doc.title.toLowerCase().includes(documentFilters.search.toLowerCase()) &&
+          !doc.description?.toLowerCase().includes(documentFilters.search.toLowerCase()) &&
+          !doc.fileName?.toLowerCase().includes(documentFilters.search.toLowerCase())) {
+        return false
+      }
+
+      // Filtrage par type de fichier
+      if (documentFilters.fileType && doc.fileType !== documentFilters.fileType) {
+        return false
+      }
+
+      // Filtrage par taille
+      if (documentFilters.minSize && (!doc.fileSize || doc.fileSize < documentFilters.minSize)) {
+        return false
+      }
+      if (documentFilters.maxSize && (!doc.fileSize || doc.fileSize > documentFilters.maxSize)) {
+        return false
+      }
+
+      // Filtrage par période
+      if (documentFilters.startDate && doc.createdAt && new Date(doc.createdAt) < new Date(documentFilters.startDate)) {
+        return false
+      }
+      if (documentFilters.endDate && doc.createdAt && new Date(doc.createdAt) > new Date(documentFilters.endDate)) {
+        return false
+      }
+
+      // Filtrage par tags
+      if (documentFilters.tags && documentFilters.tags.length > 0) {
+        const docTags = doc.tags || []
+        if (!documentFilters.tags.some(tag => docTags.some((docTag: any) => docTag === tag))) {
+          return false
+        }
+      }
+
+      return true
+    })
 
     // Tri des documents
+    const sortBy = documentFilters.sortBy || documentSortField
+    const sortOrderValue = documentFilters.sortOrder || documentSortOrder
+
     filtered.sort((a, b) => {
       let aValue: any, bValue: any
       
-      switch (documentSortField) {
+      switch (sortBy) {
         case 'title':
           aValue = a.title.toLowerCase()
           bValue = b.title.toLowerCase()
           break
         case 'createdAt':
-          aValue = new Date(a.createdAt).getTime()
-          bValue = new Date(b.createdAt).getTime()
+          aValue = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          bValue = b.createdAt ? new Date(b.createdAt).getTime() : 0
           break
         case 'updatedAt':
-          aValue = new Date(a.updatedAt).getTime()
-          bValue = new Date(b.updatedAt).getTime()
+          aValue = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+          bValue = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
           break
         case 'fileSize':
-          aValue = a.currentVersion?.fileSize || 0
-          bValue = b.currentVersion?.fileSize || 0
+          aValue = a.fileSize || 0
+          bValue = b.fileSize || 0
           break
         case 'fileType':
-          aValue = a.currentVersion?.fileType?.toLowerCase() || ''
-          bValue = b.currentVersion?.fileType?.toLowerCase() || ''
+          aValue = a.fileType?.toLowerCase() || ''
+          bValue = b.fileType?.toLowerCase() || ''
           break
         default:
-          aValue = new Date(a.updatedAt).getTime()
-          bValue = new Date(b.updatedAt).getTime()
+          aValue = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+          bValue = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
       }
 
-      if (documentSortOrder === 'asc') {
+      if (sortOrderValue === 'asc') {
         return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
       } else {
         return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
@@ -306,25 +359,77 @@ export default function FoldersPage() {
     })
 
     setFilteredDocuments(filtered)
-  }, [documents, documentSearchQuery, documentSortField, documentSortOrder])
+  }, [documents, documentSearchQuery, documentSortField, documentSortOrder, documentFilters])
 
   const filteredFolders = React.useMemo(() => {
-    const items = (folders || []).filter(f => !query || f.name.toLowerCase().includes(query.toLowerCase()))
+    let items = (folders || [])
+
+    // Filtrage par recherche textuelle
+    if (query) {
+      items = items.filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
+    }
+
+    // Filtrage par recherche dans les filtres
+    if (folderFilters.search) {
+      items = items.filter(f => 
+        f.name.toLowerCase().includes(folderFilters.search!.toLowerCase()) ||
+        (f.description && f.description.toLowerCase().includes(folderFilters.search!.toLowerCase()))
+      )
+    }
+
+    // Filtrage par nombre de documents
+    if (folderFilters.minDocuments !== undefined) {
+      items = items.filter(f => (f._count?.documents || 0) >= folderFilters.minDocuments!)
+    }
+    if (folderFilters.maxDocuments !== undefined) {
+      items = items.filter(f => (f._count?.documents || 0) <= folderFilters.maxDocuments!)
+    }
+
+    // Filtrage par période
+    if (folderFilters.startDate) {
+      items = items.filter(f => f.createdAt && new Date(f.createdAt) >= new Date(folderFilters.startDate!))
+    }
+    if (folderFilters.endDate) {
+      items = items.filter(f => f.createdAt && new Date(f.createdAt) <= new Date(folderFilters.endDate!))
+    }
+
+    // Filtrage par poste comptable
+    if (folderFilters.posteComptableId) {
+      items = items.filter(f => (f as any).posteComptableId === folderFilters.posteComptableId)
+    }
+
+    // Filtrage par nature de document
+    if (folderFilters.natureDocumentId) {
+      items = items.filter(f => (f as any).natureDocumentId === folderFilters.natureDocumentId)
+    }
+
+    // Tri
+    const sortBy = folderFilters.sortBy || sortField
+    const sortOrderValue = folderFilters.sortOrder || sortOrder
+
     const getValue = (f: any) => {
-      if (sortField === 'updatedAt') return new Date(f.updatedAt || 0).getTime()
-      if (sortField === 'documentCount') return f.documentCount || 0
+      if (sortBy === 'updatedAt') return f.updatedAt ? new Date(f.updatedAt).getTime() : 0
+      if (sortBy === 'createdAt') return f.createdAt ? new Date(f.createdAt).getTime() : 0
+      if (sortBy === 'documentCount') return f._count?.documents || 0
       return (f.name || '').toLowerCase()
     }
+
     items.sort((a, b) => {
       const av = getValue(a)
       const bv = getValue(b)
-      if (sortOrder === 'asc') return av > bv ? 1 : av < bv ? -1 : 0
+      if (sortOrderValue === 'asc') return av > bv ? 1 : av < bv ? -1 : 0
       return av < bv ? 1 : av > bv ? -1 : 0
     })
-    return items
-  }, [folders, query, sortField, sortOrder])
 
-  const handleCreateFolder = async (formData?: any) => {
+    return items
+  }, [folders, query, sortField, sortOrder, folderFilters])
+
+  const handleCreateFolder = async (formData?: any, e?: React.FormEvent) => {
+    // Prévenir le comportement par défaut si un événement est fourni
+    if (e) {
+      e.preventDefault()
+    }
+    
     // Si formData est fourni, utiliser les données du formulaire stepper
     const data = formData || {
       name,
@@ -454,14 +559,6 @@ export default function FoldersPage() {
     }
   }
 
-  // Fonctions d'adaptation des types pour les modales
-  const adaptDocumentForModal = (doc: DocumentItem) => ({
-    ...doc,
-    _count: {
-      versions: doc._count?.versions || 0
-    },
-    author: doc.author || { id: 'unknown', name: 'Utilisateur inconnu', email: 'unknown@example.com' }
-  })
 
   // Fonctions pour la gestion des documents
   const handleViewDocument = React.useCallback((document: DocumentItem) => {
@@ -479,10 +576,6 @@ export default function FoldersPage() {
     setShareModalOpen(true)
   }, [])
 
-  const handleVersionHistory = React.useCallback((document: DocumentItem) => {
-    setSelectedDocument(document)
-    setVersionHistoryOpen(true)
-  }, [])
 
   const handleDownloadDocument = async (document: DocumentItem) => {
     try {
@@ -492,7 +585,7 @@ export default function FoldersPage() {
         const url = window.URL.createObjectURL(blob)
         const a = window.document.createElement('a')
         a.href = url
-        a.download = document.currentVersion?.fileName || 'document'
+        a.download = document.fileName || 'document'
         a.click()
         window.URL.revokeObjectURL(url)
       }
@@ -519,6 +612,9 @@ export default function FoldersPage() {
 
   // Fonction pour ouvrir un dossier
   const handleOpenFolder = React.useCallback((folder: any) => {
+    console.log('🔍 Tentative d\'ouverture du dossier:', folder)
+    console.log('🔍 ID du dossier:', folder.id)
+    console.log('🔍 URL de navigation:', `/folders?folder=${folder.id}`)
     router.push(`/folders?folder=${folder.id}`)
   }, [router])
 
@@ -541,7 +637,6 @@ export default function FoldersPage() {
               </Button>
               <div className="border-l pl-4 flex-1 min-w-0">
                 <div className="flex items-center space-x-2 text-sm text-primary mb-1">
-                  <FolderOpen className="h-4 w-4" />
                   <span>Dossiers</span>
                   <span>/</span>
                   <span className="font-medium text-foreground">{currentFolder.name}</span>
@@ -573,10 +668,7 @@ export default function FoldersPage() {
             sortOrder={documentSortOrder}
             onSortFieldChange={setDocumentSortField}
             onSortOrderChange={setDocumentSortOrder}
-            onOpenFilters={() => {
-              // TODO: Implémenter les filtres pour les documents
-              console.log('Ouvrir les filtres des documents')
-            }}
+            onOpenFilters={() => setIsDocumentFiltersOpen(true)}
           />
 
           {/* Contenu des documents */}
@@ -614,15 +706,15 @@ export default function FoldersPage() {
                       {filteredDocuments.map((document) => (
                         <TableRow key={document.id}>
                           <TableCell className="font-medium">{document.title}</TableCell>
-                          <TableCell>{document.currentVersion?.fileType}</TableCell>
+                          <TableCell>{document.fileType || 'N/A'}</TableCell>
                           <TableCell>
-                            {document.currentVersion?.fileSize ? 
-                              `${Math.round(document.currentVersion.fileSize / 1024)} KB` : 
+                            {document.fileSize ? 
+                              `${Math.round(document.fileSize / 1024)} KB` : 
                               'N/A'
                             }
                           </TableCell>
                           <TableCell>
-                            {new Date(document.updatedAt).toLocaleDateString('fr-FR')}
+                            {document.updatedAt ? new Date(document.updatedAt).toLocaleDateString('fr-FR') : 'N/A'}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -687,10 +779,18 @@ export default function FoldersPage() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-primary">
-                      Vue grille disponible prochainement. Utilisez la vue liste pour le moment.
-                    </p>
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 p-1">
+                    {filteredDocuments.map((document) => (
+                      <DocumentGridItem
+                        key={document.id}
+                        document={document}
+                        onView={handleViewDocument}
+                        onEdit={handleEditDocument}
+                        onDownload={handleDownloadDocument}
+                        onShare={handleShareDocument}
+                        onDelete={handleDeleteDocument}
+                      />
+                    ))}
                   </div>
                 )
               ) : (
@@ -709,12 +809,12 @@ export default function FoldersPage() {
           {selectedDocument && (
             <>
               <DocumentPreviewModal
-                document={adaptDocumentForModal(selectedDocument)}
+                document={selectedDocument}
                 isOpen={previewOpen}
                 onClose={() => setPreviewOpen(false)}
               />
               <DocumentEditModal
-                document={adaptDocumentForModal(selectedDocument)}
+                document={selectedDocument}
                 isOpen={editModalOpen}
                 onClose={() => setEditModalOpen(false)}
                 onSave={() => folderId && loadFolderDocuments(folderId)}
@@ -724,14 +824,17 @@ export default function FoldersPage() {
                 isOpen={shareModalOpen}
                 onClose={() => setShareModalOpen(false)}
               />
-              {versionHistoryOpen && (
-                <DocumentVersionHistory
-                  documentId={selectedDocument.id}
-                  documentTitle={selectedDocument.title}
-                />
-              )}
             </>
           )}
+
+          {/* Panneau de filtres des documents */}
+          <DocumentsFilters
+            isOpen={isDocumentFiltersOpen}
+            onClose={() => setIsDocumentFiltersOpen(false)}
+            filters={documentFilters}
+            onApplyFilters={setDocumentFilters}
+            folders={[]} // Pas de sous-dossiers dans cette vue
+          />
         </div>
       </MainLayout>
     )
@@ -790,10 +893,7 @@ export default function FoldersPage() {
           sortOrder={sortOrder}
           onSortFieldChange={setSortField}
           onSortOrderChange={setSortOrder}
-          onOpenFilters={() => {
-            // TODO: Implémenter l'ouverture des filtres
-            console.log('Ouvrir les filtres')
-          }}
+          onOpenFilters={() => setIsFiltersOpen(true)}
         />
 
         {/* Stats rapides */}
@@ -966,6 +1066,16 @@ export default function FoldersPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Panneau de filtres des dossiers */}
+        <FoldersFilters
+          isOpen={isFiltersOpen}
+          onClose={() => setIsFiltersOpen(false)}
+          filters={folderFilters}
+          onApplyFilters={setFolderFilters}
+          postesComptables={postesComptables}
+          naturesDocuments={naturesDocuments}
+        />
       </div>
     </MainLayout>
   )

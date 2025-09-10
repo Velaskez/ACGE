@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { httpClient } from '@/lib/http-client'
 
 interface User {
   id: string
@@ -53,20 +54,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
       
-      // Utiliser un timeout pour éviter les blocages
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 secondes de timeout
-      
-      const response = await fetch('/api/auth/me', {
+      // Utiliser le client HTTP robuste
+      const response = await httpClient.get('/api/auth/me', {
         credentials: 'include',
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
+        timeout: 10000, // 10 secondes de timeout
+        retries: 1 // 1 tentative de retry
       })
       
-      clearTimeout(timeoutId)
       console.log('📡 Status checkAuth:', response.status)
       
       if (response.ok) {
@@ -90,21 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('❌ Erreur lors de la vérification de l\'authentification:', error)
       
-      // Gérer spécifiquement les erreurs de timeout et de réseau
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.log('⏰ Timeout lors de la vérification d\'auth')
-      } else if (error instanceof Error && error.message.includes('Failed to fetch')) {
-        console.log('🌐 Erreur réseau - serveur peut-être indisponible')
-        
-        // Retry après un délai si c'est une erreur réseau
-        setTimeout(() => {
-          console.log('🔄 Retry de la vérification d\'auth...')
-          checkAuth()
-        }, 1000)
-        return
-      }
-      
-      // En cas d'erreur réseau, on considère qu'il n'y a pas d'authentification
+      // Le client HTTP gère déjà les AbortError et les retries
+      // On considère simplement qu'il n'y a pas d'authentification
       setUser(null)
     } finally {
       setIsLoading(false)

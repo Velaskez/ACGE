@@ -103,10 +103,34 @@ export default function UploadPage() {
 
       setIsSuccess(true)
       
-      // Redirection après succès
-      setTimeout(() => {
-        router.push('/documents')
-      }, 2000)
+      // Mise à jour optimiste de la liste des documents
+      if (result.files && result.files.length > 0) {
+        // Stocker les nouveaux documents dans sessionStorage pour la page documents
+        const newDocuments = result.files.map((file: any) => ({
+          id: file.id,
+          title: file.title,
+          description: file.description || '',
+          author: { id: 'current-user', name: 'Vous', email: 'current@user.com' },
+          folderId: file.folderId || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          currentVersion: {
+            id: file.id,
+            fileName: file.name,
+            fileSize: file.size,
+            fileType: file.type,
+            filePath: file.path,
+            url: file.url,
+            createdAt: new Date().toISOString()
+          },
+          tags: file.tags || []
+        }))
+        
+        sessionStorage.setItem('newDocuments', JSON.stringify(newDocuments))
+      }
+      
+      // Redirection immédiate après succès
+      router.push('/documents')
 
     } catch (error) {
       console.error('Erreur upload:', error)
@@ -177,8 +201,7 @@ export default function UploadPage() {
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center gap-2">
-                <Upload className="w-6 h-6 sm:w-8 sm:h-8" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary">
                 Upload de Fichiers
               </h1>
               <p className="text-primary text-sm sm:text-base">

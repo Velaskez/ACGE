@@ -112,7 +112,7 @@ export function DocumentEditForm({
   const fetchFolders = async () => {
     setFoldersLoading(true)
     try {
-      const response = await fetch('/api/sidebar/folders', {
+      const response = await fetch('/api/folders', {
         credentials: 'include'
       })
       
@@ -151,7 +151,12 @@ export function DocumentEditForm({
   const handleNext = async () => {
     const isValid = await validateStep(currentStep)
     if (isValid) {
-      setCurrentStep(prev => Math.min(prev + 1, steps.length))
+      if (currentStep < steps.length) {
+        setCurrentStep(prev => prev + 1)
+      } else {
+        // À la dernière étape, soumettre le formulaire
+        handleSubmit()
+      }
     }
   }
 
@@ -439,16 +444,18 @@ export function DocumentEditForm({
             )}
           </Button>
 
-          {currentStep < steps.length ? (
-            <Button onClick={handleNext} disabled={isLoading || foldersLoading}>
-              Suivant
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={isLoading}>
-              {isLoading ? 'Sauvegarde...' : 'Sauvegarder les modifications'}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {currentStep < steps.length ? (
+              <Button onClick={handleNext} disabled={isLoading || foldersLoading}>
+                Suivant
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={isLoading}>
+                {isLoading ? 'Sauvegarde...' : 'Sauvegarder les modifications'}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </Form>

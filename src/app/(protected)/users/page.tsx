@@ -211,8 +211,7 @@ export default function UsersPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center gap-2">
-              <Users className="w-6 h-6 sm:w-8 sm:h-8" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary">
               Gestion des Utilisateurs
             </h1>
             <p className="text-primary text-sm sm:text-base">

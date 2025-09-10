@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { randomUUID } from 'crypto'
+import { FolderNotifications } from '@/lib/notifications'
+import { CacheInvalidation } from '@/lib/cache'
 
 type CreateFolderBody = {
   name?: string
@@ -41,12 +44,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Un dossier portant ce nom existe déjà' }, { status: 409 })
     }
 
-    // Créer le dossier dans Supabase (même logique que test-folders qui fonctionne)
+    // Créer le dossier dans Supabase avec un UUID valide
     const now = new Date().toISOString()
     const { data: newFolder, error: insertError } = await admin
       .from('folders')
       .insert({
-        id: 'folder_' + Date.now(),
+        id: randomUUID(), // Utiliser un UUID valide
         name: name.trim(),
         description: description?.trim() || null,
         authorId: 'cmebotahv0000c17w3izkh2k9',
@@ -67,6 +70,12 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Dossier créé dans Supabase:', newFolder.name)
     
+    // Notification admin
+    await FolderNotifications.created(newFolder.name, newFolder.authorId)
+    
+    // Invalider le cache
+    CacheInvalidation.onFolderChange()
+    
     return NextResponse.json({ folder: newFolder }, { status: 201 })
   } catch (error) {
     console.error('Erreur lors de la création du dossier:', error)
@@ -82,7 +91,7 @@ export async function GET(request: NextRequest) {
     // Utiliser Supabase pour la récupération persistante
     const admin = getSupabaseAdmin()
     
-    // Récupérer les dossiers depuis Supabase (même logique que test-get-folders qui fonctionne)
+    // Récupérer les dossiers depuis Supabase
     const { data: folders, error } = await admin
       .from('folders')
       .select('*')
@@ -99,7 +108,50 @@ export async function GET(request: NextRequest) {
 
     console.log(`📁 ${folders?.length || 0} dossiers trouvés dans Supabase`)
     
-    return NextResponse.json({ folders: folders || [] })
+    // Enrichir chaque dossier avec le nombre de documents
+    const enrichedFolders = await Promise.all(
+      (folders || []).map(async (folder) => {
+        try {
+          // Compter les documents pour ce dossier (UUID et legacy)
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+          const legacyRegex = /^folder[-_]\d+$/i
+          
+          let documentsCount = 0
+          
+          if (uuidRegex.test(folder.id)) {
+            // Dossier UUID - compter directement
+            const { count } = await admin
+              .from('documents')
+              .select('id', { count: 'exact', head: true })
+              .eq('folder_id', folder.id)
+            documentsCount = count || 0
+          } else if (legacyRegex.test(folder.id)) {
+            // Dossier legacy - compter côté application
+            const { data: allDocs } = await admin
+              .from('documents')
+              .select('id, folder_id')
+            documentsCount = allDocs?.filter(doc => doc.folder_id === folder.id).length || 0
+          }
+          
+          return {
+            ...folder,
+            _count: {
+              documents: documentsCount
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Erreur comptage documents pour dossier ${folder.id}:`, error)
+          return {
+            ...folder,
+            _count: {
+              documents: 0
+            }
+          }
+        }
+      })
+    )
+    
+    return NextResponse.json({ folders: enrichedFolders })
 
   } catch (error) {
     console.error('Erreur API dossiers:', error)

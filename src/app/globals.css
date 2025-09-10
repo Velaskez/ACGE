@@ -165,6 +165,17 @@
   --sidebar-accent-foreground: oklch(0.25 0.15 240);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.25 0.15 240);
+  /* Palette vive pour icônes (clair) */
+  --icon-blue-bg: oklch(0.93 0.06 230);
+  --icon-blue-fg: oklch(0.45 0.16 230);
+  --icon-green-bg: oklch(0.93 0.08 150);
+  --icon-green-fg: oklch(0.42 0.15 150);
+  --icon-purple-bg: oklch(0.94 0.07 300);
+  --icon-purple-fg: oklch(0.42 0.18 300);
+  --icon-orange-bg: oklch(0.94 0.09 70);
+  --icon-orange-fg: oklch(0.5 0.17 70);
+  --icon-red-bg: oklch(0.94 0.09 25);
+  --icon-red-fg: oklch(0.5 0.18 25);
 }
 
 .dark {
@@ -199,6 +210,17 @@
   --sidebar-accent-foreground: oklch(1 0 0);
   --sidebar-border: oklch(1 0 0 / 15%);
   --sidebar-ring: oklch(1 0 0);
+  /* Palette vive pour icônes (sombre) */
+  --icon-blue-bg: oklch(0.28 0.07 230);
+  --icon-blue-fg: oklch(0.85 0.09 230);
+  --icon-green-bg: oklch(0.3 0.09 150);
+  --icon-green-fg: oklch(0.88 0.08 150);
+  --icon-purple-bg: oklch(0.3 0.1 300);
+  --icon-purple-fg: oklch(0.88 0.1 300);
+  --icon-orange-bg: oklch(0.32 0.11 70);
+  --icon-orange-fg: oklch(0.9 0.1 70);
+  --icon-red-bg: oklch(0.32 0.11 25);
+  --icon-red-fg: oklch(0.9 0.11 25);
 }
 
 @layer base {
@@ -434,4 +456,15 @@
   .focus-visible-enhanced:focus-visible {
     @apply ring-2 ring-primary ring-offset-2 ring-offset-background;
   }
+  /* Utilitaires de couleurs d'icônes */
+  .icon-blue-bg { background-color: var(--icon-blue-bg); }
+  .icon-blue-fg { color: var(--icon-blue-fg); }
+  .icon-green-bg { background-color: var(--icon-green-bg); }
+  .icon-green-fg { color: var(--icon-green-fg); }
+  .icon-purple-bg { background-color: var(--icon-purple-bg); }
+  .icon-purple-fg { color: var(--icon-purple-fg); }
+  .icon-orange-bg { background-color: var(--icon-orange-bg); }
+  .icon-orange-fg { color: var(--icon-orange-fg); }
+  .icon-red-bg { background-color: var(--icon-red-bg); }
+  .icon-red-fg { color: var(--icon-red-fg); }
 }

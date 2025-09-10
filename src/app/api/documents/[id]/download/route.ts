@@ -1,202 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verify } from 'jsonwebtoken'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+
+/**
+ * 🚀 API DOCUMENTS DOWNLOAD - Téléchargement de documents
+ * 
+ * API pour télécharger les documents depuis Supabase Storage
+ */
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    console.log('📥 Début du download document Supabase...')
+    console.log('📄 API Documents Download - Téléchargement:', params.id)
     
-    // Vérifier l'authentification
-    const token = request.cookies.get('auth-token')?.value
-
-    if (!token) {
-      console.log('❌ Pas de token d\'authentification')
+    const documentId = params.id
+    
+    if (!documentId) {
       return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
+        { error: 'ID de document requis' },
+        { status: 400 }
       )
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
-    const userId = decoded.userId
-    const userRole = decoded.role
-    console.log('✅ Utilisateur authentifié:', userId, 'Rôle:', userRole)
-
-    const documentId = params.id
-    console.log('📄 Document ID:', documentId)
-
-    // Récupérer le document avec sa version actuelle depuis Supabase
-    const admin = getSupabaseAdmin()
-    const { data: document, error: docError } = await admin
-      .from('documents')
-      .select(`
-        id,
-        title,
-        author_id,
-        current_version_id
-      `)
-      .eq('id', documentId)
-      .maybeSingle()
-
-    if (docError) {
-      console.error('❌ Erreur Supabase:', docError)
+    // Connexion à Supabase
+    const supabase = getSupabaseAdmin()
+    if (!supabase) {
+      console.error('❌ Supabase non configuré')
       return NextResponse.json(
-        { error: 'Erreur lors de la récupération du document', details: docError.message },
+        { error: 'Service de stockage non disponible' },
         { status: 500 }
       )
     }
 
-    if (!document) {
-      console.log('❌ Document non trouvé')
-      return NextResponse.json(
-        { error: 'Document non trouvé' },
-        { status: 404 }
-      )
-    }
+    try {
+      // Récupérer le document depuis la base de données
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('file_name, file_path, file_type, title')
+        .eq('id', documentId)
+        .single()
 
-    console.log('📄 Document trouvé:', document.title)
-
-    // Vérifier les permissions (admin ou propriétaire)
-    if (userRole !== 'ADMIN' && document.author_id !== userId) {
-      console.log('❌ Accès non autorisé - Utilisateur:', userId, 'Auteur:', document.author_id)
-      return NextResponse.json(
-        { error: 'Accès non autorisé' },
-        { status: 403 }
-      )
-    }
-
-    let currentVersion = null
-
-    if (document.current_version_id) {
-      // Récupérer la version actuelle du document
-      const { data: version, error: versionError } = await admin
-        .from('document_versions')
-        .select(`
-          id,
-          file_name,
-          file_path,
-          file_type,
-          file_size
-        `)
-        .eq('id', document.current_version_id)
-        .maybeSingle()
-
-      if (versionError) {
-        console.error('❌ Erreur récupération version:', versionError)
+      if (docError || !document) {
+        console.error('❌ Document non trouvé:', docError)
         return NextResponse.json(
-          { error: 'Erreur lors de la récupération de la version', details: versionError.message },
-          { status: 500 }
-        )
-      }
-
-      currentVersion = version
-    }
-
-    // Si pas de version actuelle définie, récupérer la première version disponible
-    if (!currentVersion) {
-      console.log('⚠️ Aucune version actuelle définie, recherche de la première version...')
-      const { data: firstVersion, error: firstVersionError } = await admin
-        .from('document_versions')
-        .select(`
-          id,
-          file_name,
-          file_path,
-          file_type,
-          file_size
-        `)
-        .eq('document_id', documentId)
-        .order('version_number', { ascending: true })
-        .limit(1)
-        .maybeSingle()
-
-      if (firstVersionError) {
-        console.error('❌ Erreur récupération première version:', firstVersionError)
-        return NextResponse.json(
-          { error: 'Erreur lors de la récupération de la version', details: firstVersionError.message },
-          { status: 500 }
-        )
-      }
-
-      if (!firstVersion) {
-        console.log('❌ Aucune version trouvée pour ce document')
-        return NextResponse.json(
-          { error: 'Ce document n\'a pas de fichier associé. Veuillez le re-télécharger.' },
+          { error: 'Document non trouvé' },
           { status: 404 }
         )
       }
 
-      currentVersion = firstVersion
-      console.log('✅ Première version trouvée:', currentVersion.id)
-    }
+      console.log('📄 Document trouvé:', document.title, document.file_name)
 
-    console.log('📁 Fichier trouvé:', currentVersion.file_path)
+      // Télécharger le fichier depuis Supabase Storage
+      const { data: fileData, error: storageError } = await supabase.storage
+        .from('documents')
+        .download(document.file_name)
 
-    // Traiter le chemin du fichier
-    let filePath = currentVersion.file_path
-    
-    // Si le filePath est une URL complète, extraire le chemin relatif
-    if (filePath.includes('supabase.co') || filePath.startsWith('http')) {
-      const urlParts = filePath.split('/')
-      const fileName = urlParts[urlParts.length - 1]
-      const userIdFromPath = urlParts[urlParts.length - 2]
-      filePath = `${userIdFromPath}/${fileName}`
-      console.log('🔍 Chemin extrait depuis URL:', filePath)
-    }
+      if (storageError || !fileData) {
+        console.error('❌ Erreur Supabase Storage:', storageError)
+        return NextResponse.json(
+          { error: 'Fichier non trouvé dans le stockage' },
+          { status: 404 }
+        )
+      }
 
-    console.log('📂 Chemin final pour Supabase:', filePath)
+      console.log('✅ Fichier téléchargé depuis Supabase Storage')
 
-    // Télécharger le fichier depuis Supabase Storage
-    const { data, error } = await admin.storage
-      .from('documents')
-      .download(filePath)
+      // Convertir le blob en ArrayBuffer
+      const arrayBuffer = await fileData.arrayBuffer()
+      
+      // Retourner le fichier avec les bons headers
+      return new NextResponse(arrayBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': document.file_type || 'application/octet-stream',
+          'Content-Disposition': `inline; filename="${document.title || document.file_name}"`,
+          'Cache-Control': 'public, max-age=3600',
+        },
+      })
 
-    if (error || !data) {
-      console.error('❌ Erreur téléchargement Supabase:', error)
+    } catch (dbError) {
+      console.error('❌ Erreur base de données:', dbError)
       return NextResponse.json(
-        { error: 'Erreur lors du téléchargement du fichier', details: error?.message },
+        { error: 'Erreur lors de la récupération du fichier' },
         { status: 500 }
       )
     }
 
-    console.log('✅ Fichier téléchargé avec succès, taille:', data.size)
-
-    // Convertir le blob en array buffer
-    const arrayBuffer = await data.arrayBuffer()
-
-    // Retourner le fichier avec les bons headers
-    return new NextResponse(arrayBuffer, {
-      headers: {
-        'Content-Type': currentVersion.file_type || 'application/octet-stream',
-        'Content-Disposition': `inline; filename="${currentVersion.file_name}"`,
-        'Cache-Control': 'no-cache'
-      }
-    })
-
   } catch (error) {
-    console.error('❌ Erreur téléchargement document:', error)
-    
-    let errorMessage = 'Erreur inconnue'
-    let errorDetails = null
-    
-    if (error instanceof Error) {
-      errorMessage = error.message
-      errorDetails = error.stack
-    } else if (typeof error === 'string') {
-      errorMessage = error
-    } else if (error && typeof error === 'object') {
-      errorMessage = error.message || JSON.stringify(error)
-      errorDetails = error.stack || error.details
-    }
-    
+    console.error('❌ Erreur générale API documents download:', error)
     return NextResponse.json(
-      { 
-        error: 'Erreur interne du serveur', 
-        details: errorMessage,
-        stack: process.env.NODE_ENV === 'development' ? errorDetails : undefined
-      },
+      { error: 'Erreur interne du serveur' },
       { status: 500 }
     )
   }

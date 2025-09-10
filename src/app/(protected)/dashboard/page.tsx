@@ -31,18 +31,15 @@ export default function DashboardPage() {
   }
 
   const handleNewFolder = () => {
-    // TODO: Implémenter la création de dossier
-    console.log('Créer un nouveau dossier')
+    router.push('/folders')
   }
 
   const handleShare = () => {
-    // TODO: Implémenter le partage
-    console.log('Partager des documents')
+    router.push('/documents')
   }
 
   const handleHistory = () => {
-    // TODO: Implémenter l'historique
-    console.log('Afficher l\'historique')
+    router.push('/documents')
   }
 
   const handleViewAllDocuments = () => {
@@ -123,7 +120,7 @@ export default function DashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Fichiers</CardTitle>
               <div className="p-2 bg-muted rounded-lg">
-                <FileText className="h-4 w-4 text-muted-foreground" />
+                <FileText className="h-4 w-4 icon-red-fg" />
               </div>
             </CardHeader>
             <CardContent>
@@ -149,11 +146,11 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => router.push('/folders')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Dossiers</CardTitle>
               <div className="p-2 bg-muted rounded-lg">
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <FolderOpen className="h-4 w-4 icon-orange-fg" />
               </div>
             </CardHeader>
             <CardContent>
@@ -175,11 +172,11 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => router.push('/documents')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Espace utilisé</CardTitle>
               <div className="p-2 bg-muted rounded-lg">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="h-4 w-4 icon-blue-fg" />
               </div>
             </CardHeader>
             <CardContent>
@@ -207,7 +204,7 @@ export default function DashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Utilisateurs</CardTitle>
               <div className="p-2 bg-muted rounded-lg">
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-4 w-4 icon-purple-fg" />
               </div>
             </CardHeader>
             <CardContent>
@@ -305,7 +302,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <FileText className="mx-auto h-12 w-12 text-primary" />
+                    <FileText className="mx-auto h-12 w-12 icon-red-fg" />
                     <h3 className="mt-2 text-sm font-medium text-primary">Aucun document</h3>
                     <p className="mt-1 text-sm text-primary">
                       Commencez par télécharger votre premier document.
@@ -356,7 +353,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <Clock className="mx-auto h-8 w-8 text-primary" />
+                    <Clock className="mx-auto h-8 w-8 icon-blue-fg" />
                     <h3 className="mt-2 text-sm font-medium text-primary">Aucune activité</h3>
                     <p className="mt-1 text-xs text-primary">
                       Vos activités récentes apparaîtront ici.
@@ -379,19 +376,19 @@ export default function DashboardPage() {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
               <Button variant="outline" className="h-20 flex-col" onClick={handleNewDocument}>
-                <Upload className="h-6 w-6 mb-2" />
+                <Upload className="h-6 w-6 mb-2 icon-purple-fg" />
                 <span>Upload</span>
               </Button>
               <Button variant="outline" className="h-20 flex-col" onClick={handleNewFolder}>
-                <FolderOpen className="h-6 w-6 mb-2" />
+                <FolderOpen className="h-6 w-6 mb-2 icon-orange-fg" />
                 <span>Nouveau dossier</span>
               </Button>
               <Button variant="outline" className="h-20 flex-col" onClick={handleShare}>
-                <Users className="h-6 w-6 mb-2" />
+                <Users className="h-6 w-6 mb-2 icon-purple-fg" />
                 <span>Partager</span>
               </Button>
               <Button variant="outline" className="h-20 flex-col" onClick={handleHistory}>
-                <Clock className="h-6 w-6 mb-2" />
+                <Clock className="h-6 w-6 mb-2 icon-blue-fg" />
                 <span>Historique</span>
               </Button>
             </div>

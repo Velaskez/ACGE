@@ -2,17 +2,6 @@
  * Types partagés pour les documents dans l'application
  */
 
-export interface DocumentVersion {
-  id: string
-  versionNumber: number
-  fileName: string
-  fileSize: number
-  fileType: string
-  filePath: string
-  changeLog?: string
-  createdAt: string
-}
-
 export interface DocumentAuthor {
   id: string
   name: string
@@ -30,24 +19,27 @@ export interface DocumentTag {
 }
 
 export interface DocumentCounts {
-  versions?: number
   comments?: number
   shares?: number
 }
 
 export interface DocumentItem {
   id: string
+  originalId?: string       // ID original UUID de la base de données
   title: string
-  description?: string
-  category?: string
-  isPublic: boolean
-  createdAt: string
-  updatedAt: string
-  tags: DocumentTag[]
+  description?: string | null
+  fileName?: string | null  // Correspond au champ file_name de Supabase
+  fileSize?: number | null  // Correspond au champ file_size de Supabase
+  fileType?: string | null  // Correspond au champ file_type de Supabase
+  filePath?: string | null  // Correspond au champ file_path de Supabase
+  isPublic?: boolean        // Correspond au champ is_public de Supabase
+  createdAt: string         // Correspond au champ created_at de Supabase
+  updatedAt?: string        // Correspond au champ updated_at de Supabase
+  tags?: DocumentTag[]      // Correspond au champ tags de Supabase
   folder?: DocumentFolder
-  folderId?: string | null
-  author: DocumentAuthor
-  currentVersion?: DocumentVersion
+  folderId?: string | null  // Correspond au champ folder_id de Supabase
+  author: DocumentAuthor    // Correspond au champ author_id de Supabase
+  authorId?: string         // Correspond au champ author_id de Supabase
   _count?: DocumentCounts
 }
 

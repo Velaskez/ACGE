@@ -41,7 +41,6 @@ import {
 } from 'lucide-react'
 import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
-import { DocumentVersionHistory } from '@/components/documents/document-version-history'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
 import { DocumentDeleteConfirmation } from '@/components/documents/document-delete-confirmation'
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
@@ -63,41 +62,6 @@ import {
 
 import { DocumentItem } from '@/types/document'
 
-interface DossierComptable {
-  id: string
-  numeroDossier: string
-  dateDepot: string
-  numeroNature: string
-  objetOperation: string
-  beneficiaire: string
-  statut: string
-  posteComptable: {
-    numero: string
-    intitule: string
-  }
-  natureDocument: {
-    numero: string
-    nom: string
-  }
-  secretaire: {
-    name: string
-  }
-}
-
-interface PosteComptable {
-  id: string
-  numero: string
-  intitule: string
-  isActive: boolean
-}
-
-interface NatureDocument {
-  id: string
-  numero: string
-  nom: string
-  description?: string
-  isActive: boolean
-}
 
 type ViewMode = 'list' | 'grid'
 type SortField = 'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'
@@ -112,7 +76,7 @@ export default function DocumentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [sortField, setSortField] = useState<SortField>('createdAt')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [selectedDocument, setSelectedDocument] = useState<DocumentItem | null>(null)
@@ -133,19 +97,16 @@ export default function DocumentsPage() {
     totalPages: 0
   })
 
-  // États pour les dossiers comptables
-  const [dossiersComptables, setDossiersComptables] = useState<DossierComptable[]>([])
-  const [postesComptables, setPostesComptables] = useState<PosteComptable[]>([])
-  const [naturesDocuments, setNaturesDocuments] = useState<NatureDocument[]>([])
-  const [showDossierModal, setShowDossierModal] = useState(false)
-  const [dossierFormData, setDossierFormData] = useState({
-    numeroNature: '',
-    objetOperation: '',
-    beneficiaire: '',
-    posteComptableId: '',
-    natureDocumentId: ''
-  })
-  const [activeTab, setActiveTab] = useState<'documents' | 'dossiers'>('documents')
+
+  // Fonction pour ajouter un document de manière optimiste
+  const addDocumentOptimistically = (newDocument: DocumentItem) => {
+    setDocuments(prev => [newDocument, ...prev])
+    setFilteredDocuments(prev => [newDocument, ...prev])
+    setPagination(prev => ({
+      ...prev,
+      total: prev.total + 1
+    }))
+  }
 
   // Initialiser la recherche depuis l'URL
   useEffect(() => {
@@ -157,6 +118,22 @@ export default function DocumentsPage() {
   }, [searchParams])
 
   useEffect(() => {
+    // Vérifier s'il y a de nouveaux documents à ajouter de manière optimiste
+    const newDocumentsData = sessionStorage.getItem('newDocuments')
+    if (newDocumentsData) {
+      try {
+        const newDocuments = JSON.parse(newDocumentsData)
+        newDocuments.forEach((doc: DocumentItem) => addDocumentOptimistically(doc))
+        sessionStorage.removeItem('newDocuments') // Nettoyer après utilisation
+        
+        // Si on vient d'un upload, recharger seulement la première page
+        setPagination(prev => ({ ...prev, page: 1 }))
+        return // Ne pas faire fetchDocuments() ici
+      } catch (error) {
+        console.error('Erreur lors du parsing des nouveaux documents:', error)
+      }
+    }
+    
     fetchDocuments()
   }, [filters, pagination.page])
 
@@ -164,18 +141,12 @@ export default function DocumentsPage() {
     filterAndSortDocuments()
   }, [documents, searchQuery, sortField, sortOrder])
 
-  // Charger les données des dossiers comptables
-  useEffect(() => {
-    if (activeTab === 'dossiers') {
-      fetchDossiersComptables()
-      fetchPostesComptables()
-      fetchNaturesDocuments()
-    }
-  }, [activeTab])
 
   const fetchDocuments = async () => {
     try {
+      console.log('📄 Chargement des documents...')
       setIsLoading(true)
+      setError('')
       
       // Construire les paramètres de requête
       const params = new URLSearchParams()
@@ -194,17 +165,35 @@ export default function DocumentsPage() {
       params.append('page', pagination.page.toString())
       params.append('limit', pagination.limit.toString())
       
-      const response = await fetch(`/api/documents?${params.toString()}`, { 
+      const url = `/api/documents?${params.toString()}`
+      console.log('📄 URL de la requête:', url)
+      
+      const response = await fetch(url, { 
         credentials: 'include' 
       })
+      
+      console.log('📄 Réponse API documents:', response.status, response.ok)
+      
       if (response.ok) {
         const data = await response.json()
-        setDocuments(data.documents)
-        setPagination(data.pagination)
+        console.log('📄 Données reçues:', data)
+        console.log('📄 Nombre de documents:', data.documents?.length || 0)
+        console.log('📄 Pagination:', data.pagination)
+        
+        setDocuments(data.documents || [])
+        setPagination(data.pagination || {
+          page: 1,
+          limit: 20,
+          total: 0,
+          totalPages: 0
+        })
       } else {
-        setError('Erreur lors du chargement des fichiers')
+        const errorText = await response.text()
+        console.error('❌ Erreur API documents:', response.status, errorText)
+        setError(`Erreur lors du chargement des fichiers (${response.status})`)
       }
     } catch (error) {
+      console.error('❌ Erreur de connexion:', error)
       setError('Erreur de connexion')
     } finally {
       setIsLoading(false)
@@ -288,85 +277,6 @@ export default function DocumentsPage() {
     setPagination(prev => ({ ...prev, page: 1 }))
   }
 
-  // Fonctions pour les dossiers comptables
-  const fetchDossiersComptables = async () => {
-    try {
-      const response = await fetch('/api/documents/dossiers-comptables')
-      if (response.ok) {
-        const data = await response.json()
-        setDossiersComptables(data.dossiers)
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des dossiers comptables:', error)
-    }
-  }
-
-  const fetchPostesComptables = async () => {
-    try {
-      const response = await fetch('/api/documents/postes-comptables')
-      if (response.ok) {
-        const data = await response.json()
-        setPostesComptables(data.postesComptables)
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des postes comptables:', error)
-    }
-  }
-
-  const fetchNaturesDocuments = async () => {
-    try {
-      const response = await fetch('/api/documents/natures-documents')
-      if (response.ok) {
-        const data = await response.json()
-        setNaturesDocuments(data.naturesDocuments)
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des natures de documents:', error)
-    }
-  }
-
-  const handleCreateDossier = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const response = await fetch('/api/documents/dossiers-comptables', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dossierFormData),
-      })
-
-      if (response.ok) {
-        setShowDossierModal(false)
-        setDossierFormData({
-          numeroNature: '',
-          objetOperation: '',
-          beneficiaire: '',
-          posteComptableId: '',
-          natureDocumentId: ''
-        })
-        fetchDossiersComptables()
-      } else {
-        const data = await response.json()
-        setError(data.error || 'Erreur lors de la création')
-      }
-    } catch (error) {
-      setError('Erreur de connexion')
-    }
-  }
-
-  const getStatutColor = (statut: string) => {
-    switch (statut) {
-      case 'EN_ATTENTE':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'VALIDE':
-        return 'bg-green-100 text-green-800'
-      case 'REJETE':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   const filterAndSortDocuments = () => {
     let filtered = documents
@@ -375,7 +285,7 @@ export default function DocumentsPage() {
     if (searchQuery) {
       filtered = filtered.filter(doc => 
         doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (doc.currentVersion?.fileName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (doc.fileName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         doc.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
@@ -386,13 +296,13 @@ export default function DocumentsPage() {
         case 'title':
           return doc.title?.toLowerCase() || ''
         case 'createdAt':
-          return new Date(doc.createdAt).getTime()
+          return doc.createdAt ? new Date(doc.createdAt).getTime() : 0
         case 'updatedAt':
-          return new Date(doc.updatedAt).getTime()
+          return doc.updatedAt ? new Date(doc.updatedAt).getTime() : 0
         case 'fileSize':
-          return doc.currentVersion?.fileSize || 0
+          return doc.fileSize || 0
         case 'fileType':
-          return doc.currentVersion?.fileType || ''
+          return doc.fileType || ''
       }
     }
 
@@ -436,20 +346,27 @@ export default function DocumentsPage() {
 
   const handleDownload = async (documentItem: DocumentItem) => {
     try {
-      const response = await fetch(`/api/documents/${documentItem.id}/download`)
+      // Utiliser l'API de téléchargement standard
+      const apiUrl = `/api/documents/${documentItem.id}/download`
+      
+      const response = await fetch(apiUrl)
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.style.display = 'none'
         a.href = url
-        a.download = documentItem.currentVersion?.fileName || 'document'
+        a.download = documentItem.fileName || 'document'
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
+      } else {
+        console.error('Erreur téléchargement:', response.status, response.statusText)
+        setError(`Erreur lors du téléchargement (${response.status})`)
       }
     } catch (error) {
       console.error('Erreur téléchargement:', error)
+      setError('Erreur de connexion lors du téléchargement')
     }
   }
 
@@ -463,7 +380,17 @@ export default function DocumentsPage() {
 
   const confirmDelete = async (documentId: string) => {
     try {
-      const response = await fetch(`/api/documents/${documentId}`, {
+      // Trouver le document pour récupérer son ID original
+      const documentToDelete = documents.find(doc => doc.id === documentId)
+      if (!documentToDelete) {
+        throw new Error('Document non trouvé')
+      }
+
+      // Utiliser l'ID original pour la suppression
+      const originalId = documentToDelete.originalId || documentToDelete.id
+      console.log('🗑️ Suppression document:', documentToDelete.title, 'ID original:', originalId)
+
+      const response = await fetch(`/api/documents/${originalId}`, {
         method: 'DELETE'
       })
 
@@ -471,11 +398,14 @@ export default function DocumentsPage() {
         setDocuments(prev => prev.filter(doc => doc.id !== documentId))
         setShowDeleteConfirmation(false)
         setSelectedDocument(null)
+        console.log('✅ Document supprimé avec succès')
       } else {
         const data = await response.json()
+        console.error('❌ Erreur suppression:', data)
         throw new Error(data.error || 'Erreur lors de la suppression')
       }
     } catch (error) {
+      console.error('❌ Erreur lors de la suppression:', error)
       throw error // Re-throw pour que le composant puisse gérer l'erreur
     }
   }
@@ -509,8 +439,7 @@ export default function DocumentsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center gap-2">
-              <FileText className="w-6 h-6 sm:w-8 sm:h-8" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary">
               Mes Documents
             </h1>
             <p className="text-primary text-sm sm:text-base">
@@ -607,18 +536,18 @@ export default function DocumentsPage() {
                   {filteredDocuments.map((document) => (
                     <TableRow key={document.id}>
                       <TableCell>
-                        {getFileIcon(document.currentVersion?.fileType || 'unknown')}
+                        {getFileIcon(document.fileType || 'unknown')}
                       </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{document.title}</div>
-                          <div className="text-xs sm:text-sm text-primary">{document.currentVersion?.fileName || 'Sans fichier'}</div>
+                          <div className="text-xs sm:text-sm text-primary">{document.fileName || 'Sans fichier'}</div>
                           {document.description && (
                             <div className="hidden sm:block text-xs text-primary mt-1">{document.description}</div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">{formatFileSize(document.currentVersion?.fileSize || 0)}</TableCell>
+                      <TableCell className="hidden md:table-cell">{formatFileSize(document.fileSize || 0)}</TableCell>
                       <TableCell className="hidden sm:table-cell">
                         {new Date(document.createdAt).toLocaleDateString('fr-FR')}
                       </TableCell>
@@ -638,18 +567,6 @@ export default function DocumentsPage() {
                             <DropdownMenuItem onClick={() => handleDownload(document)}>
                               <Download className="mr-2 h-4 w-4" />
                               Télécharger
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <DocumentVersionHistory 
-                                documentId={document.id}
-                                documentTitle={document.title}
-                                trigger={
-                                  <div className="flex items-center w-full px-2 py-1.5 cursor-pointer">
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    Versions ({document._count?.versions ?? 0})
-                                  </div>
-                                }
-                              />
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(document)}>
                               <Edit className="mr-2 h-4 w-4" />

@@ -98,34 +98,49 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
   const [rotation, setRotation] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false) // Chargement différé
   const [error, setError] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [showMetadata, setShowMetadata] = useState(false)
+  const [previewLoaded, setPreviewLoaded] = useState(false)
 
-  const previewType = getPreviewType(document.currentVersion?.fileType)
+  const previewType = getPreviewType(document.fileType || undefined)
 
   useEffect(() => {
-    if (isOpen && document.id) {
-      loadPreview()
+    if (isOpen && document.id && !previewLoaded) {
+      // Chargement différé seulement quand nécessaire
+      const timer = setTimeout(() => {
+        loadPreview()
+      }, 100) // Petit délai pour éviter les chargements inutiles
+      
+      return () => clearTimeout(timer)
     }
     return () => {
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl)
       }
     }
-  }, [isOpen, document.id])
+  }, [isOpen, document.id, previewLoaded])
 
   const loadPreview = async () => {
     setIsLoading(true)
     setError(null)
     try {
       console.log('🔍 Chargement aperçu pour document:', document.id, document.title)
-      console.log('📁 Type de fichier:', document.currentVersion?.fileType)
-      console.log('📂 Chemin fichier:', document.currentVersion?.filePath)
+      console.log('📁 Type de fichier:', document.fileType)
+      console.log('📂 Chemin fichier:', document.filePath)
+      
+      // Utiliser l'originalId (UUID) pour l'API Supabase
+      const documentId = document.originalId || document.id
+      console.log('🔑 ID utilisé pour l\'API:', documentId)
+      
+      // Utiliser l'API Supabase pour les fichiers
+      const apiUrl = `/api/files/${documentId}`
+      
+      console.log('🔗 URL API utilisée:', apiUrl)
       
       // Essayer d'abord l'API de téléchargement
-      const response = await fetch(`/api/documents/${document.id}/download`)
+      const response = await fetch(apiUrl)
       console.log('📡 Réponse API:', response.status, response.statusText)
       
       if (response.ok) {
@@ -134,12 +149,11 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
         
         const url = URL.createObjectURL(blob)
         setPreviewUrl(url)
+        setPreviewLoaded(true)
         console.log('✅ URL de prévisualisation créée via API')
       } else {
-        // Si l'API échoue, essayer d'utiliser directement l'URL Supabase
-        console.log('⚠️ API échouée, tentative avec URL Supabase directe')
-        
-        const filePath = document.currentVersion?.filePath
+        // Si l'API échoue, essayer d'abord l'URL Supabase directe
+        const filePath = document.filePath
         if (filePath && (filePath.includes('supabase.co') || filePath.startsWith('http'))) {
           console.log('🔗 Utilisation URL Supabase directe:', filePath)
           
@@ -152,25 +166,36 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
               
               const url = URL.createObjectURL(blob)
               setPreviewUrl(url)
+              setPreviewLoaded(true)
               console.log('✅ URL de prévisualisation créée via Supabase direct')
+              return
             } else {
               console.error('❌ Erreur Supabase direct:', supabaseResponse.status, supabaseResponse.statusText)
-              throw new Error(`Erreur Supabase: ${supabaseResponse.status}`)
             }
           } catch (supabaseError) {
             console.error('❌ Erreur fetch Supabase:', supabaseError)
-            throw supabaseError
           }
-        } else {
-          // Aucune URL disponible
+        }
+        
+        // Si Supabase échoue aussi, lire l'erreur de l'API (une seule fois)
+        try {
           const errorData = await response.text()
           console.error('❌ Erreur API:', response.status, errorData)
           
           let errorMessage = 'Erreur lors du chargement du document'
+          let isOrphanedDocument = false
+          
           try {
             const errorJson = JSON.parse(errorData)
             errorMessage = errorJson.error || errorMessage
-            if (errorJson.details) {
+            
+            // Vérifier si c'est un document orphelin
+            if (errorJson.code === 'DOCUMENT_ORPHANED') {
+              isOrphanedDocument = true
+              errorMessage = 'Ce document n\'a pas de fichier associé. Il peut être supprimé ou re-téléchargé.'
+            }
+            
+            if (errorJson.details && !isOrphanedDocument) {
               errorMessage += ` (${errorJson.details})`
             }
           } catch {
@@ -181,6 +206,9 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
           }
           
           setError(errorMessage)
+        } catch (readError) {
+          console.error('❌ Impossible de lire l\'erreur:', readError)
+          setError('Erreur lors du chargement du document')
         }
       }
     } catch (err) {
@@ -197,7 +225,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
         const a = window.document.createElement('a')
         a.style.display = 'none'
         a.href = previewUrl
-        a.download = document.currentVersion?.fileName || 'document'
+        a.download = document.fileName || 'document'
         window.document.body.appendChild(a)
         a.click()
         window.document.body.removeChild(a)
@@ -206,6 +234,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
       console.error('Erreur téléchargement:', error)
     }
   }
+
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 300))
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 25))
@@ -216,8 +245,9 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
     if (isLoading) {
       return (
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
-          <Progress value={undefined} className="w-48" />
-          <p className="text-sm text-primary">Chargement de la prévisualisation...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="text-sm text-muted-foreground">Chargement de la prévisualisation...</p>
+          <p className="text-xs text-muted-foreground">Téléchargement du fichier en cours...</p>
         </div>
       )
     }
@@ -231,11 +261,11 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
       )
     }
 
-    if (!previewUrl || !canPreview(document.currentVersion?.fileType)) {
+    if (!previewUrl || !canPreview(document.fileType || undefined)) {
       return (
         <div className="p-8 text-center text-primary">
           <div className="mb-4">
-            {getFileIcon(document.currentVersion?.fileType)}
+            {getFileIcon(document.fileType || undefined)}
           </div>
           <h3 className="text-lg font-medium mb-2">Aperçu non disponible</h3>
           <p className="text-sm mb-4">
@@ -256,7 +286,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
           <div className="relative bg-gray-50 min-h-96 flex items-center justify-center overflow-hidden">
             <img 
               src={previewUrl} 
-              alt={document.currentVersion?.fileName || 'Image'}
+              alt={document.fileName || 'Image'}
               className="max-w-full max-h-96 transition-transform duration-200"
               style={{ 
                 transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
@@ -273,7 +303,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
             <iframe 
               src={previewUrl}
               className="w-full h-full border-0"
-              title={document.currentVersion?.fileName || 'PDF'}
+              title={document.fileName || 'PDF'}
               onError={() => setError('Impossible de charger le PDF')}
             />
           </div>
@@ -299,7 +329,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
         return (
           <div className="p-8 text-center bg-gray-50">
             <Music className="mx-auto h-16 w-16 mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-4">{document.currentVersion?.fileName}</h3>
+            <h3 className="text-lg font-medium mb-4">{document.fileName}</h3>
             <audio 
               src={previewUrl}
               controls 
@@ -319,7 +349,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
             <iframe 
               src={previewUrl}
               className="w-full border-0 min-h-96"
-              title={document.currentVersion?.fileName || 'Texte'}
+              title={document.fileName || 'Texte'}
               onError={() => setError('Impossible de charger le fichier texte')}
             />
           </div>
@@ -362,11 +392,11 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
         <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              {getFileIcon(document.currentVersion?.fileType)}
+              {getFileIcon(document.fileType || undefined)}
               <div className="min-w-0 flex-1">
                 <span className="truncate text-base sm:text-lg block">{document.title}</span>
                 <p className="text-xs text-muted-foreground break-all">
-                  {document.currentVersion?.fileName}
+                  {document.fileName}
                 </p>
               </div>
             </div>
@@ -397,27 +427,27 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="min-w-0">
                   <Label className="text-sm font-medium text-blue-900 block mb-1">Fichier</Label>
-                  <p className="text-sm text-blue-800 break-all">{document.currentVersion?.fileName}</p>
+                  <p className="text-sm text-blue-800 break-all">{document.fileName}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-blue-900 block mb-1">Taille</Label>
                   <div className="flex items-center gap-2">
                     <HardDrive className="h-4 w-4 text-blue-600" />
                     <span className="text-sm text-blue-800">
-                      {document.currentVersion?.fileSize ? formatFileSize(document.currentVersion.fileSize) : 'N/A'}
+                      {document.fileSize ? formatFileSize(document.fileSize) : 'N/A'}
                     </span>
                   </div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-blue-900 block mb-1">Type</Label>
                   <Badge variant="secondary" className="text-xs">
-                    {document.currentVersion?.fileType?.split('/')[1]?.toUpperCase() || 'N/A'}
+                    {document.fileType?.split('/')[1]?.toUpperCase() || 'N/A'}
                   </Badge>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-blue-900 block mb-1">Version</Label>
                   <Badge variant="outline" className="text-xs">
-                    v{document.currentVersion?.versionNumber || 0}
+                    v1
                   </Badge>
                 </div>
                 <div>
@@ -443,7 +473,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
           </div>
 
           {/* Barre d'outils de prévisualisation - Version compacte */}
-          {canPreview(document.currentVersion?.fileType) && (
+          {canPreview(document.fileType) && (
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 p-3 bg-gray-100 rounded-lg">
               <div className="flex flex-wrap items-center gap-2">
                 {previewType === 'image' && (
@@ -464,9 +494,9 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
                   <Badge variant={document.isPublic ? 'default' : 'secondary'} className="flex-shrink-0">
                     {document.isPublic ? 'Public' : 'Privé'}
                   </Badge>
-                  {document._count?.versions && (
+                  {document._count && (
                     <Badge variant="outline" className="flex-shrink-0 text-xs">
-                      {document._count.versions} version(s)
+                      Document
                     </Badge>
                   )}
                 </div>

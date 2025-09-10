@@ -95,7 +95,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
     setFoldersLoading(true)
     try {
       console.log('🔍 Chargement des dossiers pour la modal d\'édition...')
-      const response = await fetch('/api/sidebar/folders', {
+      const response = await fetch('/api/folders', {
         credentials: 'include'
       })
       console.log('📡 Réponse API sidebar/folders:', response.status, response.statusText)
@@ -121,13 +121,18 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleFormSubmit = async (formData: any) => {
     setIsLoading(true)
     setError('')
 
     try {
-      const response = await fetch(`/api/documents/${document.id}`, {
+      // Utiliser l'originalId (ID réel de la base) au lieu de l'ID artificiel
+      const documentId = document.originalId || document.id
+      const apiUrl = `/api/documents/${documentId}`
+      console.log('🔗 URL API utilisée pour la modification:', apiUrl)
+      console.log('🔑 ID du document utilisé:', documentId)
+      
+      const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -144,6 +149,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
       if (response.ok) {
         const updatedDocument = await response.json()
         onSave(updatedDocument.document || updatedDocument)
+        onClose() // Fermer le modal seulement après succès
         
         // Message de confirmation si le dossier a changé
         const actualFolderId = formData.folderId === 'root' ? null : formData.folderId
@@ -178,7 +184,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <FileText className="h-5 w-5 flex-shrink-0" />
+              <FileText className="h-5 w-5 flex-shrink-0 icon-red-fg" />
               <span className="truncate">Modifier le document</span>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -188,14 +194,14 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                 onClick={() => setShowFileInfo(!showFileInfo)}
                 className="hidden sm:flex"
               >
-                <Info className="h-4 w-4" />
-                <span className="ml-1">Infos</span>
+                <Info className="mr-1 h-4 w-4" />
+                <span>Infos</span>
               </Button>
             </div>
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           {/* Informations du fichier (lecture seule) - Version compacte avec toggle */}
           <div className={`transition-all duration-300 overflow-hidden ${
             showFileInfo ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
@@ -211,7 +217,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                     <div className="min-w-0 flex-1">
                       <Label className="text-sm font-medium text-blue-900 mb-1 block">Nom du fichier</Label>
                       <p className="text-sm text-blue-800 break-all leading-relaxed">
-                        {document.currentVersion?.fileName || 'Sans nom'}
+                        {document.fileName || 'Sans nom'}
                       </p>
                     </div>
                   </div>
@@ -221,7 +227,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                 <div>
                   <Label className="text-sm font-medium text-blue-900 mb-1 block">Type</Label>
                   <Badge variant="secondary" className="w-full justify-center text-xs">
-                    {document.currentVersion?.fileType?.split('/')[1]?.toUpperCase() || 'INCONNU'}
+                    {document.fileType?.split('/')[1]?.toUpperCase() || 'INCONNU'}
                   </Badge>
                 </div>
 
@@ -231,7 +237,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                   <div className="flex items-center gap-2">
                     <HardDrive className="h-4 w-4 text-blue-600" />
                     <span className="text-sm text-blue-800">
-                      {formatFileSize(document.currentVersion?.fileSize || 0)}
+                      {formatFileSize(document.fileSize || 0)}
                     </span>
                   </div>
                 </div>
@@ -241,7 +247,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                   <Label className="text-sm font-medium text-blue-900 mb-1 block">Version</Label>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
-                      v{document.currentVersion?.versionNumber || 0}
+                      v{document.versionNumber || 0}
                     </Badge>
                   </div>
                 </div>
@@ -304,11 +310,11 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
 
           <DocumentEditForm
             document={document}
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
             onCancel={onClose}
             isLoading={isLoading}
           />
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
     </ModalWrapper>

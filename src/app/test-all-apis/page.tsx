@@ -48,7 +48,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/health',
     method: 'GET',
     description: 'Vérification de l\'état du serveur',
-    icon: <Globe className="h-4 w-4" />,
+    icon: <Globe className="h-4 w-4 icon-blue-fg" />,
     category: 'Système'
   },
   {
@@ -56,7 +56,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/check-schema',
     method: 'GET',
     description: 'Vérification du schéma et des politiques RLS',
-    icon: <Database className="h-4 w-4" />,
+    icon: <Database className="h-4 w-4 icon-green-fg" />,
     category: 'Système'
   },
   {
@@ -64,7 +64,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/test-users',
     method: 'GET',
     description: 'Test de récupération des utilisateurs',
-    icon: <Users className="h-4 w-4" />,
+    icon: <Users className="h-4 w-4 icon-purple-fg" />,
     category: 'Système'
   },
   {
@@ -72,7 +72,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/test-supabase',
     method: 'GET',
     description: 'Test de configuration Supabase',
-    icon: <Shield className="h-4 w-4" />,
+    icon: <Shield className="h-4 w-4 icon-red-fg" />,
     category: 'Système'
   },
 
@@ -82,7 +82,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/dashboard/stats',
     method: 'GET',
     description: 'Statistiques du dashboard',
-    icon: <BarChart3 className="h-4 w-4" />,
+    icon: <BarChart3 className="h-4 w-4 icon-orange-fg" />,
     category: 'Dashboard'
   },
   {
@@ -90,7 +90,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/dashboard/activity',
     method: 'GET',
     description: 'Activités récentes',
-    icon: <Activity className="h-4 w-4" />,
+    icon: <Activity className="h-4 w-4 icon-blue-fg" />,
     category: 'Dashboard'
   },
 
@@ -100,7 +100,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/users',
     method: 'GET',
     description: 'Liste des utilisateurs',
-    icon: <Users className="h-4 w-4" />,
+    icon: <Users className="h-4 w-4 icon-purple-fg" />,
     category: 'Gestion'
   },
   {
@@ -108,7 +108,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/folders',
     method: 'GET',
     description: 'Liste des dossiers',
-    icon: <FolderOpen className="h-4 w-4" />,
+    icon: <FolderOpen className="h-4 w-4 icon-orange-fg" />,
     category: 'Gestion'
   },
   {
@@ -116,7 +116,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/documents',
     method: 'GET',
     description: 'Liste des documents',
-    icon: <FileText className="h-4 w-4" />,
+    icon: <FileText className="h-4 w-4 icon-red-fg" />,
     category: 'Gestion'
   },
   {
@@ -124,7 +124,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/notifications',
     method: 'GET',
     description: 'Liste des notifications',
-    icon: <Bell className="h-4 w-4" />,
+    icon: <Bell className="h-4 w-4 icon-purple-fg" />,
     category: 'Gestion'
   },
 
@@ -134,7 +134,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/search/suggestions',
     method: 'GET',
     description: 'Suggestions de recherche',
-    icon: <Search className="h-4 w-4" />,
+    icon: <Search className="h-4 w-4 icon-green-fg" />,
     category: 'Fonctionnalités'
   },
   {
@@ -142,7 +142,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/settings',
     method: 'GET',
     description: 'Paramètres de l\'application',
-    icon: <Settings className="h-4 w-4" />,
+    icon: <Settings className="h-4 w-4 icon-blue-fg" />,
     category: 'Fonctionnalités'
   },
   {
@@ -150,7 +150,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/sidebar/folders',
     method: 'GET',
     description: 'Dossiers pour la sidebar',
-    icon: <FolderOpen className="h-4 w-4" />,
+    icon: <FolderOpen className="h-4 w-4 icon-orange-fg" />,
     category: 'Fonctionnalités'
   },
 
@@ -160,7 +160,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/upload',
     method: 'POST',
     description: 'Test de l\'upload de fichiers',
-    icon: <Upload className="h-4 w-4" />,
+    icon: <Upload className="h-4 w-4 icon-purple-fg" />,
     category: 'Upload & Fichiers'
   },
   {
@@ -168,7 +168,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/documents/versions',
     method: 'GET',
     description: 'Gestion des versions de documents',
-    icon: <FileText className="h-4 w-4" />,
+    icon: <FileText className="h-4 w-4 icon-red-fg" />,
     category: 'Upload & Fichiers'
   },
   {
@@ -176,7 +176,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/documents/[id]/download',
     method: 'GET',
     description: 'Téléchargement de documents',
-    icon: <FileText className="h-4 w-4" />,
+    icon: <FileText className="h-4 w-4 icon-red-fg" />,
     category: 'Upload & Fichiers'
   },
   {
@@ -184,7 +184,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/documents/[id]/share',
     method: 'POST',
     description: 'Partage de documents',
-    icon: <FileText className="h-4 w-4" />,
+    icon: <FileText className="h-4 w-4 icon-red-fg" />,
     category: 'Upload & Fichiers'
   },
 
@@ -194,7 +194,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/folders',
     method: 'POST',
     description: 'Création de dossiers',
-    icon: <FolderOpen className="h-4 w-4" />,
+    icon: <FolderOpen className="h-4 w-4 icon-orange-fg" />,
     category: 'Gestion des Dossiers'
   },
   {
@@ -202,7 +202,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/folders/[id]',
     method: 'PUT',
     description: 'Modification de dossiers',
-    icon: <FolderOpen className="h-4 w-4" />,
+    icon: <FolderOpen className="h-4 w-4 icon-orange-fg" />,
     category: 'Gestion des Dossiers'
   },
   {
@@ -210,7 +210,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/folders/[id]',
     method: 'DELETE',
     description: 'Suppression de dossiers',
-    icon: <FolderOpen className="h-4 w-4" />,
+    icon: <FolderOpen className="h-4 w-4 icon-orange-fg" />,
     category: 'Gestion des Dossiers'
   },
 
@@ -220,7 +220,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/notifications/[id]/read',
     method: 'PUT',
     description: 'Marquer notification comme lue',
-    icon: <Bell className="h-4 w-4" />,
+    icon: <Bell className="h-4 w-4 icon-purple-fg" />,
     category: 'Notifications'
   },
   {
@@ -228,7 +228,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/notifications/mark-all-read',
     method: 'PUT',
     description: 'Marquer toutes comme lues',
-    icon: <Bell className="h-4 w-4" />,
+    icon: <Bell className="h-4 w-4 icon-purple-fg" />,
     category: 'Notifications'
   },
 
@@ -238,7 +238,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/profile',
     method: 'GET',
     description: 'Profil utilisateur',
-    icon: <Users className="h-4 w-4" />,
+    icon: <Users className="h-4 w-4 icon-purple-fg" />,
     category: 'Profil & Auth'
   },
   {
@@ -246,7 +246,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/auth/me',
     method: 'GET',
     description: 'Vérification de session',
-    icon: <Shield className="h-4 w-4" />,
+    icon: <Shield className="h-4 w-4 icon-red-fg" />,
     category: 'Profil & Auth'
   },
   {
@@ -254,7 +254,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/user-profile',
     method: 'PUT',
     description: 'Mise à jour du profil',
-    icon: <Users className="h-4 w-4" />,
+    icon: <Users className="h-4 w-4 icon-purple-fg" />,
     category: 'Profil & Auth'
   },
 
@@ -264,7 +264,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/session/extend',
     method: 'POST',
     description: 'Extension de session',
-    icon: <Shield className="h-4 w-4" />,
+    icon: <Shield className="h-4 w-4 icon-red-fg" />,
     category: 'Fonctionnalités Avancées'
   },
   {
@@ -272,7 +272,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     path: '/api/update-passwords',
     method: 'POST',
     description: 'Mise à jour des mots de passe',
-    icon: <Shield className="h-4 w-4" />,
+    icon: <Shield className="h-4 w-4 icon-red-fg" />,
     category: 'Fonctionnalités Avancées'
   }
 ]

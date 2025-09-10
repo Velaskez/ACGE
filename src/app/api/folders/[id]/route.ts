@@ -23,7 +23,7 @@ export async function GET(
     const admin = getSupabaseAdmin()
     const { data: folder, error } = await admin
       .from('folders')
-      .select('id, name, description, parentId, createdAt:created_at, updatedAt:updated_at, authorId')
+      .select('id, name, description, parentId, createdAt, updatedAt, authorId')
       .eq('id', folderId)
       .maybeSingle()
 

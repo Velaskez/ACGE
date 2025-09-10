@@ -57,15 +57,16 @@ export function DocumentGridItem({
   }
 
   const getFileTypeColor = (fileType?: string) => {
-    // Toutes les icônes de types de fichiers utilisent maintenant des couleurs neutres
-    return {
-      bg: 'bg-muted',
-      text: 'text-muted-foreground'
-    }
+    if (!fileType) return { bg: 'icon-blue-bg', text: 'icon-blue-fg' }
+    if (fileType.startsWith('image/')) return { bg: 'icon-green-bg', text: 'icon-green-fg' }
+    if (fileType.startsWith('video/')) return { bg: 'icon-purple-bg', text: 'icon-purple-fg' }
+    if (fileType.startsWith('audio/')) return { bg: 'icon-orange-bg', text: 'icon-orange-fg' }
+    if (fileType === 'application/pdf' || fileType.startsWith('text/')) return { bg: 'icon-red-bg', text: 'icon-red-fg' }
+    return { bg: 'icon-blue-bg', text: 'icon-blue-fg' }
   }
 
-  const IconComponent = getFileIcon(document.currentVersion?.fileType)
-  const colorClasses = getFileTypeColor(document.currentVersion?.fileType)
+  const IconComponent = getFileIcon(document.fileType)
+  const colorClasses = getFileTypeColor(document.fileType)
 
   return (
     <Card 

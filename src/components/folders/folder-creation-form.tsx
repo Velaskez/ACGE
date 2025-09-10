@@ -104,7 +104,10 @@ export function FolderCreationForm({
     setCurrentStep(prev => Math.max(prev - 1, 1))
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault()
+    }
     if (validateStep(currentStep)) {
       onSubmit(formData)
     }
