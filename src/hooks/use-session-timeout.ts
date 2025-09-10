@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useRouter } from 'next/navigation'
 
 interface UseSessionTimeoutProps {
@@ -7,7 +7,7 @@ interface UseSessionTimeoutProps {
 }
 
 export function useSessionTimeout({ enabled = true }: UseSessionTimeoutProps) {
-  const { logout } = useAuth()
+  const { logout } = useSupabaseAuth()
   const router = useRouter()
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastActivityRef = useRef<number>(Date.now())

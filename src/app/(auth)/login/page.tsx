@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertTriangle, Eye, EyeOff, Mail, Lock, CheckCircle, XCircle } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login } = useAuth()
+  const { login } = useSupabaseAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''

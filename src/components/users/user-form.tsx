@@ -108,6 +108,7 @@ export function UserForm({
   }
 
   const handleSubmit = async () => {
+    console.log('📝 UserForm handleSubmit appelé')
     const isValid = await validateStep(currentStep)
     if (isValid) {
       const submitData = { ...watchedValues }
@@ -116,7 +117,10 @@ export function UserForm({
         delete submitData.password
         delete submitData.confirmPassword
       }
+      console.log('📝 Données à envoyer:', submitData)
       onSubmit(submitData)
+    } else {
+      console.log('❌ Validation échouée')
     }
   }
 
@@ -124,7 +128,9 @@ export function UserForm({
     const roleLabels = {
       ADMIN: 'Administrateur',
       SECRETAIRE: 'Secrétaire',
-      COMPTABLE: 'Comptable'
+      AGENT_COMPTABLE: 'Agent Comptable',
+      CONTROLEUR_BUDGETAIRE: 'Contrôleur Budgétaire',
+      ORDONNATEUR: 'Ordonnateur'
     }
     return roleLabels[role] || role
   }
@@ -343,7 +349,9 @@ export function UserForm({
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="SECRETAIRE">Secrétaire</SelectItem>
-                      <SelectItem value="COMPTABLE">Comptable</SelectItem>
+                      <SelectItem value="AGENT_COMPTABLE">Agent Comptable</SelectItem>
+                      <SelectItem value="CONTROLEUR_BUDGETAIRE">Contrôleur Budgétaire</SelectItem>
+                      <SelectItem value="ORDONNATEUR">Ordonnateur</SelectItem>
                       <SelectItem value="ADMIN">Administrateur</SelectItem>
                     </SelectContent>
                   </Select>

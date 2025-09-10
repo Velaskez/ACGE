@@ -9,7 +9,7 @@ import { Header } from './header'
 import { Sidebar } from './sidebar'
 import { useSessionTimeout } from '@/hooks/use-session-timeout'
 import { SessionWarning } from '@/components/ui/session-warning'
-import { useAuth } from '@/contexts/auth-context'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useModal } from '@/contexts/modal-context'
 import { useModalDetection } from '@/hooks/use-modal-detection'
 
@@ -19,7 +19,7 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { logout } = useAuth()
+  const { logout } = useSupabaseAuth()
   const { hideHeader } = useModal()
   const router = useRouter()
 

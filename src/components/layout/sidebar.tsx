@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useSidebarData } from '@/hooks/use-sidebar-data'
 import { cn, formatFileSize } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,9 @@ import {
   ChevronDown,
   ChevronRight,
   Upload,
+  CheckCircle,
+  FileCheck,
+  Calculator,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -40,24 +43,53 @@ const mainNav = [
     icon: Home,
     color: 'blue'
   },
+  // Navigation pour Secrétaire
   {
     title: 'Mes fichiers',
     href: '/documents',
     icon: FileText,
-    color: 'green'
+    color: 'green',
+    role: 'SECRETAIRE'
   },
   {
     title: 'Upload',
     href: '/upload',
     icon: Upload,
-    color: 'purple'
+    color: 'purple',
+    role: 'SECRETAIRE'
   },
   {
     title: 'Dossiers',
     href: '/folders',
     icon: FolderOpen,
-    color: 'orange'
+    color: 'orange',
+    role: 'SECRETAIRE'
   },
+  // Navigation pour Contrôleur Budgétaire
+  {
+    title: 'Validation CB',
+    href: '/cb-dashboard',
+    icon: CheckCircle,
+    color: 'emerald',
+    role: 'CONTROLEUR_BUDGETAIRE'
+  },
+  // Navigation pour Ordonnateur
+  {
+    title: 'Ordonnancement',
+    href: '/ordonnateur-dashboard',
+    icon: FileCheck,
+    color: 'blue',
+    role: 'ORDONNATEUR'
+  },
+  // Navigation pour Agent Comptable
+  {
+    title: 'Comptabilisation',
+    href: '/ac-dashboard',
+    icon: Calculator,
+    color: 'purple',
+    role: 'AGENT_COMPTABLE'
+  },
+  // Navigation pour Admin
   {
     title: 'Utilisateurs',
     href: '/users',
@@ -65,11 +97,53 @@ const mainNav = [
     color: 'red',
     adminOnly: true,
   },
+  {
+    title: 'Mes fichiers',
+    href: '/documents',
+    icon: FileText,
+    color: 'green',
+    adminOnly: true,
+  },
+  {
+    title: 'Upload',
+    href: '/upload',
+    icon: Upload,
+    color: 'purple',
+    adminOnly: true,
+  },
+  {
+    title: 'Dossiers',
+    href: '/folders',
+    icon: FolderOpen,
+    color: 'orange',
+    adminOnly: true,
+  },
+  {
+    title: 'Validation CB',
+    href: '/cb-dashboard',
+    icon: CheckCircle,
+    color: 'emerald',
+    adminOnly: true,
+  },
+  {
+    title: 'Ordonnancement',
+    href: '/ordonnateur-dashboard',
+    icon: FileCheck,
+    color: 'blue',
+    adminOnly: true,
+  },
+  {
+    title: 'Comptabilisation',
+    href: '/ac-dashboard',
+    icon: Calculator,
+    color: 'purple',
+    adminOnly: true,
+  },
 ]
 
 export function Sidebar({ className, inSheet = false }: SidebarProps) {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user } = useSupabaseAuth()
   const { stats, folders, isLoading } = useSidebarData()
   const [expandedFolders, setExpandedFolders] = useState<string[]>([])
 
@@ -83,10 +157,21 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
 
   // Filtrer les éléments de navigation selon le rôle
   const filteredNav = mainNav.filter(item => {
-    // On vérifie que la propriété 'role' existe bien avant de l'utiliser
+    // Vérifier les permissions admin
     if (item.adminOnly && user?.role !== 'ADMIN') {
       return false
     }
+    
+    // Vérifier les rôles spécifiques
+    if (item.role && user?.role !== item.role) {
+      return false
+    }
+    
+    // Si pas de rôle spécifique, afficher pour tous les utilisateurs
+    if (!item.role && !item.adminOnly) {
+      return true
+    }
+    
     return true
   })
 
@@ -102,6 +187,8 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
         return { bg: 'icon-orange-bg', text: 'icon-orange-fg' }
       case 'red':
         return { bg: 'icon-red-bg', text: 'icon-red-fg' }
+      case 'emerald':
+        return { bg: 'bg-emerald-100', text: 'text-emerald-700' }
       default:
         return { bg: 'bg-muted', text: 'text-muted-foreground' }
     }

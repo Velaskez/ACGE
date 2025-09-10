@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '@/contexts/auth-context'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useMounted } from '@/hooks/use-mounted'
@@ -10,7 +10,7 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading } = useSupabaseAuth()
   const router = useRouter()
   const isMounted = useMounted()
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useRouter } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Button } from '@/components/ui/button'
@@ -60,19 +60,13 @@ interface User {
 }
 
 export default function UsersPage() {
-  const { user } = useAuth()
+  const { user, getAccessToken } = useSupabaseAuth()
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'SECRETAIRE' as Role
-  })
 
   // Vérifier si l'utilisateur est admin
   useEffect(() => {
@@ -101,31 +95,47 @@ export default function UsersPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (data: any) => {
+    console.log('🚀 Début handleSubmit:', data)
     setIsLoading(true)
     setError('')
 
     try {
       const url = editingUser ? `/api/users/${editingUser.id}` : '/api/users'
       const method = editingUser ? 'PUT' : 'POST'
+      
+      console.log('🔑 Récupération du token...')
+      // Récupérer le token d'accès Supabase
+      const accessToken = await getAccessToken()
+      console.log('🔑 Token récupéré:', accessToken ? 'Oui' : 'Non')
+      
+      if (!accessToken) {
+        console.log('❌ Pas de token, arrêt')
+        setError('Non authentifié')
+        return
+      }
 
+      console.log('📡 Envoi de la requête:', { url, method, data })
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       })
 
+      console.log('📡 Réponse reçue:', response.status, response.statusText)
+
       if (response.ok) {
+        console.log('✅ Succès, fermeture du dialog')
         setIsDialogOpen(false)
         setEditingUser(null)
-        resetForm()
         fetchUsers()
       } else {
-        const data = await response.json()
-        setError(data.error || 'Erreur lors de l\'opération')
+        const responseData = await response.json()
+        console.log('❌ Erreur:', responseData)
+        setError(responseData.error || 'Erreur lors de l\'opération')
       }
     } catch (error) {
       setError('Erreur de connexion')
@@ -140,14 +150,29 @@ export default function UsersPage() {
     }
 
     try {
+      console.log('🗑️ Suppression utilisateur:', userId)
+      
+      // Récupérer le token d'accès Supabase
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        setError('Non authentifié')
+        return
+      }
+
       const response = await fetch(`/api/users/${userId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
       })
+
+      console.log('🗑️ Réponse suppression:', response.status)
 
       if (response.ok) {
         fetchUsers()
       } else {
-        setError('Erreur lors de la suppression')
+        const responseData = await response.json()
+        setError(responseData.error || 'Erreur lors de la suppression')
       }
     } catch (error) {
       setError('Erreur de connexion')
@@ -156,27 +181,11 @@ export default function UsersPage() {
 
   const handleEdit = (user: User) => {
     setEditingUser(user)
-    setFormData({
-      name: user.name,
-      email: user.email,
-      password: '',
-      role: user.role
-    })
     setIsDialogOpen(true)
-  }
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      email: '',
-      password: '',
-      role: 'AGENT_COMPTABLE'
-    })
   }
 
   const openCreateDialog = () => {
     setEditingUser(null)
-    resetForm()
     setIsDialogOpen(true)
   }
 
@@ -250,7 +259,6 @@ export default function UsersPage() {
                 onCancel={() => {
                   setIsDialogOpen(false)
                   setEditingUser(null)
-                  resetForm()
                 }}
                 isLoading={isLoading}
               />
@@ -299,7 +307,10 @@ export default function UsersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {new Date(userItem.createdAt).toLocaleDateString('fr-FR')}
+                        {userItem.createdAt 
+                          ? new Date(userItem.createdAt).toLocaleDateString('fr-FR')
+                          : 'Date inconnue'
+                        }
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">

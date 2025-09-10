@@ -1,14 +1,14 @@
 'use client'
 
-import { AuthProvider } from '@/contexts/auth-context'
+import { SupabaseAuthProvider } from '@/contexts/supabase-auth-context'
 import { ModalProvider } from '@/contexts/modal-context'
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
+    <SupabaseAuthProvider>
       <ModalProvider>
         {children}
       </ModalProvider>
-    </AuthProvider>
+    </SupabaseAuthProvider>
   )
 }

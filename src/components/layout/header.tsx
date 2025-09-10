@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '@/contexts/auth-context'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useModal } from '@/contexts/modal-context'
 import { Search, Settings, LogOut, User, Menu, X } from 'lucide-react'
 import Image from 'next/image'
@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
-  const { user, logout } = useAuth()
+  const { user, logout } = useSupabaseAuth()
   const { hideHeader } = useModal()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)

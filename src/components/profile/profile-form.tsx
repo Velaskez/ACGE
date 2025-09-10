@@ -114,10 +114,9 @@ export function ProfileForm({
     const roleLabels: Record<string, string> = {
       ADMIN: 'Administrateur',
       SECRETAIRE: 'Secrétaire',
-      COMPTABLE: 'Comptable',
+      AGENT_COMPTABLE: 'Agent Comptable',
       CONTROLEUR_BUDGETAIRE: 'Contrôleur Budgétaire',
-      ORDONNATEUR: 'Ordonnateur',
-      AGENT_COMPTABLE: 'Agent Comptable'
+      ORDONNATEUR: 'Ordonnateur'
     }
     return roleLabels[role] || role
   }

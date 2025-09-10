@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
-import { useAuth } from '@/contexts/auth-context'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { formatRelativeTime } from '@/lib/utils'
 import {
   User,
@@ -45,7 +45,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { user, refreshUser } = useAuth()
+  const { user, refreshUser, getAccessToken } = useSupabaseAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -102,18 +102,56 @@ export default function ProfilePage() {
       setIsLoading(true)
       setError('')
 
-      const response = await fetch('/api/profile')
-      
-      if (response.ok) {
-        const data = await response.json()
-        setProfile(data.user)
+      // Utiliser directement les données du contexte si disponibles
+      if (user) {
+        setProfile({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          _count: { documents: 0, sharedWith: 0 }
+        })
         setFormData({
-          name: data.user.name || '',
-          email: data.user.email || '',
+          name: user.name || '',
+          email: user.email || '',
           currentPassword: '',
           newPassword: '',
           confirmPassword: ''
         })
+        setIsLoading(false)
+        return
+      }
+
+      // Fallback vers l'API si le contexte n'est pas disponible
+      const token = await getAccessToken()
+      
+      if (!token) {
+        setError('Token d\'authentification manquant')
+        return
+      }
+
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.user) {
+          setProfile(data.user)
+          setFormData({
+            name: data.user.name || '',
+            email: data.user.email || '',
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          })
+        } else {
+          setError('Erreur dans les données reçues')
+        }
       } else {
         const errorData = await response.json().catch(() => ({}))
         setError(`Erreur lors du chargement du profil: ${errorData.error || response.status}`)

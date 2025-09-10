@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
+    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
 
     // Vérifier les permissions et récupérer le document
@@ -92,7 +92,7 @@ export async function POST(
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
+    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
 
     const { userEmail, permission } = await request.json()
@@ -224,7 +224,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as any
+    const decoded = verify(token, process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development') as any
     const userId = decoded.userId
 
     const { searchParams } = new URL(request.url)

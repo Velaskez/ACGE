@@ -36,7 +36,7 @@ import {
   ExternalLink,
   Key
 } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import Link from 'next/link'
 
 interface SettingItem {
@@ -51,7 +51,7 @@ interface SettingItem {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user } = useSupabaseAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingSettings, setIsLoadingSettings] = useState(true)
   const [error, setError] = useState('')

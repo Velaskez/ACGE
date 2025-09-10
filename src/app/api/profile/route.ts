@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 // GET - Récupérer le profil de l'utilisateur connecté
@@ -14,6 +15,87 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Essayer d'abord avec le token Supabase
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      const { createClient } = await import('@supabase/supabase-js')
+      
+      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      })
+
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+      
+      if (!authError && authUser) {
+        console.log('🔐 Utilisateur Supabase trouvé:', authUser.email)
+        
+        const admin = getSupabaseAdmin()
+        if (!admin) {
+          return NextResponse.json(
+            { error: 'Service de base de données indisponible' },
+            { status: 503 }
+          )
+        }
+
+        // Récupérer l'utilisateur depuis notre base de données
+        const { data: user, error: userErr } = await admin
+          .from('users')
+          .select('id, name, email, role, createdAt, updatedAt')
+          .eq('email', authUser.email)
+          .single()
+
+        if (userErr || !user) {
+          return NextResponse.json(
+            { error: 'Utilisateur non trouvé' },
+            { status: 404 }
+          )
+        }
+
+        // Compter les documents de l'utilisateur
+        let documentsCount = 0
+        try {
+          const { count, error } = await admin
+            .from('documents')
+            .select('*', { count: 'exact', head: true })
+            .eq('authorId', user.id)
+          if (!error && typeof count === 'number') documentsCount = count
+        } catch {}
+
+        // Compter les dossiers de l'utilisateur
+        let foldersCount = 0
+        try {
+          const { count, error } = await admin
+            .from('folders')
+            .select('*', { count: 'exact', head: true })
+            .eq('authorId', user.id)
+          if (!error && typeof count === 'number') foldersCount = count
+        } catch {}
+
+        return NextResponse.json({
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            _count: {
+              documents: documentsCount,
+              folders: foldersCount
+            }
+          }
+        })
+      }
+    } catch (supabaseError) {
+      console.log('🔄 Fallback vers JWT NextAuth...')
+    }
+
+    // Fallback vers JWT NextAuth
     let decoded: any
     try {
       decoded = verify(token, process.env.NEXTAUTH_SECRET || 'dev-secret') as any
@@ -27,6 +109,13 @@ export async function GET(request: NextRequest) {
     const userId = decoded.userId
 
     const supabase = getSupabaseAdmin()
+    
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Service de base de données indisponible' },
+        { status: 503 }
+      )
+    }
 
     // Récupérer l'utilisateur
     const { data: user, error: userErr } = await supabase
@@ -115,10 +204,32 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Vérifier si l'email existe déjà (sauf pour l'utilisateur actuel)
-    const existingUser = await supabase.from('users').select('*').eq('email', email).neq('id', userId).single()
+    const supabase = getSupabaseAdmin()
+    
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Service de base de données indisponible' },
+        { status: 503 }
+      )
+    }
 
-    if (existingUser.error) {
+    // Vérifier si l'email existe déjà (sauf pour l'utilisateur actuel)
+    const { data: existingUser, error: existingUserError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .neq('id', userId)
+      .maybeSingle()
+
+    if (existingUserError) {
+      console.error('Erreur vérification email:', existingUserError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la vérification de l\'email' },
+        { status: 500 }
+      )
+    }
+
+    if (existingUser) {
       return NextResponse.json(
         { error: 'Un utilisateur avec cet email existe déjà' },
         { status: 400 }
@@ -148,9 +259,13 @@ export async function PUT(request: NextRequest) {
       }
 
       // Récupérer l'utilisateur avec le mot de passe actuel
-      const user = await supabase.from('users').select('password').eq('id', userId).single()
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('password')
+        .eq('id', userId)
+        .single()
 
-      if (user.error) {
+      if (userError || !userData) {
         return NextResponse.json(
           { error: 'Utilisateur non trouvé' },
           { status: 404 }
@@ -158,7 +273,7 @@ export async function PUT(request: NextRequest) {
       }
 
       // Vérifier le mot de passe actuel
-      const isPasswordValid = await bcrypt.compare(currentPassword, user.data.password)
+      const isPasswordValid = await bcrypt.compare(currentPassword, userData.password)
       if (!isPasswordValid) {
         return NextResponse.json(
           { error: 'Mot de passe actuel incorrect' },
