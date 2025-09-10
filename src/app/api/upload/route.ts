@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
-import { DocumentNotifications } from '@/lib/notifications'
 
 /**
  * 🚀 API UPLOAD 100% SUPABASE - ACGE
@@ -10,7 +9,7 @@ import { DocumentNotifications } from '@/lib/notifications'
  * - Stockage dans Supabase Storage
  * - Métadonnées dans la base de données Supabase
  * - Authentification JWT
- * - Notifications automatiques
+ * - Gestion des métadonnées
  */
 
 export async function POST(request: NextRequest) {
@@ -159,12 +158,7 @@ export async function POST(request: NextRequest) {
 
         console.log('✅ Document sauvegardé en base:', documentId)
         
-        // Envoyer une notification
-        await DocumentNotifications.created(
-          documentId,
-          metadata.name || file.name.split('.')[0],
-          userId
-        )
+        // Document créé avec succès
 
         uploadedFiles.push({
           id: documentId,

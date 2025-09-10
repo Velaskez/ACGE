@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
-import { DocumentNotifications } from '@/lib/notifications'
 
 // DELETE - Supprimer un document
 export async function DELETE(
@@ -91,8 +90,6 @@ export async function DELETE(
       }
     }
     
-    // Notification admin
-    await DocumentNotifications.deleted(documentId, document.title, document.author_id)
     
     return NextResponse.json({
       success: true,
@@ -281,14 +278,6 @@ export async function PUT(
     console.log('✅ Document modifié avec succès')
     console.log(`📄 Nouveau titre: ${updatedDocument.title}`)
 
-    // Notification admin des modifications
-    const changes = []
-    if (title !== existingDocument.title) changes.push('titre')
-    if (description !== existingDocument.description) changes.push('description')
-    if (folderId !== existingDocument.folder_id) changes.push('dossier')
-    if (changes.length > 0) {
-      await DocumentNotifications.updated(updatedDocument.title, updatedDocument.author_id, changes)
-    }
 
     // Transformer la réponse pour correspondre au format DocumentItem
     const transformedDocument = {

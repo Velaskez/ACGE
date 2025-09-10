@@ -18,7 +18,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { NotificationDropdown } from '@/components/notifications/notification-dropdown'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
@@ -126,8 +125,6 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </Button>
           {/* Toggle de thème */}
           <ThemeToggle />
-          {/* Notifications */}
-          <NotificationDropdown />
 
           {/* Menu utilisateur */}
           {user && (

@@ -20,7 +20,6 @@ import {
 import { ThemeSelector } from '@/components/ui/theme-selector'
 import {
   Settings,
-  Bell,
   Shield,
   Palette,
   Globe,
@@ -72,8 +71,6 @@ export default function SettingsPage() {
 
   // États pour les paramètres
   const [settings, setSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: false,
     language: 'fr',
     timezone: 'Africa/Libreville',
     security: {
@@ -120,35 +117,6 @@ export default function SettingsPage() {
       keywords: ['thème', 'apparence', 'couleur', 'mode', 'clair', 'sombre', 'système'],
       available: true,
       component: <ThemeSelector />
-    },
-    // Notifications
-    {
-      id: 'email-notifications',
-      title: 'Notifications par email',
-      description: 'Recevoir des notifications par email',
-      section: 'Notifications',
-      keywords: ['email', 'notification', 'courriel', 'mail'],
-      available: true,
-      component: (
-        <Switch
-          checked={settings.emailNotifications}
-          onCheckedChange={(checked: boolean) => handleSettingsChange('emailNotifications', checked)}
-        />
-      )
-    },
-    {
-      id: 'push-notifications',
-      title: 'Notifications push',
-      description: 'Recevoir des notifications push dans le navigateur',
-      section: 'Notifications',
-      keywords: ['push', 'notification', 'navigateur', 'browser'],
-      available: true,
-      component: (
-        <Switch
-          checked={settings.pushNotifications}
-          onCheckedChange={(checked: boolean) => handleSettingsChange('pushNotifications', checked)}
-        />
-      )
     },
     // Compte
     {
@@ -274,7 +242,6 @@ export default function SettingsPage() {
   // Sections disponibles
   const sections = [
     { name: 'Apparence', icon: Palette, color: 'blue' },
-    { name: 'Notifications', icon: Bell, color: 'orange' },
     { name: 'Compte', icon: User, color: 'green' },
     { name: 'Sécurité', icon: Shield, color: 'red' },
     { name: 'Régional', icon: Globe, color: 'purple' }
@@ -358,7 +325,6 @@ export default function SettingsPage() {
   const getSectionIcon = (sectionName: string) => {
     switch (sectionName) {
       case 'Apparence': return Palette
-      case 'Notifications': return Bell
       case 'Compte': return User
       case 'Sécurité': return Shield
       case 'Régional': return Globe
@@ -369,7 +335,6 @@ export default function SettingsPage() {
   const getSectionColor = (sectionName: string) => {
     switch (sectionName) {
       case 'Apparence': return 'blue'
-      case 'Notifications': return 'orange'
       case 'Compte': return 'green'
       case 'Sécurité': return 'red'
       case 'Régional': return 'purple'
@@ -605,7 +570,6 @@ export default function SettingsPage() {
                             <CardTitle className="text-xl">{sectionName}</CardTitle>
                             <CardDescription className="text-sm">
                               {sectionName === 'Apparence' && 'Personnalisez l\'apparence de l\'application'}
-                              {sectionName === 'Notifications' && 'Gérez vos préférences de notifications'}
                               {sectionName === 'Compte' && 'Informations de votre compte'}
                               {sectionName === 'Sécurité' && 'Paramètres de sécurité de votre compte'}
                               {sectionName === 'Régional' && 'Paramètres régionaux et de langue'}

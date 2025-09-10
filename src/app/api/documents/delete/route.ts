@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
-import { DocumentNotifications } from '@/lib/notifications'
 
 /**
  * 🚀 API DOCUMENTS DELETE - Suppression par fileId
@@ -123,8 +122,6 @@ export async function DELETE(request: NextRequest) {
       }
     }
     
-    // Notification admin
-    await DocumentNotifications.deleted(targetDocument.id, targetDocument.title, targetDocument.author_id)
     
     return NextResponse.json({
       success: true,

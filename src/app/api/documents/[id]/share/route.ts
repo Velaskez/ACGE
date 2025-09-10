@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
-import { NotificationService } from '@/lib/notification-service'
 
 // GET - Récupérer les partages d'un document
 export async function GET(
@@ -194,14 +193,7 @@ export async function POST(
       return NextResponse.json({ error: 'Erreur lors de la création du partage' }, { status: 500 })
     }
 
-    // Créer une notification pour l'utilisateur
-    await NotificationService.notifyDocumentShared(
-      resolvedParams.id,
-      document.title,
-      userId,
-      targetUser.id,
-      permission
-    )
+    // Document partagé avec succès
 
     return NextResponse.json({
       message: 'Document partagé avec succès',

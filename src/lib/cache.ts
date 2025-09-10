@@ -64,7 +64,6 @@ export const CacheKeys = {
   documents: (filters: string) => `documents:${filters}`,
   documentById: (id: string) => `document:${id}`,
   users: 'users:all',
-  notifications: (userId: string) => `notifications:${userId}`,
   sidebarFolders: 'sidebar:folders'
 }
 
@@ -83,8 +82,4 @@ export const CacheInvalidation = {
   onUserChange: () => {
     cache.delete(CacheKeys.users)
   },
-  
-  onNotificationChange: (userId: string) => {
-    cache.delete(CacheKeys.notifications(userId))
-  }
 }

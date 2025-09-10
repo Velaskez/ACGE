@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
 import { randomUUID } from 'crypto'
-import { FolderNotifications } from '@/lib/notifications'
 import { CacheInvalidation } from '@/lib/cache'
 
 type CreateFolderBody = {
@@ -70,8 +69,6 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Dossier créé dans Supabase:', newFolder.name)
     
-    // Notification admin
-    await FolderNotifications.created(newFolder.name, newFolder.authorId)
     
     // Invalider le cache
     CacheInvalidation.onFolderChange()

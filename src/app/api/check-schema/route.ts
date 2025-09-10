@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseAdmin()
     
     // Vérifier l'état des tables
-    const tables = ['users', 'documents', 'folders', 'notifications']
+    const tables = ['users', 'documents', 'folders']
     const tableStatus: Record<string, any> = {}
     
     for (const table of tables) {

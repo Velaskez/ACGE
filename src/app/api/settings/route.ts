@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
         folderCreation: true,
         documentUpload: true,
         documentSharing: true,
-        notifications: true,
         userManagement: true
       },
       limits: {
