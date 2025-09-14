@@ -166,18 +166,18 @@ export default function UploadPage() {
     return (
       <MainLayout>
         <div className="max-w-2xl mx-auto py-12">
-          <Card className="text-center animate-fade-in-up transition-all duration-300 hover:shadow-lg">
+          <Card className="text-center  transition-all duration-300 hover:shadow-lg">
             <CardContent className="pt-6">
               <div className="mx-auto w-16 h-16 bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 rounded-full flex items-center justify-center mb-4 animate-pulse">
                 <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+              <h2 className="text-2xl font-bold text-foreground mb-2 " style={{animationDelay: '0.1s'}}>
                 Upload réussi !
               </h2>
-              <p className="text-muted-foreground mb-4 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+              <p className="text-muted-foreground mb-4 " style={{animationDelay: '0.2s'}}>
                 Vos fichiers ont été uploadés avec succès.
               </p>
-              <p className="text-sm text-muted-foreground animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+              <p className="text-sm text-muted-foreground " style={{animationDelay: '0.3s'}}>
                 Redirection vers la liste des documents...
               </p>
             </CardContent>
@@ -191,7 +191,7 @@ export default function UploadPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* Header amélioré */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 animate-fade-in-up">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 ">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -219,7 +219,7 @@ export default function UploadPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Zone d'upload principal */}
-          <div className="lg:col-span-2 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+          <div className="lg:col-span-2 " style={{animationDelay: '0.1s'}}>
             <Card className="transition-all duration-300 hover:shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export default function UploadPage() {
           {/* Options d'organisation */}
           <div className="space-y-6">
             {/* Tags */}
-            <Card className="animate-fade-in-up transition-all duration-300 hover:shadow-lg" style={{animationDelay: '0.2s'}}>
+            <Card className=" transition-all duration-300 hover:shadow-lg" style={{animationDelay: '0.2s'}}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Tag className="w-5 h-5 text-primary" />
@@ -268,12 +268,12 @@ export default function UploadPage() {
                 </div>
 
                 {metadata.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 animate-fade-in">
+                  <div className="flex flex-wrap gap-2 ">
                     {metadata.tags.map((tag, index) => (
                       <Badge
                         key={tag}
                         variant="secondary"
-                        className="cursor-pointer transition-all duration-300 hover:scale-110 hover:bg-primary/20 animate-fade-in-up"
+                        className="cursor-pointer transition-all duration-300 hover:scale-110 hover:bg-primary/20 "
                         style={{animationDelay: `${index * 0.1}s`}}
                         onClick={() => removeTag(tag)}
                       >
@@ -286,7 +286,7 @@ export default function UploadPage() {
             </Card>
 
             {/* Dossier de destination */}
-            <Card className="animate-fade-in-up transition-all duration-300 hover:shadow-lg" style={{animationDelay: '0.3s'}}>
+            <Card className=" transition-all duration-300 hover:shadow-lg" style={{animationDelay: '0.3s'}}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FolderOpen className="w-5 h-5 text-primary" />
@@ -328,7 +328,7 @@ export default function UploadPage() {
 
         {/* Messages d'erreur */}
         {error && (
-          <Alert variant="destructive" className="animate-fade-in">
+          <Alert variant="destructive" className="">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -337,40 +337,4 @@ export default function UploadPage() {
   )
 }
 
-// Styles CSS pour les animations
-const styles = `
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-  }
-
-  .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out;
-  }
-`
-
-// Injecter les styles
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style')
-  styleSheet.textContent = styles
-  document.head.appendChild(styleSheet)
-}
+// Styles CSS simplifiés - Suppression des animations superficielles

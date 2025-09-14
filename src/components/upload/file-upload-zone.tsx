@@ -186,14 +186,14 @@ export function FileUploadZone({
             </div>
             
             {isDragActive ? (
-              <div className="animate-fade-in-up">
+              <div className="">
                 <p className="text-lg font-medium text-primary">
                   Déposez les fichiers ici...
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="animate-fade-in-up">
+                <div className="">
                   <p className="text-lg font-medium text-foreground mb-2">
                     Glissez-déposez vos fichiers ici
                   </p>
@@ -203,7 +203,7 @@ export function FileUploadZone({
                 </div>
                 <Button 
                   variant="outline" 
-                  className="animate-fade-in-up transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  className=" transition-all duration-300 hover:scale-105 hover:shadow-md"
                   style={{animationDelay: '0.1s'}}
                 >
                   Parcourir les fichiers
@@ -211,7 +211,7 @@ export function FileUploadZone({
               </div>
             )}
             
-            <div className="mt-6 text-xs text-muted-foreground space-y-1 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+            <div className="mt-6 text-xs text-muted-foreground space-y-1 " style={{animationDelay: '0.2s'}}>
               <p>Formats acceptés : PDF, Word, Excel, Images, Texte</p>
               <p>Taille maximale : {maxSize}MB par fichier • Maximum {maxFiles} fichiers</p>
             </div>
@@ -221,7 +221,7 @@ export function FileUploadZone({
 
       {/* Messages d'erreur améliorés */}
       {error && (
-        <Alert variant="destructive" className="animate-fade-in">
+        <Alert variant="destructive" className="">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
@@ -229,10 +229,10 @@ export function FileUploadZone({
 
       {/* Liste des fichiers améliorée */}
       {files.length > 0 && (
-        <Card className="animate-fade-in-up transition-all duration-300 hover:shadow-md">
+        <Card className=" transition-all duration-300 hover:shadow-md">
           <CardContent className="p-4">
             <div className="space-y-3">
-              <h3 className="font-medium text-lg flex items-center gap-2 animate-fade-in-up">
+              <h3 className="font-medium text-lg flex items-center gap-2 ">
                 <File className="w-5 h-5 text-primary" />
                 Fichiers sélectionnés ({files.length})
               </h3>
@@ -240,7 +240,7 @@ export function FileUploadZone({
               {files.map((file, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center gap-3 p-3 bg-muted/20 rounded-lg transition-all duration-300 hover:bg-muted/30 hover:scale-[1.01] animate-fade-in-up"
+                  className="flex items-center gap-3 p-3 bg-muted/20 rounded-lg transition-all duration-300 hover:bg-muted/30 hover:scale-[1.01] "
                   style={{animationDelay: `${index * 0.1}s`}}
                 >
                   {/* Icône et preview */}
@@ -274,19 +274,19 @@ export function FileUploadZone({
                     
                     {/* Message d'erreur */}
                     {file.uploadStatus === 'error' && file.errorMessage && (
-                      <p className="text-xs text-destructive mt-1 animate-fade-in">{file.errorMessage}</p>
+                      <p className="text-xs text-destructive mt-1 ">{file.errorMessage}</p>
                     )}
                   </div>
 
                   {/* Statut et actions */}
                   <div className="flex items-center gap-2">
                     {file.uploadStatus === 'success' && (
-                      <div className="w-5 h-5 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center animate-fade-in">
+                      <div className="w-5 h-5 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center ">
                         <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
                       </div>
                     )}
                     {file.uploadStatus === 'error' && (
-                      <div className="w-5 h-5 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center animate-fade-in">
+                      <div className="w-5 h-5 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center ">
                         <AlertCircle className="w-3 h-3 text-red-600 dark:text-red-400" />
                       </div>
                     )}
@@ -311,7 +311,7 @@ export function FileUploadZone({
 
             {/* Bouton d'upload amélioré */}
             {files.some(f => f.uploadStatus === 'pending') && (
-              <div className="mt-4 flex justify-end animate-fade-in-up">
+              <div className="mt-4 flex justify-end ">
                 <Button 
                   onClick={handleUpload}
                   disabled={isUploading}
@@ -338,40 +338,4 @@ export function FileUploadZone({
   )
 }
 
-// Styles CSS pour les animations
-const styles = `
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-  }
-
-  .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out;
-  }
-`
-
-// Injecter les styles
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style')
-  styleSheet.textContent = styles
-  document.head.appendChild(styleSheet)
-}
+// Styles CSS simplifiés - Suppression des animations superficielles

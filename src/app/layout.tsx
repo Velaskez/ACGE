@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ClientProviders } from "@/components/providers/client-providers";
+import { LoadingProvider } from "@/components/providers/loading-provider";
 import { ThemeProvider } from "next-themes";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -38,9 +39,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ClientProviders>
-            {children}
-          </ClientProviders>
+          <LoadingProvider>
+            <ClientProviders>
+              {children}
+            </ClientProviders>
+          </LoadingProvider>
         </ThemeProvider>
       </body>
     </html>

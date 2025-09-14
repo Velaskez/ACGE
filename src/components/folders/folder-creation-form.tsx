@@ -132,15 +132,15 @@ export function FolderCreationForm({
       case 1:
         return (
           <div className="space-y-6">
-            <div className="text-center mb-6 animate-fade-in-up">
-              <FolderOpen className="w-12 h-12 text-primary mx-auto mb-2 animate-pulse" />
+            <div className="text-center mb-6 ">
+              <FolderOpen className="w-12 h-12 text-primary mx-auto mb-2 " />
               <h3 className="text-lg font-semibold">Informations de base</h3>
               <p className="text-sm text-muted-foreground">
                 Définissez le nom et la description de votre dossier
               </p>
             </div>
 
-            <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+            <div className="space-y-2 " >
               <Label htmlFor="name" className="text-sm font-medium">
                 Nom du dossier *
               </Label>
@@ -150,12 +150,12 @@ export function FolderCreationForm({
                   value={formData.name}
                   onChange={(e) => updateFormData('name', e.target.value)}
                   placeholder="Ex: Dossier ENS 2025"
-                  className={`transition-all duration-300 hover:border-primary/50 focus:scale-[1.02] ${errors.name ? 'border-destructive' : ''}`}
+                  className={`transition-colors duration-200 hover:border-primary/50  ${errors.name ? 'border-destructive' : ''}`}
                 />
               </div>
-              {errors.name && <p className="text-sm text-destructive animate-fade-in">{errors.name}</p>}
+              {errors.name && <p className="text-sm text-destructive ">{errors.name}</p>}
             </div>
-            <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+            <div className="space-y-2 " >
               <Label htmlFor="description" className="text-sm font-medium">
                 Description
               </Label>
@@ -165,7 +165,7 @@ export function FolderCreationForm({
                   value={formData.description}
                   onChange={(e) => updateFormData('description', e.target.value)}
                   placeholder="Description optionnelle du dossier"
-                  className="transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
+                  className="transition-colors duration-200 hover:border-primary/50 "
                 />
               </div>
             </div>
@@ -175,21 +175,21 @@ export function FolderCreationForm({
       case 2:
         return (
           <div className="space-y-6">
-            <div className="text-center mb-6 animate-fade-in-up">
-              <Calculator className="w-12 h-12 text-primary mx-auto mb-2 animate-pulse" />
+            <div className="text-center mb-6 ">
+              <Calculator className="w-12 h-12 text-primary mx-auto mb-2 " />
               <h3 className="text-lg font-semibold">Informations comptables</h3>
               <p className="text-sm text-muted-foreground">
                 Renseignez les détails comptables du dossier
               </p>
             </div>
 
-            <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+            <div className="space-y-2 " >
               <Label className="text-sm font-medium">Poste comptable *</Label>
               <Select 
                 value={formData.posteComptableId} 
                 onValueChange={(value) => updateFormData('posteComptableId', value)}
               >
-                <SelectTrigger className={`transition-all duration-300 hover:border-primary/50 focus:scale-[1.02] ${errors.posteComptableId ? 'border-destructive' : ''}`}>
+                <SelectTrigger className={`transition-colors duration-200 hover:border-primary/50  ${errors.posteComptableId ? 'border-destructive' : ''}`}>
                   <SelectValue placeholder="Sélectionner un poste comptable" />
                 </SelectTrigger>
                 <SelectContent>
@@ -200,15 +200,15 @@ export function FolderCreationForm({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.posteComptableId && <p className="text-sm text-destructive animate-fade-in">{errors.posteComptableId}</p>}
+              {errors.posteComptableId && <p className="text-sm text-destructive ">{errors.posteComptableId}</p>}
             </div>
-            <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+            <div className="space-y-2 " >
               <Label className="text-sm font-medium">Nature du document *</Label>
               <Select 
                 value={formData.natureDocumentId} 
                 onValueChange={(value) => updateFormData('natureDocumentId', value)}
               >
-                <SelectTrigger className={`transition-all duration-300 hover:border-primary/50 focus:scale-[1.02] ${errors.natureDocumentId ? 'border-destructive' : ''}`}>
+                <SelectTrigger className={`transition-colors duration-200 hover:border-primary/50  ${errors.natureDocumentId ? 'border-destructive' : ''}`}>
                   <SelectValue placeholder="Sélectionner une nature" />
                 </SelectTrigger>
                 <SelectContent>
@@ -219,7 +219,7 @@ export function FolderCreationForm({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.natureDocumentId && <p className="text-sm text-destructive animate-fade-in">{errors.natureDocumentId}</p>}
+              {errors.natureDocumentId && <p className="text-sm text-destructive ">{errors.natureDocumentId}</p>}
             </div>
           </div>
         )
@@ -227,8 +227,8 @@ export function FolderCreationForm({
       case 3:
         return (
           <div className="space-y-6">
-            <div className="text-center mb-6 animate-fade-in-up">
-              <FileText className="w-12 h-12 text-primary mx-auto mb-2 animate-pulse" />
+            <div className="text-center mb-6 ">
+              <FileText className="w-12 h-12 text-primary mx-auto mb-2 " />
               <h3 className="text-lg font-semibold">Détails de l'opération</h3>
               <p className="text-sm text-muted-foreground">
                 Complétez les informations spécifiques à l'opération
@@ -236,7 +236,7 @@ export function FolderCreationForm({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+              <div className="space-y-2 " >
                 <Label htmlFor="numeroNature" className="text-sm font-medium">
                   Numéro nature
                 </Label>
@@ -246,11 +246,11 @@ export function FolderCreationForm({
                     value={formData.numeroNature}
                     onChange={(e) => updateFormData('numeroNature', e.target.value)}
                     placeholder="Ex: 01"
-                    className="transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
+                    className="transition-colors duration-200 hover:border-primary/50 "
                   />
                 </div>
               </div>
-              <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+              <div className="space-y-2 " >
                 <Label htmlFor="beneficiaire" className="text-sm font-medium">
                   Bénéficiaire *
                 </Label>
@@ -260,13 +260,13 @@ export function FolderCreationForm({
                     value={formData.beneficiaire}
                     onChange={(e) => updateFormData('beneficiaire', e.target.value)}
                     placeholder="Nom du bénéficiaire"
-                    className={`transition-all duration-300 hover:border-primary/50 focus:scale-[1.02] ${errors.beneficiaire ? 'border-destructive' : ''}`}
+                    className={`transition-colors duration-200 hover:border-primary/50  ${errors.beneficiaire ? 'border-destructive' : ''}`}
                   />
                 </div>
-                {errors.beneficiaire && <p className="text-sm text-destructive animate-fade-in">{errors.beneficiaire}</p>}
+                {errors.beneficiaire && <p className="text-sm text-destructive ">{errors.beneficiaire}</p>}
               </div>
             </div>
-            <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+            <div className="space-y-2 " >
               <Label htmlFor="objetOperation" className="text-sm font-medium">
                 Objet de l'opération *
               </Label>
@@ -276,10 +276,10 @@ export function FolderCreationForm({
                   value={formData.objetOperation}
                   onChange={(e) => updateFormData('objetOperation', e.target.value)}
                   placeholder="Description détaillée de l'opération"
-                  className={`transition-all duration-300 hover:border-primary/50 focus:scale-[1.02] ${errors.objetOperation ? 'border-destructive' : ''}`}
+                  className={`transition-colors duration-200 hover:border-primary/50  ${errors.objetOperation ? 'border-destructive' : ''}`}
                 />
               </div>
-              {errors.objetOperation && <p className="text-sm text-destructive animate-fade-in">{errors.objetOperation}</p>}
+              {errors.objetOperation && <p className="text-sm text-destructive ">{errors.objetOperation}</p>}
             </div>
           </div>
         )
@@ -290,14 +290,14 @@ export function FolderCreationForm({
         
         return (
           <div className="space-y-6">
-            <div className="text-center animate-fade-in-up">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4 animate-pulse" />
+            <div className="text-center ">
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4 " />
               <h3 className="text-lg font-semibold mb-2">Récapitulatif</h3>
               <p className="text-muted-foreground">Vérifiez les informations avant de créer le dossier</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+              <Card className="" >
                 <CardContent className="p-4">
                   <h4 className="font-medium mb-2">Informations de base</h4>
                   <div className="space-y-1 text-sm">
@@ -307,7 +307,7 @@ export function FolderCreationForm({
                 </CardContent>
               </Card>
               
-              <Card className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+              <Card className="" >
                 <CardContent className="p-4">
                   <h4 className="font-medium mb-2">Informations comptables</h4>
                   <div className="space-y-1 text-sm">
@@ -317,7 +317,7 @@ export function FolderCreationForm({
                 </CardContent>
               </Card>
               
-              <Card className="animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+              <Card className="" >
                 <CardContent className="p-4">
                   <h4 className="font-medium mb-2">Détails de l'opération</h4>
                   <div className="space-y-1 text-sm">
@@ -328,7 +328,7 @@ export function FolderCreationForm({
                 </CardContent>
               </Card>
               
-              <Card className="animate-fade-in-up" style={{animationDelay: '0.4s'}}>
+              <Card className="" >
                 <CardContent className="p-4">
                   <h4 className="font-medium mb-2">Informations système</h4>
                   <div className="space-y-1 text-sm">
@@ -357,7 +357,7 @@ export function FolderCreationForm({
                 {/* Ligne de connexion */}
                 {index < steps.length - 1 && (
                   <div className="absolute top-5 left-1/2 w-full h-px bg-border -translate-x-1/2 -z-10">
-                    <div className={`h-full transition-all duration-300 ${
+                    <div className={`h-full transition-colors duration-200 ${
                       currentStep > step.id ? 'bg-primary' : 'bg-border'
                     }`} style={{ width: '100%' }} />
                   </div>
@@ -367,14 +367,14 @@ export function FolderCreationForm({
                 <div className="flex flex-col items-center group relative z-10 w-full">
                   <div className={`
                     w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
-                    transition-all duration-300 transform
+                    transition-colors duration-200 transform
                     ${currentStep >= step.id 
                       ? 'bg-primary text-primary-foreground shadow-lg scale-110' 
                       : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
                     }
                   `}>
                     {currentStep > step.id ? (
-                      <CheckCircle className="w-5 h-5 animate-fade-in" />
+                      <CheckCircle className="w-5 h-5 " />
                     ) : (
                       <Circle className="w-5 h-5" />
                     )}
@@ -393,7 +393,7 @@ export function FolderCreationForm({
 
         {/* Content avec animation */}
         <div className="min-h-[400px] relative overflow-hidden px-4">
-          <div className="animate-fade-in-up transition-all duration-500">
+          <div className=" transition-all duration-500">
             {renderStepContent()}
           </div>
         </div>
@@ -404,7 +404,7 @@ export function FolderCreationForm({
           variant="outline"
           onClick={currentStep === 1 ? onCancel : handlePrevious}
           disabled={isLoading}
-          className="transition-all duration-300 hover:scale-105 group"
+          className="transition-colors duration-200 hover:scale-105 group"
         >
           {currentStep === 1 ? (
             'Annuler'
@@ -420,7 +420,7 @@ export function FolderCreationForm({
           <Button 
             onClick={handleNext} 
             disabled={isLoading}
-            className="transition-all duration-300 hover:scale-105 group"
+            className="transition-colors duration-200 hover:scale-105 group"
           >
             Suivant
             <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
@@ -429,7 +429,7 @@ export function FolderCreationForm({
           <Button 
             onClick={handleSubmit} 
             disabled={isLoading}
-            className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover:shadow-xl transition-all duration-300 hover:scale-105 group"
+            className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover:shadow-xl transition-colors duration-200 hover:scale-105 group"
           >
             {isLoading ? 'Création...' : 'Créer le dossier'}
             {!isLoading && <CheckCircle className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform duration-300" />}
@@ -441,40 +441,4 @@ export function FolderCreationForm({
   )
 }
 
-// Styles CSS pour les animations
-const styles = `
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-  }
-
-  .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out;
-  }
-`
-
-// Injecter les styles
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style')
-  styleSheet.textContent = styles
-  document.head.appendChild(styleSheet)
-}
+// Styles CSS simplifiés - Suppression des animations superficielles

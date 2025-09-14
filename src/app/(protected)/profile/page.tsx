@@ -315,7 +315,7 @@ export default function ProfilePage() {
   return (
     <MainLayout>
       {isLoading ? (
-        <div className="space-y-8 animate-pulse">
+        <div className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Skeleton pour les informations du profil */}
             <div className="lg:col-span-1">
@@ -433,7 +433,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Informations du profil */}
             <div className="lg:col-span-1">
-              <Card className="card-elevated group animate-fade-in-scale">
+              <Card className="card-elevated group ">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-3 text-xl text-foreground">
                     <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors duration-200">
@@ -502,7 +502,7 @@ export default function ProfilePage() {
 
             {/* Formulaire de modification */}
             <div className="lg:col-span-2">
-              <Card className="card-elevated animate-fade-in-scale">
+              <Card className="card-elevated ">
                 <CardHeader className="pb-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -517,7 +517,7 @@ export default function ProfilePage() {
                       </CardDescription>
                     </div>
                     {isEditing && (
-                      <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 px-3 py-1 rounded-full animate-pulse-glow">
+                      <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 px-3 py-1 rounded-full ">
                         <Edit3 className="h-4 w-4" />
                         Mode édition
                       </div>

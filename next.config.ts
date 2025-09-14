@@ -60,8 +60,8 @@ const nextConfig: NextConfig = {
   // Optimisations SWC (déprécié dans Next.js 15)
   // swcMinify: true,
   
-  // Configuration webpack (compatibilité; Turbopack ignore ceci en dev)
-  webpack: (config, { isServer, dev }) => {
+  // Configuration webpack simplifiée
+  webpack: (config, { isServer }) => {
     // Résoudre le problème du loader
     if (!isServer) {
       config.resolve.fallback = {
@@ -69,21 +69,6 @@ const nextConfig: NextConfig = {
         fs: false,
         net: false,
         tls: false,
-      };
-    }
-    
-    // Optimisations pour le développement
-    if (dev) {
-      // Désactiver la minification en dev pour plus de vitesse
-      config.optimization.minimize = false;
-      config.optimization.minimizer = [];
-      
-      // Cache plus agressif
-      config.cache = {
-        type: 'filesystem',
-        buildDependencies: {
-          config: [__filename],
-        },
       };
     }
     

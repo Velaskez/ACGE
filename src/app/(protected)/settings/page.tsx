@@ -420,7 +420,7 @@ export default function SettingsPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* Header amélioré */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 animate-fade-in-up">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 ">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-gradient-to-r from-primary/10 to-primary/20 rounded-lg">
@@ -438,21 +438,21 @@ export default function SettingsPage() {
 
         {/* Messages d'alerte améliorés */}
         {error && (
-          <Alert variant="destructive" className="animate-fade-in">
+          <Alert variant="destructive" className="">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         {success && (
-          <Alert className="animate-fade-in">
+          <Alert className="">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
 
         {sessionTimeoutUpdated && (
-          <Alert className="animate-fade-in">
+          <Alert className="">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription>Délai d'expiration de session mis à jour avec succès !</AlertDescription>
           </Alert>
@@ -461,7 +461,7 @@ export default function SettingsPage() {
         {/* Layout avec sidebar */}
         <div className="flex gap-8">
           {/* Sidebar améliorée */}
-          <div className="w-80 flex-shrink-0 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+          <div className="w-80 flex-shrink-0 " style={{animationDelay: '0.1s'}}>
             <Card className="transition-all duration-300 hover:shadow-lg">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -503,7 +503,7 @@ export default function SettingsPage() {
                       <Button
                         key={section.name}
                         variant={isActive ? "default" : "ghost"}
-                        className={`w-full justify-start transition-all duration-300 transform hover:scale-[1.02] animate-fade-in-up ${
+                        className={`w-full justify-start transition-all duration-300 transform hover:scale-[1.02]  ${
                           isActive ? 'bg-primary text-primary-foreground shadow-lg scale-[1.02]' : 'hover:bg-accent hover:shadow-md'
                         } ${!hasResults && searchQuery ? 'opacity-50' : ''}`}
                         style={{animationDelay: `${(index + 1) * 0.1}s`}}
@@ -547,23 +547,23 @@ export default function SettingsPage() {
           </div>
 
           {/* Contenu principal amélioré */}
-          <div className="flex-1 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+          <div className="flex-1 " style={{animationDelay: '0.2s'}}>
             {Object.keys(groupedSettings).length === 0 ? (
-              <Card className="transition-all duration-300 hover:shadow-lg animate-fade-in">
+              <Card className="transition-all duration-300 hover:shadow-lg ">
                 <CardContent className="py-12 text-center">
                   <div className="animate-bounce mb-4">
                     <Search className="h-12 w-12 text-muted-foreground mx-auto" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+                  <h3 className="text-lg font-semibold mb-2 " style={{animationDelay: '0.1s'}}>
                     Aucun résultat trouvé
                   </h3>
-                  <p className="text-muted-foreground animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+                  <p className="text-muted-foreground " style={{animationDelay: '0.2s'}}>
                     Aucun paramètre ne correspond à "{searchQuery}"
                   </p>
                   <Button 
                     variant="outline" 
                     onClick={clearSearch} 
-                    className="mt-4 transition-all duration-300 hover:scale-105 animate-fade-in-up"
+                    className="mt-4 transition-all duration-300 hover:scale-105 "
                     style={{animationDelay: '0.3s'}}
                   >
                     Effacer la recherche
@@ -580,9 +580,9 @@ export default function SettingsPage() {
                   const color = getSectionColor(sectionName)
                   
                   return (
-                    <Card key={sectionName} className="animate-fade-in-up transition-all duration-300 hover:shadow-lg">
+                    <Card key={sectionName} className=" transition-all duration-300 hover:shadow-lg">
                       <CardHeader className="pb-4">
-                        <div className="flex items-center gap-3 animate-fade-in-up">
+                        <div className="flex items-center gap-3 ">
                           <div className="p-2 bg-gradient-to-r from-primary/10 to-primary/20 rounded-md transition-all duration-300 hover:scale-110">
                             <Icon className="h-5 w-5 text-primary" />
                           </div>
@@ -602,7 +602,7 @@ export default function SettingsPage() {
                           {settings.map((setting, index) => (
                             <div 
                               key={setting.id} 
-                              className="group flex items-center justify-between p-4 rounded-lg border hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.01] animate-fade-in-up"
+                              className="group flex items-center justify-between p-4 rounded-lg border hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.01] "
                               style={{animationDelay: `${index * 0.1}s`}}
                             >
                               <div className="flex-1">
@@ -613,7 +613,7 @@ export default function SettingsPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 {!setting.available && (
-                                  <Badge variant="secondary" className="text-xs animate-fade-in">
+                                  <Badge variant="secondary" className="text-xs ">
                                     Bientôt disponible
                                   </Badge>
                                 )}
@@ -641,22 +641,22 @@ export default function SettingsPage() {
 
                                 {/* Formulaire de changement de mot de passe pour la section Sécurité */}
                 {selectedSection === 'Sécurité' && (
-                  <Card className="animate-fade-in-up transition-all duration-300 hover:shadow-lg">
+                  <Card className=" transition-all duration-300 hover:shadow-lg">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 animate-fade-in-up">
+                      <CardTitle className="flex items-center gap-2 ">
                         <div className="p-2 bg-gradient-to-r from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 rounded-md">
                           <Key className="w-5 h-5 text-red-600 dark:text-red-400" />
                         </div>
                         Changer le mot de passe
                       </CardTitle>
-                      <CardDescription className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+                      <CardDescription className="" style={{animationDelay: '0.1s'}}>
                         Modifiez votre mot de passe de sécurité
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+                          <div className="space-y-2 " style={{animationDelay: '0.2s'}}>
                             <Label htmlFor="currentPassword">Mot de passe actuel</Label>
                             <div className="relative group">
                               <Input
@@ -679,7 +679,7 @@ export default function SettingsPage() {
                               </Button>
                             </div>
                           </div>
-                          <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+                          <div className="space-y-2 " style={{animationDelay: '0.3s'}}>
                             <Label htmlFor="newPassword">Nouveau mot de passe</Label>
                             <div className="relative group">
                               <Input
@@ -703,7 +703,7 @@ export default function SettingsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.4s'}}>
+                        <div className="space-y-2 " style={{animationDelay: '0.4s'}}>
                           <Label htmlFor="confirmPassword">Confirmer le nouveau mot de passe</Label>
                           <div className="relative group">
                             <Input
@@ -726,7 +726,7 @@ export default function SettingsPage() {
                             </Button>
                           </div>
                         </div>
-                        <div className="flex justify-end gap-3 animate-fade-in-up" style={{animationDelay: '0.5s'}}>
+                        <div className="flex justify-end gap-3 " style={{animationDelay: '0.5s'}}>
                           <Button 
                             type="button" 
                             variant="outline" 
@@ -766,40 +766,4 @@ export default function SettingsPage() {
   )
 }
 
-// Styles CSS pour les animations
-const styles = `
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-  }
-
-  .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out;
-  }
-`
-
-// Injecter les styles
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style')
-  styleSheet.textContent = styles
-  document.head.appendChild(styleSheet)
-}
+// Styles CSS simplifiés - Suppression des animations superficielles

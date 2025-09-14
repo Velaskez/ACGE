@@ -84,15 +84,24 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </Button>
 
           <div className="flex items-center space-x-3">
-            <Image
-              src="/TrésorPublicGabon.jpg"
-              alt="Trésor Public Gabon"
-              width={48}
-              height={48}
-              sizes="(max-width: 640px) 40px, 48px"
-              priority
-              className="rounded-lg object-contain shadow-sm w-10 h-10 sm:w-12 sm:h-12"
-            />
+            <button
+              onClick={() => window.location.href = '/dashboard'}
+              className="group cursor-pointer transition-all duration-300 hover:scale-105"
+              aria-label="Retour à l'accueil"
+            >
+              <Image
+                src="/logo-tresor-public.svg"
+                alt="Trésor Public Gabon"
+                width={48}
+                height={48}
+                sizes="(max-width: 640px) 40px, 48px"
+                priority
+                className="object-contain w-10 h-10 sm:w-12 sm:h-12 transition-all duration-300 group-hover:scale-105 drop-shadow-md"
+                style={{
+                  filter: 'drop-shadow(0 0 8px rgba(30, 64, 175, 0.2))'
+                }}
+              />
+            </button>
             <h1 className="text-lg sm:text-xl font-semibold text-primary">ACGE</h1>
           </div>
         </div>
