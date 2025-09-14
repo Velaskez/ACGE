@@ -4,6 +4,7 @@ import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useMounted } from '@/hooks/use-mounted'
+import { redirectByRole } from '@/lib/role-redirect'
 
 export default function HomePage() {
   const { user, isLoading } = useSupabaseAuth()
@@ -17,8 +18,8 @@ export default function HomePage() {
       // Non authentifié, rediriger vers login
       router.push('/login')
     } else {
-      // Authentifié, rediriger vers dashboard
-      router.push('/dashboard')
+      // Authentifié, rediriger vers la page appropriée selon le rôle
+      redirectByRole(user.role, router)
     }
   }, [user, isLoading, router, isMounted])
 

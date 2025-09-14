@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AlertTriangle, Eye, EyeOff, Mail, Lock, CheckCircle, XCircle } from 'lucide-react'
+import { AlertTriangle, Eye, EyeOff, Mail, Lock, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { redirectByRole } from '@/lib/role-redirect'
 import Image from 'next/image'
 
 export default function LoginPage() {
@@ -42,7 +43,30 @@ export default function LoginPage() {
       const success = await login(formData.email, formData.password)
       
       if (success) {
-        router.push('/dashboard')
+        // Attendre un peu pour que l'état utilisateur soit mis à jour
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Récupérer les informations utilisateur pour la redirection basée sur le rôle
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        })
+        
+        if (response.ok) {
+          const userData = await response.json()
+          if (userData.user && userData.user.role) {
+            console.log(`🔀 Redirection après connexion: ${userData.user.role}`)
+            // Redirection basée sur le rôle
+            redirectByRole(userData.user.role, router)
+          } else {
+            console.log('⚠️ Rôle utilisateur non trouvé, redirection vers dashboard')
+            // Fallback vers dashboard général
+            router.push('/dashboard')
+          }
+        } else {
+          console.log('⚠️ Erreur récupération données utilisateur, redirection vers dashboard')
+          // Fallback vers dashboard général
+          router.push('/dashboard')
+        }
       } else {
         setError('Email ou mot de passe incorrect')
       }
@@ -106,14 +130,14 @@ export default function LoginPage() {
         </div>
 
         {/* Formulaire avec animation d'entrée */}
-        <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-          <div className="bg-primary p-8 text-primary-foreground text-center">
-            <h2 className="text-3xl font-bold text-primary-foreground">Connexion</h2>
-            <p className="text-primary-foreground/90 mt-2 text-sm">Accédez à votre espace de gestion</p>
+        <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.01] animate-fade-in-up" style={{animationDelay: '0.4s'}}>
+          <div className="bg-gradient-to-r from-primary to-primary/90 p-8 text-primary-foreground text-center">
+            <h2 className="text-3xl font-bold text-primary-foreground animate-fade-in-up" style={{animationDelay: '0.5s'}}>Connexion</h2>
+            <p className="text-primary-foreground/90 mt-2 text-sm animate-fade-in-up" style={{animationDelay: '0.6s'}}>Accédez à votre espace de gestion</p>
           </div>
 
           <div className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up" style={{animationDelay: '0.7s'}}>
               {error && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 animate-shake">
                   <div className="flex items-center gap-2 text-destructive">
@@ -123,20 +147,20 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.8s'}}>
                 <Label htmlFor="email" className="text-sm font-semibold text-foreground">
                   Identifiant
                 </Label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors duration-200" />
+                    <Mail className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-all duration-300 group-focus-within:scale-110" />
                   </div>
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     required
-                    className={`pl-10 h-12 border-input bg-background focus:border-primary focus:ring-primary rounded-lg transition-all duration-200 ${
+                    className={`pl-10 h-12 border-input bg-background focus:border-primary focus:ring-primary rounded-lg transition-all duration-300 hover:border-primary/50 focus:scale-[1.02] ${
                       emailValid === true ? 'border-green-500 focus:border-green-500 focus:ring-green-500' :
                       emailValid === false ? 'border-destructive focus:border-destructive focus:ring-destructive' : ''
                     }`}
@@ -147,34 +171,34 @@ export default function LoginPage() {
                     disabled={isLoading}
                   />
                   {emailValid !== null && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center animate-fade-in">
                       {emailValid ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <CheckCircle className="h-5 w-5 text-green-500 animate-pulse" />
                       ) : (
-                        <XCircle className="h-5 w-5 text-destructive" />
+                        <XCircle className="h-5 w-5 text-destructive animate-pulse" />
                       )}
                     </div>
                   )}
                 </div>
                 {emailValid === false && (
-                  <p className="text-destructive text-xs">Veuillez entrer votre identifiant</p>
+                  <p className="text-destructive text-xs animate-fade-in">Veuillez entrer votre identifiant</p>
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.9s'}}>
                 <Label htmlFor="password" className="text-sm font-semibold text-foreground">
                   Mot de passe
                 </Label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors duration-200" />
+                    <Lock className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-all duration-300 group-focus-within:scale-110" />
                   </div>
                   <Input
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className="pl-10 pr-12 h-12 border-input bg-background focus:border-primary focus:ring-primary rounded-lg transition-all duration-200"
+                    className="pl-10 pr-12 h-12 border-input bg-background focus:border-primary focus:ring-primary rounded-lg transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                     placeholder="Votre mot de passe"
                     value={formData.password}
                     onChange={handleInputChange}
@@ -185,7 +209,7 @@ export default function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors duration-200"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-110"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -197,8 +221,8 @@ export default function LoginPage() {
                 </div>
                 
                 {capsLockOn && (
-                  <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                    <AlertTriangle className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-2 text-muted-foreground text-xs animate-fade-in">
+                    <AlertTriangle className="h-3.5 w-3.5 animate-pulse" />
                     <span>Verr. Maj activée</span>
                   </div>
                 )}
@@ -206,7 +230,8 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                className="w-full h-12 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl animate-fade-in-up"
+                style={{animationDelay: '1s'}}
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -215,7 +240,10 @@ export default function LoginPage() {
                     Connexion en cours...
                   </div>
                 ) : (
-                  'Se connecter'
+                  <div className="flex items-center justify-center">
+                    <span>Se connecter</span>
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </div>
                 )}
               </Button>
             </form>
@@ -242,9 +270,22 @@ export default function LoginPage() {
           75% { transform: translateX(5px); }
         }
         
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
         .animate-fade-in-up {
           animation: fade-in-up 0.6s ease-out forwards;
           opacity: 0;
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
         }
         
         .animate-shake {

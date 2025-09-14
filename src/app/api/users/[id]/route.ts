@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { syncUserWithAuth } from '@/lib/auth-sync'
 
 const allowedRoles = new Set(['ADMIN', 'SECRETAIRE', 'CONTROLEUR_BUDGETAIRE', 'ORDONNATEUR', 'AGENT_COMPTABLE'])
 
@@ -8,19 +9,60 @@ async function getAuthenticatedUser(request: NextRequest) {
   try {
     const admin = getSupabaseAdmin()
     
-    // Récupérer le token depuis l'en-tête Authorization
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
+    // D'abord essayer l'authentification via cookies JWT
+    const authToken = request.cookies.get('auth-token')?.value
+    
+    if (authToken) {
+      console.log('🔑 [PUT] Token JWT trouvé dans les cookies')
+      
+      try {
+        // Vérifier le token JWT directement
+        const jwt = require('jsonwebtoken')
+        const secret = process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development'
+        
+        if (!secret) {
+          console.log('❌ [PUT] NEXTAUTH_SECRET non configuré')
+          return null
+        }
+        
+        const decoded = jwt.verify(authToken, secret)
+        console.log('✅ [PUT] Token JWT valide:', decoded.email, decoded.role)
+        
+        // Récupérer les informations complètes de l'utilisateur
+        const { data: userData, error: userError } = await admin
+          .from('users')
+          .select('id, name, email, role')
+          .eq('id', decoded.userId)
+          .single()
+        
+        if (userError || !userData) {
+          console.log('❌ [PUT] Utilisateur non trouvé dans public.users:', userError)
+          return null
+        }
+        
+        console.log('✅ [PUT] Utilisateur authentifié via JWT:', userData.email, userData.role)
+        return userData
+        
+      } catch (jwtError) {
+        console.log('❌ [PUT] Token JWT invalide:', jwtError)
+        // Continuer vers le fallback
+      }
     }
     
-    const token = authHeader.substring(7)
-    
-    // Vérifier le token avec Supabase Auth
-    const { data: { user }, error } = await admin.auth.getUser(token)
-    
-    if (error || !user) {
-      console.log('❌ [PUT] Token Supabase invalide:', error)
+    // Fallback vers l'authentification Bearer token (pour compatibilité)
+    const authHeader = request.headers.get('authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      
+      // Vérifier le token avec Supabase Auth
+      const { data: { user }, error } = await admin.auth.getUser(token)
+      
+      if (error || !user) {
+        console.log('❌ [PUT] Token Supabase invalide:', error)
+        return null
+      }
+    } else {
+      console.log('❌ [PUT] Aucun token d\'authentification trouvé')
       return null
     }
     
@@ -156,8 +198,8 @@ export async function PUT(
       updateData.password = await bcrypt.hash(password, 12)
     }
 
-    // Mettre à jour l'utilisateur
-    console.log('🔧 [PUT] Mise à jour avec données:', updateData)
+    // Étape 1: Mettre à jour l'utilisateur dans public.users
+    console.log('🔧 [PUT] Mise à jour dans public.users avec données:', updateData)
     const { data: user, error: updateError } = await admin
       .from('users')
       .update(updateData)
@@ -165,14 +207,32 @@ export async function PUT(
       .select('id, name, email, role')
       .single()
 
-    console.log('🔧 [PUT] Résultat mise à jour:', { user, updateError })
+    console.log('🔧 [PUT] Résultat mise à jour public.users:', { user, updateError })
 
     if (updateError) {
-      console.error('❌ [PUT] Erreur mise à jour utilisateur:', updateError)
+      console.error('❌ [PUT] Erreur mise à jour utilisateur dans public.users:', updateError)
       return NextResponse.json(
         { error: 'Erreur lors de la mise à jour de l\'utilisateur' },
         { status: 500 }
       )
+    }
+
+    // Étape 2: Synchroniser avec Supabase Auth
+    const syncResult = await syncUserWithAuth(
+      admin,
+      existingUser.email,
+      {
+        name: name.trim(),
+        email: email.trim(),
+        role: role,
+        password: password && password.length >= 6 ? password : undefined
+      },
+      'USER_UPDATE'
+    )
+
+    if (!syncResult.success) {
+      console.warn('⚠️ [PUT] Synchronisation Auth échouée:', syncResult.error)
+      // Ne pas échouer, juste logger l'avertissement
     }
 
     return NextResponse.json(
@@ -246,20 +306,69 @@ export async function DELETE(
       )
     }
 
-    // Supprimer l'utilisateur
+    // Étape 1: Récupérer l'email de l'utilisateur avant suppression
+    const { data: userToDelete, error: fetchError } = await admin
+      .from('users')
+      .select('email')
+      .eq('id', resolvedParams.id)
+      .single()
+
+    if (fetchError || !userToDelete) {
+      console.error('❌ [DELETE] Erreur récupération utilisateur:', fetchError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la récupération de l\'utilisateur' },
+        { status: 500 }
+      )
+    }
+
+    // Étape 2: Supprimer l'utilisateur de public.users
+    console.log('🗑️ [DELETE] Suppression de public.users...')
     const { error: deleteError } = await admin
       .from('users')
       .delete()
       .eq('id', resolvedParams.id)
 
     if (deleteError) {
-      console.error('Erreur suppression utilisateur:', deleteError)
+      console.error('❌ [DELETE] Erreur suppression utilisateur dans public.users:', deleteError)
       return NextResponse.json(
         { error: 'Erreur lors de la suppression de l\'utilisateur' },
         { status: 500 }
       )
     }
 
+    // Étape 3: Supprimer l'utilisateur de Supabase Auth
+    console.log('🗑️ [DELETE] Suppression de Supabase Auth...')
+    try {
+      // Trouver l'utilisateur Auth par email
+      const { data: authUsers, error: listError } = await admin.auth.admin.listUsers()
+      
+      if (listError) {
+        console.error('❌ [DELETE] Erreur récupération utilisateurs Auth:', listError)
+        // Ne pas échouer, juste logger l'erreur
+      } else {
+        const authUser = authUsers.users.find(u => u.email === userToDelete.email)
+        
+        if (authUser) {
+          console.log('🗑️ [DELETE] Utilisateur Auth trouvé, suppression...', authUser.id)
+          
+          const { error: authDeleteError } = await admin.auth.admin.deleteUser(authUser.id)
+          
+          if (authDeleteError) {
+            console.error('❌ [DELETE] Erreur suppression Supabase Auth:', authDeleteError)
+            // Ne pas échouer, juste logger l'erreur
+          } else {
+            console.log('✅ [DELETE] Utilisateur Auth supprimé avec succès')
+          }
+        } else {
+          console.warn('⚠️ [DELETE] Utilisateur Auth non trouvé pour l\'email:', userToDelete.email)
+        }
+      }
+    } catch (authError) {
+      console.error('❌ [DELETE] Erreur lors de la suppression Auth:', authError)
+      // Ne pas échouer, juste logger l'erreur
+    }
+
+    console.log('✅ [DELETE] Utilisateur supprimé avec succès')
     return NextResponse.json(
       { message: 'Utilisateur supprimé avec succès' }
     )

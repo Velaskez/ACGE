@@ -32,6 +32,7 @@ export interface DocumentItem {
   fileSize?: number | null  // Correspond au champ file_size de Supabase
   fileType?: string | null  // Correspond au champ file_type de Supabase
   filePath?: string | null  // Correspond au champ file_path de Supabase
+  category?: string | null  // Correspond au champ category de Supabase
   isPublic?: boolean        // Correspond au champ is_public de Supabase
   createdAt: string         // Correspond au champ created_at de Supabase
   updatedAt?: string        // Correspond au champ updated_at de Supabase

@@ -419,74 +419,81 @@ export default function SettingsPage() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        {/* Header amélioré */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 animate-fade-in-up">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center gap-2">
-              <Settings className="w-6 h-6 sm:w-8 sm:h-8" />
-              Paramètres
-            </h1>
-            <p className="text-primary text-sm sm:text-base">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-gradient-to-r from-primary/10 to-primary/20 rounded-lg">
+                <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary">
+                Paramètres
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Gérez vos préférences et paramètres de compte
             </p>
           </div>
         </div>
 
-        {/* Messages d'alerte */}
+        {/* Messages d'alerte améliorés */}
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="animate-fade-in">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         {success && (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
+          <Alert className="animate-fade-in">
+            <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
 
         {sessionTimeoutUpdated && (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
+          <Alert className="animate-fade-in">
+            <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription>Délai d'expiration de session mis à jour avec succès !</AlertDescription>
           </Alert>
         )}
 
         {/* Layout avec sidebar */}
         <div className="flex gap-8">
-          {/* Sidebar */}
-          <div className="w-80 flex-shrink-0">
-            <Card>
+          {/* Sidebar améliorée */}
+          <div className="w-80 flex-shrink-0 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+            <Card className="transition-all duration-300 hover:shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg">Navigation</CardTitle>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Search className="w-5 h-5 text-primary" />
+                  Navigation
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Barre de recherche */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                {/* Barre de recherche améliorée */}
+                <div className="relative group">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary group-focus-within:scale-110 transition-all duration-300" />
                   <Input
                     placeholder="Rechercher..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                   />
                   {searchQuery && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={clearSearch}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 transition-all duration-300 hover:scale-110 hover:bg-red-100 dark:hover:bg-red-900/20"
                     >
                       <X className="h-3 w-3" />
                     </Button>
                   )}
                 </div>
 
-                {/* Navigation des sections */}
+                {/* Navigation des sections améliorée */}
                 <div className="space-y-2">
-                  {sections.map((section) => {
+                  {sections.map((section, index) => {
                     const Icon = section.icon
                     const isActive = selectedSection === section.name
                     const hasResults = Object.keys(groupedSettings).includes(section.name)
@@ -496,25 +503,29 @@ export default function SettingsPage() {
                       <Button
                         key={section.name}
                         variant={isActive ? "default" : "ghost"}
-                        className={`w-full justify-start transition-all duration-200 ${
-                          isActive ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-accent'
+                        className={`w-full justify-start transition-all duration-300 transform hover:scale-[1.02] animate-fade-in-up ${
+                          isActive ? 'bg-primary text-primary-foreground shadow-lg scale-[1.02]' : 'hover:bg-accent hover:shadow-md'
                         } ${!hasResults && searchQuery ? 'opacity-50' : ''}`}
+                        style={{animationDelay: `${(index + 1) * 0.1}s`}}
                         onClick={() => {
                           setSelectedSection(section.name)
                           setSearchQuery('') // Effacer la recherche quand on clique sur une section
                         }}
                         disabled={!hasResults && !!searchQuery}
                       >
-                        <div className={`p-1.5 rounded-md mr-3 transition-colors duration-200 ${
-                          isActive ? 'bg-primary-foreground/20' : 'bg-muted'
+                        <div className={`p-1.5 rounded-md mr-3 transition-all duration-300 ${
+                          isActive ? 'bg-primary-foreground/20 scale-110' : 'bg-muted group-hover:scale-110'
                         }`}>
-                          <Icon className={`h-4 w-4 transition-colors duration-200 ${
-                            isActive ? 'text-primary-foreground' : 'text-muted-foreground'
+                          <Icon className={`h-4 w-4 transition-all duration-300 ${
+                            isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-primary'
                           }`} />
                         </div>
                         <span className="font-medium">{section.name}</span>
                         {count > 0 && (
-                          <Badge variant={isActive ? "secondary" : "outline"} className="ml-auto text-xs">
+                          <Badge 
+                            variant={isActive ? "secondary" : "outline"} 
+                            className="ml-auto text-xs transition-all duration-300 hover:scale-110"
+                          >
                             {count}
                           </Badge>
                         )}
@@ -535,17 +546,26 @@ export default function SettingsPage() {
             </Card>
           </div>
 
-          {/* Contenu principal */}
-          <div className="flex-1">
+          {/* Contenu principal amélioré */}
+          <div className="flex-1 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
             {Object.keys(groupedSettings).length === 0 ? (
-              <Card>
+              <Card className="transition-all duration-300 hover:shadow-lg animate-fade-in">
                 <CardContent className="py-12 text-center">
-                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Aucun résultat trouvé</h3>
-                  <p className="text-muted-foreground">
+                  <div className="animate-bounce mb-4">
+                    <Search className="h-12 w-12 text-muted-foreground mx-auto" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+                    Aucun résultat trouvé
+                  </h3>
+                  <p className="text-muted-foreground animate-fade-in-up" style={{animationDelay: '0.2s'}}>
                     Aucun paramètre ne correspond à "{searchQuery}"
                   </p>
-                  <Button variant="outline" onClick={clearSearch} className="mt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={clearSearch} 
+                    className="mt-4 transition-all duration-300 hover:scale-105 animate-fade-in-up"
+                    style={{animationDelay: '0.3s'}}
+                  >
                     Effacer la recherche
                   </Button>
                 </CardContent>
@@ -560,11 +580,11 @@ export default function SettingsPage() {
                   const color = getSectionColor(sectionName)
                   
                   return (
-                    <Card key={sectionName} className="animate-in slide-in-from-top-2 duration-300">
+                    <Card key={sectionName} className="animate-fade-in-up transition-all duration-300 hover:shadow-lg">
                       <CardHeader className="pb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-muted rounded-md">
-                            <Icon className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex items-center gap-3 animate-fade-in-up">
+                          <div className="p-2 bg-gradient-to-r from-primary/10 to-primary/20 rounded-md transition-all duration-300 hover:scale-110">
+                            <Icon className="h-5 w-5 text-primary" />
                           </div>
                           <div>
                             <CardTitle className="text-xl">{sectionName}</CardTitle>
@@ -579,8 +599,12 @@ export default function SettingsPage() {
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="space-y-3">
-                          {settings.map((setting) => (
-                            <div key={setting.id} className="group flex items-center justify-between p-4 rounded-lg border hover:bg-accent transition-all duration-200">
+                          {settings.map((setting, index) => (
+                            <div 
+                              key={setting.id} 
+                              className="group flex items-center justify-between p-4 rounded-lg border hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.01] animate-fade-in-up"
+                              style={{animationDelay: `${index * 0.1}s`}}
+                            >
                               <div className="flex-1">
                                 <p className="font-semibold">{setting.title}</p>
                                 <p className="text-sm text-muted-foreground mt-1">
@@ -589,7 +613,7 @@ export default function SettingsPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 {!setting.available && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge variant="secondary" className="text-xs animate-fade-in">
                                     Bientôt disponible
                                   </Badge>
                                 )}
@@ -598,14 +622,14 @@ export default function SettingsPage() {
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
-                                    className="text-xs hover:bg-primary hover:text-primary-foreground transition-colors duration-200" 
+                                    className="text-xs hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-105" 
                                     onClick={setting.action}
                                   >
-                                    <ExternalLink className="h-3 w-3 mr-1" />
+                                    <ExternalLink className="h-3 w-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
                                     Modifier
                                   </Button>
                                 )}
-                                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
+                                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all duration-300" />
                               </div>
                             </div>
                           ))}
@@ -617,22 +641,24 @@ export default function SettingsPage() {
 
                                 {/* Formulaire de changement de mot de passe pour la section Sécurité */}
                 {selectedSection === 'Sécurité' && (
-                  <Card className="animate-in slide-in-from-top-2 duration-300">
+                  <Card className="animate-fade-in-up transition-all duration-300 hover:shadow-lg">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Key className="w-5 h-5" />
+                      <CardTitle className="flex items-center gap-2 animate-fade-in-up">
+                        <div className="p-2 bg-gradient-to-r from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 rounded-md">
+                          <Key className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        </div>
                         Changer le mot de passe
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
                         Modifiez votre mot de passe de sécurité
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
+                          <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
                             <Label htmlFor="currentPassword">Mot de passe actuel</Label>
-                            <div className="relative">
+                            <div className="relative group">
                               <Input
                                 id="currentPassword"
                                 name="currentPassword"
@@ -640,21 +666,22 @@ export default function SettingsPage() {
                                 value={formData.currentPassword}
                                 onChange={handleInputChange}
                                 placeholder="Mot de passe actuel"
+                                className="transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                               />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-1 top-1 h-7 w-7"
+                                className="absolute right-1 top-1 h-7 w-7 transition-all duration-300 hover:scale-110"
                                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                               >
                                 {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               </Button>
                             </div>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
                             <Label htmlFor="newPassword">Nouveau mot de passe</Label>
-                            <div className="relative">
+                            <div className="relative group">
                               <Input
                                 id="newPassword"
                                 name="newPassword"
@@ -662,12 +689,13 @@ export default function SettingsPage() {
                                 value={formData.newPassword}
                                 onChange={handleInputChange}
                                 placeholder="Nouveau mot de passe"
+                                className="transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                               />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-1 top-1 h-7 w-7"
+                                className="absolute right-1 top-1 h-7 w-7 transition-all duration-300 hover:scale-110"
                                 onClick={() => setShowNewPassword(!showNewPassword)}
                               >
                                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -675,9 +703,9 @@ export default function SettingsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 animate-fade-in-up" style={{animationDelay: '0.4s'}}>
                           <Label htmlFor="confirmPassword">Confirmer le nouveau mot de passe</Label>
-                          <div className="relative">
+                          <div className="relative group">
                             <Input
                               id="confirmPassword"
                               name="confirmPassword"
@@ -685,23 +713,33 @@ export default function SettingsPage() {
                               value={formData.confirmPassword}
                               onChange={handleInputChange}
                               placeholder="Confirmer le nouveau mot de passe"
+                              className="transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                             />
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="absolute right-1 top-1 h-7 w-7"
+                              className="absolute right-1 top-1 h-7 w-7 transition-all duration-300 hover:scale-110"
                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             >
                               {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </Button>
                           </div>
                         </div>
-                        <div className="flex justify-end gap-3">
-                          <Button type="button" variant="outline" onClick={() => setSelectedSection('Apparence')}>
+                        <div className="flex justify-end gap-3 animate-fade-in-up" style={{animationDelay: '0.5s'}}>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => setSelectedSection('Apparence')}
+                            className="transition-all duration-300 hover:scale-105"
+                          >
                             Annuler
                           </Button>
-                          <Button type="submit" disabled={isLoading}>
+                          <Button 
+                            type="submit" 
+                            disabled={isLoading}
+                            className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover:shadow-xl transition-all duration-300 hover:scale-105 group"
+                          >
                             {isLoading ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -709,7 +747,7 @@ export default function SettingsPage() {
                               </>
                             ) : (
                               <>
-                                <Save className="mr-2 h-4 w-4" />
+                                <Save className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
                                 Sauvegarder
                               </>
                             )}
@@ -726,4 +764,42 @@ export default function SettingsPage() {
       </div>
     </MainLayout>
   )
+}
+
+// Styles CSS pour les animations
+const styles = `
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out;
+  }
+`
+
+// Injecter les styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style')
+  styleSheet.textContent = styles
+  document.head.appendChild(styleSheet)
 }

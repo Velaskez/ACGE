@@ -1,0 +1,182 @@
+import { getSupabaseAdmin } from './supabase-server'
+
+export interface CreateNotificationParams {
+  userId: string
+  title: string
+  message: string
+  type?: 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS' | 'VALIDATION' | 'REJECTION' | 'APPROVAL' | 'SYSTEM'
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  actionUrl?: string
+  actionLabel?: string
+  metadata?: Record<string, any>
+  expiresAt?: string
+}
+
+/**
+ * 🔔 Service de notifications centralisé
+ * 
+ * Crée une notification pour un utilisateur avec gestion d'erreur gracieuse
+ */
+export async function createNotification(params: CreateNotificationParams): Promise<boolean> {
+  try {
+    const admin = getSupabaseAdmin()
+    
+    if (!admin) {
+      console.warn('⚠️ Service Supabase indisponible pour les notifications')
+      return false
+    }
+
+    // Vérifier si la table notifications existe
+    const { data: tableExists, error: tableCheckError } = await admin
+      .from('information_schema.tables')
+      .select('table_name')
+      .eq('table_schema', 'public')
+      .eq('table_name', 'notifications')
+      .maybeSingle()
+
+    if (tableCheckError || !tableExists) {
+      console.warn('⚠️ Table notifications non trouvée, notification ignorée')
+      return false
+    }
+
+    // Créer la notification
+    const { error: insertError } = await admin
+      .from('notifications')
+      .insert({
+        user_id: params.userId,
+        title: params.title,
+        message: params.message,
+        type: params.type || 'INFO',
+        priority: params.priority || 'MEDIUM',
+        action_url: params.actionUrl,
+        action_label: params.actionLabel,
+        metadata: params.metadata,
+        expires_at: params.expiresAt
+      })
+
+    if (insertError) {
+      console.error('❌ Erreur création notification:', insertError)
+      return false
+    }
+
+    console.log(`🔔 Notification créée pour l'utilisateur ${params.userId}: ${params.title}`)
+    return true
+
+  } catch (error) {
+    console.error('❌ Erreur service notifications:', error)
+    return false
+  }
+}
+
+/**
+ * 📤 Notification de soumission de dossier
+ */
+export async function notifyDossierSubmission(dossier: any, secretaire: any): Promise<boolean> {
+  if (!dossier || !secretaire) return false
+
+  return await createNotification({
+    userId: secretaire.id,
+    title: 'Dossier soumis avec succès',
+    message: `Votre dossier ${dossier.numeroDossier} a été soumis au Contrôleur Budgétaire pour validation.\n\nObjet: ${dossier.objetOperation}\nBénéficiaire: ${dossier.beneficiaire}`,
+    type: 'SUCCESS',
+    priority: 'MEDIUM',
+    actionUrl: '/folders',
+    actionLabel: 'Voir mes dossiers',
+    metadata: {
+      dossierId: dossier.id,
+      numeroDossier: dossier.numeroDossier,
+      submittedAt: new Date().toISOString()
+    }
+  })
+}
+
+/**
+ * 🔔 Notification pour le CB - Nouveau dossier à valider
+ */
+export async function notifyCBDossierPending(dossier: any, cbUserId: string): Promise<boolean> {
+  if (!dossier || !cbUserId) return false
+
+  return await createNotification({
+    userId: cbUserId,
+    title: 'Nouveau dossier à valider',
+    message: `Un nouveau dossier ${dossier.numeroDossier} a été soumis par ${dossier.secretaire?.name || 'la secrétaire'} et nécessite votre validation.\n\nObjet: ${dossier.objetOperation}\nBénéficiaire: ${dossier.beneficiaire}`,
+    type: 'VALIDATION',
+    priority: 'HIGH',
+    actionUrl: '/cb-dashboard',
+    actionLabel: 'Valider le dossier',
+    metadata: {
+      dossierId: dossier.id,
+      numeroDossier: dossier.numeroDossier,
+      secretaireId: dossier.secretaireId,
+      submittedAt: new Date().toISOString()
+    }
+  })
+}
+
+/**
+ * ✅ Notification de validation de dossier
+ */
+export async function notifyDossierValidation(dossier: any, secretaire: any): Promise<boolean> {
+  if (!dossier || !secretaire) return false
+
+  return await createNotification({
+    userId: secretaire.id,
+    title: 'Dossier validé par le CB',
+    message: `Votre dossier ${dossier.numeroDossier} a été validé par le Contrôleur Budgétaire et peut maintenant être transmis à l'ordonnateur.\n\nObjet: ${dossier.objetOperation}\nBénéficiaire: ${dossier.beneficiaire}`,
+    type: 'SUCCESS',
+    priority: 'MEDIUM',
+    actionUrl: '/folders',
+    actionLabel: 'Voir le dossier',
+    metadata: {
+      dossierId: dossier.id,
+      numeroDossier: dossier.numeroDossier,
+      validatedAt: new Date().toISOString()
+    }
+  })
+}
+
+/**
+ * ❌ Notification de rejet de dossier
+ */
+export async function notifyDossierRejection(dossier: any, secretaire: any, reason: string, details?: string): Promise<boolean> {
+  if (!dossier || !secretaire || !reason) return false
+
+  return await createNotification({
+    userId: secretaire.id,
+    title: 'Dossier rejeté par le CB',
+    message: `Votre dossier ${dossier.numeroDossier} a été rejeté par le Contrôleur Budgétaire.\n\nMotif: ${reason}${details ? `\n\nDétails: ${details}` : ''}\n\nVous pouvez corriger et resoumettre le dossier.`,
+    type: 'REJECTION',
+    priority: 'HIGH',
+    actionUrl: '/secretaire-rejected',
+    actionLabel: 'Voir les détails',
+    metadata: {
+      dossierId: dossier.id,
+      numeroDossier: dossier.numeroDossier,
+      rejectionReason: reason,
+      rejectionDetails: details,
+      rejectedAt: new Date().toISOString()
+    }
+  })
+}
+
+/**
+ * 🔄 Notification de resoumission de dossier
+ */
+export async function notifyDossierResubmission(dossier: any, cbUserId: string): Promise<boolean> {
+  if (!dossier || !cbUserId) return false
+
+  return await createNotification({
+    userId: cbUserId,
+    title: 'Dossier resoumis pour validation',
+    message: `Le dossier ${dossier.numeroDossier} a été corrigé et resoumis par ${dossier.secretaire?.name || 'la secrétaire'} pour une nouvelle validation.\n\nObjet: ${dossier.objetOperation}\nBénéficiaire: ${dossier.beneficiaire}`,
+    type: 'VALIDATION',
+    priority: 'MEDIUM',
+    actionUrl: '/cb-dashboard',
+    actionLabel: 'Valider le dossier',
+    metadata: {
+      dossierId: dossier.id,
+      numeroDossier: dossier.numeroDossier,
+      resubmittedAt: new Date().toISOString()
+    }
+  })
+}

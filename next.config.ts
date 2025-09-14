@@ -38,6 +38,27 @@ const nextConfig: NextConfig = {
       // Active des optimisations Turbopack sûres côté app router
       // La persistance du cache est gérée par Next automatiquement
     },
+    // Optimiser les preloads
+    optimizeCss: true,
+  },
+  
+  // Configuration des headers pour optimiser les preloads
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          }
+        ],
+      },
+    ]
   },
   
   // Optimisations SWC (déprécié dans Next.js 15)

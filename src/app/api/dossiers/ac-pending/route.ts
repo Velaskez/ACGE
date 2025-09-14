@@ -31,6 +31,27 @@ export async function GET(request: NextRequest) {
       .eq('statut', 'VALIDÉ_ORDONNATEUR')
       .order('createdAt', { ascending: false })
 
+    // Enrichir les dossiers avec les noms de dossiers manquants
+    if (dossiers && dossiers.length > 0) {
+      for (const dossier of dossiers) {
+        if (!dossier.foldername && dossier.folderId) {
+          try {
+            const { data: folder } = await admin
+              .from('folders')
+              .select('name')
+              .eq('id', dossier.folderId)
+              .single()
+            
+            if (folder) {
+              dossier.foldername = folder.name
+            }
+          } catch (error) {
+            console.warn(`⚠️ Impossible de récupérer le nom du dossier ${dossier.folderId}:`, error)
+          }
+        }
+      }
+    }
+
     if (error) {
       console.error('❌ Erreur Supabase dossiers AC:', error)
       throw error

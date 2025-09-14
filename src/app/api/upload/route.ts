@@ -3,6 +3,29 @@ import { verify } from 'jsonwebtoken'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 /**
+ * Fonction pour récupérer l'ID de la nature du document à partir du nom
+ */
+async function getNatureDocumentId(supabase: any, categoryName: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('natures_documents')
+      .select('id')
+      .eq('nom', categoryName)
+      .single()
+    
+    if (error || !data) {
+      console.warn(`⚠️ Nature de document "${categoryName}" non trouvée`)
+      return null
+    }
+    
+    return data.id
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération de la nature du document:', error)
+    return null
+  }
+}
+
+/**
  * 🚀 API UPLOAD 100% SUPABASE - ACGE
  * 
  * Cette API gère l'upload de fichiers avec:
@@ -142,6 +165,7 @@ export async function POST(request: NextRequest) {
             is_public: false,
             author_id: userId,
             folder_id: metadata.folderId || null,
+            nature_document_id: metadata.category ? await getNatureDocumentId(supabase, metadata.category) : null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             tags: metadata.tags || []

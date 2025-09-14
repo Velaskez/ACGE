@@ -12,6 +12,7 @@ import { SessionWarning } from '@/components/ui/session-warning'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useModal } from '@/contexts/modal-context'
 import { useModalDetection } from '@/hooks/use-modal-detection'
+import { ErrorHandler } from '@/components/error-handler'
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -42,6 +43,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      <ErrorHandler />
       {/* Header */}
       <Header onOpenMenu={() => setSidebarOpen(true)} />
 

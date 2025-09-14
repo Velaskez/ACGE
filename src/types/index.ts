@@ -5,6 +5,10 @@ export type Role = 'ADMIN' | 'SECRETAIRE' | 'CONTROLEUR_BUDGETAIRE' | 'ORDONNATE
 
 export type Permission = 'READ' | 'WRITE' | 'ADMIN' | 'VALIDATE' | 'ORDONNATE' | 'COMPTABILISE'
 
+// Types pour les notifications
+export type NotificationType = 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS' | 'VALIDATION' | 'REJECTION' | 'APPROVAL' | 'SYSTEM'
+export type NotificationPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+
 export interface User {
   id: string
   name: string | null
@@ -76,6 +80,31 @@ export interface Comment {
   authorId: string
   document: Document
   author: User
+}
+
+export interface Notification {
+  id: string
+  userId: string
+  title: string
+  message: string
+  type: NotificationType
+  priority: NotificationPriority
+  isRead: boolean
+  readAt: Date | null
+  expiresAt: Date | null
+  actionUrl?: string
+  actionLabel?: string
+  metadata?: Record<string, any>
+  createdAt: Date
+  updatedAt: Date
+  user: User
+}
+
+export interface NotificationStats {
+  totalNotifications: number
+  unreadCount: number
+  highPriorityCount: number
+  urgentCount: number
 }
 
 

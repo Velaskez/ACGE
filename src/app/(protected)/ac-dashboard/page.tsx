@@ -4,6 +4,7 @@ import React from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { MainLayout } from '@/components/layout/main-layout'
+import { AgentComptableGuard } from '@/components/auth/role-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -60,12 +61,12 @@ interface DossierComptable {
   beneficiaire: string
   statut: 'EN_ATTENTE' | 'VALIDÉ_CB' | 'REJETÉ_CB' | 'VALIDÉ_ORDONNATEUR' | 'PAYÉ' | 'TERMINÉ'
   dateDepot: string
-  posteComptable: {
+  poste_comptable: {
     id: string
     numero: string
     intitule: string
   }
-  natureDocument: {
+  nature_document: {
     id: string
     numero: string
     nom: string
@@ -77,9 +78,13 @@ interface DossierComptable {
   }
   createdAt: string
   updatedAt: string
+  // Colonnes de rejet
+  rejectedAt?: string
+  rejectionReason?: string
+  rejectionDetails?: string
 }
 
-export default function ACDashboardPage() {
+function ACDashboardContent() {
   const { user } = useSupabaseAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -465,8 +470,8 @@ export default function ACDashboardPage() {
                       <TableCell>{dossier.beneficiaire}</TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div className="font-medium">{dossier.posteComptable.numero}</div>
-                          <div className="text-muted-foreground">{dossier.posteComptable.intitule}</div>
+                          <div className="font-medium">{dossier.poste_comptable?.numero || 'N/A'}</div>
+                          <div className="text-muted-foreground">{dossier.poste_comptable?.intitule || 'N/A'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -708,5 +713,13 @@ export default function ACDashboardPage() {
         </Dialog>
       </div>
     </MainLayout>
+  )
+}
+
+export default function ACDashboardPage() {
+  return (
+    <AgentComptableGuard>
+      <ACDashboardContent />
+    </AgentComptableGuard>
   )
 }

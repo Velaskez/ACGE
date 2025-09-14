@@ -6,9 +6,12 @@ import { MainLayout } from '@/components/layout/main-layout'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRouter } from 'next/navigation'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import type { DashboardStats, DashboardActivity } from '@/hooks/use-dashboard-data'
 import { formatFileSize, formatRelativeTime, getFileTypeLabel } from '@/lib/utils'
+import { redirectByRole, getRoleRedirectPath } from '@/lib/role-redirect'
+import { useEffect } from 'react'
 import { 
   FileText, 
   FolderOpen, 
@@ -19,12 +22,63 @@ import {
   Eye,
   Download,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  CheckCircle,
+  FileCheck,
+  Calculator,
+  Shield,
+  ArrowRight,
+  Home,
+  XCircle
 } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { user, isLoading: authLoading } = useSupabaseAuth()
   const { stats, activity, isLoading, error, refreshData } = useDashboardData()
+
+  // Redirection automatique basée sur le rôle
+  useEffect(() => {
+    console.log('🔍 Dashboard useEffect - authLoading:', authLoading, 'user:', user)
+    
+    if (!authLoading && user && user.role) {
+      console.log(`👤 Utilisateur connecté: ${user.name} (${user.role})`)
+      
+      // Seuls les admins restent sur cette page
+      if (user.role !== 'ADMIN') {
+        console.log(`🔀 Redirection ${user.role} vers page spécialisée`)
+        
+        // Forcer la redirection immédiatement
+        const redirectPath = getRoleRedirectPath(user.role)
+        console.log(`🎯 Redirection vers: ${redirectPath}`)
+        
+        // Utiliser window.location pour forcer la redirection
+        if (typeof window !== 'undefined') {
+          window.location.href = redirectPath
+        } else {
+          redirectByRole(user.role, router)
+        }
+      } else {
+        console.log(`✅ Admin reste sur dashboard`)
+      }
+    } else {
+      console.log('⏳ En attente du chargement ou utilisateur non connecté')
+    }
+  }, [user, authLoading, router])
+
+  // Afficher un message de chargement pendant la redirection
+  if (!authLoading && user && user.role && user.role !== 'ADMIN') {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-sm text-muted-foreground">Redirection vers votre interface...</p>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
 
   const handleNewDocument = () => {
     router.push('/upload')
@@ -75,15 +129,89 @@ export default function DashboardPage() {
     router.push(`/documents?view=${documentId}`)
   }
 
+  // Configuration selon le rôle
+  const getRoleConfig = () => {
+    switch (user?.role) {
+      case 'ADMIN':
+        return {
+          title: 'Tableau de bord Administrateur',
+          description: 'Gestion globale du système et des utilisateurs',
+          primaryAction: { label: 'Gérer les utilisateurs', action: () => router.push('/users'), icon: Users },
+          quickActions: [
+            { label: 'Tableau de bord', action: () => router.push('/dashboard'), icon: Home, color: 'blue' },
+            { label: 'Utilisateurs', action: () => router.push('/users'), icon: Users, color: 'red' },
+            { label: 'Documents', action: () => router.push('/documents'), icon: FileText, color: 'green' },
+            { label: 'Upload', action: () => router.push('/upload'), icon: Upload, color: 'purple' }
+          ]
+        }
+      case 'SECRETAIRE':
+        return {
+          title: 'Tableau de bord Secrétaire',
+          description: 'Gestion des dossiers et documents',
+          primaryAction: { label: 'Mes fichiers', action: () => router.push('/documents'), icon: FileText },
+          quickActions: [
+            { label: 'Dossiers rejetés', action: () => router.push('/secretaire-rejected'), icon: XCircle, color: 'red' },
+            { label: 'Mes fichiers', action: () => router.push('/documents'), icon: FileText, color: 'green' },
+            { label: 'Upload', action: () => router.push('/upload'), icon: Upload, color: 'purple' },
+            { label: 'Dossiers', action: () => router.push('/folders'), icon: FolderOpen, color: 'orange' }
+          ]
+        }
+      case 'CONTROLEUR_BUDGETAIRE':
+        return {
+          title: 'Tableau de bord Contrôleur Budgétaire',
+          description: 'Validation des dossiers en attente',
+          primaryAction: { label: 'Validation CB', action: () => router.push('/cb-dashboard'), icon: CheckCircle },
+          quickActions: [
+            { label: 'Validation CB', action: () => router.push('/cb-dashboard'), icon: CheckCircle, color: 'emerald' },
+            { label: 'Dossiers rejetés', action: () => router.push('/cb-rejected'), icon: XCircle, color: 'red' },
+            { label: 'Documents', action: () => router.push('/documents'), icon: FileText, color: 'green' }
+          ]
+        }
+      case 'ORDONNATEUR':
+        return {
+          title: 'Tableau de bord Ordonnateur',
+          description: 'Ordonnancement des dépenses validées',
+          primaryAction: { label: 'Ordonnancement', action: () => router.push('/ordonnateur-dashboard'), icon: FileCheck },
+          quickActions: [
+            { label: 'Ordonnancement', action: () => router.push('/ordonnateur-dashboard'), icon: FileCheck, color: 'blue' },
+            { label: 'Documents', action: () => router.push('/documents'), icon: FileText, color: 'green' }
+          ]
+        }
+      case 'AGENT_COMPTABLE':
+        return {
+          title: 'Tableau de bord Agent Comptable',
+          description: 'Comptabilisation des paiements',
+          primaryAction: { label: 'Comptabilisation', action: () => router.push('/ac-dashboard'), icon: Calculator },
+          quickActions: [
+            { label: 'Comptabilisation', action: () => router.push('/ac-dashboard'), icon: Calculator, color: 'purple' },
+            { label: 'Documents', action: () => router.push('/documents'), icon: FileText, color: 'green' }
+          ]
+        }
+      default:
+        return {
+          title: 'Tableau de bord',
+          description: 'Vue d\'ensemble de vos fichiers et activités',
+          primaryAction: { label: 'Nouveau document', action: handleNewDocument, icon: Upload },
+          quickActions: [
+            { label: 'Documents', action: () => router.push('/documents'), icon: FileText, color: 'green' },
+            { label: 'Upload', action: () => router.push('/upload'), icon: Upload, color: 'purple' },
+            { label: 'Dossiers', action: () => router.push('/folders'), icon: FolderOpen, color: 'orange' }
+          ]
+        }
+    }
+  }
+
+  const roleConfig = getRoleConfig()
+
   return (
     <MainLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Tableau de bord</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary">{roleConfig.title}</h1>
             <p className="text-primary text-sm sm:text-base">
-              Vue d'ensemble de vos fichiers et activités
+              {roleConfig.description}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -93,9 +221,9 @@ export default function DashboardPage() {
                 Actualiser
               </Button>
             )}
-            <Button onClick={handleNewDocument} className="w-full sm:w-auto">
-              <Upload className="mr-2 h-4 w-4" />
-              Nouveau document
+            <Button onClick={roleConfig.primaryAction.action} className="w-full sm:w-auto">
+              <roleConfig.primaryAction.icon className="mr-2 h-4 w-4" />
+              {roleConfig.primaryAction.label}
             </Button>
           </div>
         </div>
@@ -226,6 +354,33 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Role-specific information */}
+        {(user?.role === 'CONTROLEUR_BUDGETAIRE' || user?.role === 'ORDONNATEUR' || user?.role === 'AGENT_COMPTABLE') && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <Shield className="h-5 w-5" />
+                Interface spécialisée
+              </CardTitle>
+              <CardDescription className="text-blue-700">
+                {user?.role === 'CONTROLEUR_BUDGETAIRE' && 'Accédez à votre interface de validation des dossiers'}
+                {user?.role === 'ORDONNATEUR' && 'Accédez à votre interface d\'ordonnancement des dépenses'}
+                {user?.role === 'AGENT_COMPTABLE' && 'Accédez à votre interface de comptabilisation des paiements'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={roleConfig.primaryAction.action}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <roleConfig.primaryAction.icon className="mr-2 h-4 w-4" />
+                {roleConfig.primaryAction.label}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Activity & Quick Actions */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -370,27 +525,36 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Actions rapides</CardTitle>
             <CardDescription>
-              Accédez rapidement aux fonctionnalités principales
+              Accédez rapidement aux fonctionnalités de votre rôle
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
-              <Button variant="outline" className="h-20 flex-col" onClick={handleNewDocument}>
-                <Upload className="h-6 w-6 mb-2 icon-purple-fg" />
-                <span>Upload</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col" onClick={handleNewFolder}>
-                <FolderOpen className="h-6 w-6 mb-2 icon-orange-fg" />
-                <span>Nouveau dossier</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col" onClick={handleShare}>
-                <Users className="h-6 w-6 mb-2 icon-purple-fg" />
-                <span>Partager</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex-col" onClick={handleHistory}>
-                <Clock className="h-6 w-6 mb-2 icon-blue-fg" />
-                <span>Historique</span>
-              </Button>
+              {roleConfig.quickActions.map((action, index) => {
+                const getColorClasses = (color: string) => {
+                  switch (color) {
+                    case 'red': return 'icon-red-fg'
+                    case 'green': return 'icon-green-fg'
+                    case 'purple': return 'icon-purple-fg'
+                    case 'orange': return 'icon-orange-fg'
+                    case 'blue': return 'icon-blue-fg'
+                    case 'emerald': return 'text-emerald-600'
+                    default: return 'text-muted-foreground'
+                  }
+                }
+                
+                return (
+                  <Button 
+                    key={index}
+                    variant="outline" 
+                    className="h-20 flex-col hover:bg-accent/50 transition-colors" 
+                    onClick={action.action}
+                  >
+                    <action.icon className={`h-6 w-6 mb-2 ${getColorClasses(action.color)}`} />
+                    <span>{action.label}</span>
+                  </Button>
+                )
+              })}
             </div>
           </CardContent>
         </Card>

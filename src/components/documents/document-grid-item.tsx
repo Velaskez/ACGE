@@ -35,7 +35,7 @@ interface DocumentGridItemProps {
   onEdit: (document: DocumentItem) => void
   onDownload: (document: DocumentItem) => void
   onShare: (document: DocumentItem) => void
-  onDelete: (documentId: string) => void
+  onDelete: (document: DocumentItem) => void
 }
 
 export function DocumentGridItem({
@@ -109,7 +109,7 @@ export function DocumentGridItem({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={(e) => { e.stopPropagation(); onDelete(document.id) }}
+                onClick={(e) => { e.stopPropagation(); onDelete(document) }}
                 className="text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />

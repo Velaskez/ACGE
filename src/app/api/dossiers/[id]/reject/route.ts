@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { NotificationsByRole } from '@/lib/notifications-by-role'
 
 /**
- * ❌ API REJET DOSSIER - ACGE
+ * ❌ API REJET DOSSIER CB - ACGE
  * 
- * Rejette un dossier par le Contrôleur Budgétaire
+ * Rejette un dossier par le Contrôleur Budgétaire avec motif
  */
 export async function PUT(
   request: NextRequest,
@@ -12,16 +13,16 @@ export async function PUT(
 ) {
   try {
     const resolvedParams = await params
-    const dossierId = resolvedParams.id
+    const id = resolvedParams.id
     
-    console.log('❌ Rejet du dossier:', dossierId)
+    console.log('❌ Rejet dossier CB:', id)
     
     const body = await request.json()
-    const { reason } = body
+    const { reason, details } = body
     
     if (!reason || !reason.trim()) {
       return NextResponse.json(
-        { error: 'La raison du rejet est requise' },
+        { error: 'Le motif de rejet est requis' },
         { status: 400 }
       )
     }
@@ -35,37 +36,44 @@ export async function PUT(
       )
     }
     
-    // Vérifier que le dossier existe et est en attente
-    const { data: existingDossier, error: checkError } = await admin
+    // Récupérer le dossier avec toutes les informations
+    const { data: dossier, error: fetchError } = await admin
       .from('dossiers')
-      .select('id, statut')
-      .eq('id', dossierId)
+      .select(`
+        *,
+        poste_comptable:posteComptableId(*),
+        nature_document:natureDocumentId(*),
+        secretaire:secretaireId(id, name, email)
+      `)
+      .eq('id', id)
       .single()
 
-    if (checkError || !existingDossier) {
+    if (fetchError) {
       return NextResponse.json(
         { error: 'Dossier non trouvé' },
         { status: 404 }
       )
     }
 
-    if (existingDossier.statut !== 'EN_ATTENTE') {
+    // Vérifier que le dossier est en attente
+    if (dossier.statut !== 'EN_ATTENTE') {
       return NextResponse.json(
-        { error: 'Ce dossier ne peut pas être rejeté dans son état actuel' },
+        { error: 'Seuls les dossiers en attente peuvent être rejetés' },
         { status: 400 }
       )
     }
-    
-    // Mettre à jour le statut du dossier avec la raison du rejet
+
+    // Mettre à jour le statut du dossier avec le motif de rejet
     const { data: updatedDossier, error: updateError } = await admin
       .from('dossiers')
       .update({
         statut: 'REJETÉ_CB',
-        updatedAt: new Date().toISOString(),
-        // On pourrait ajouter un champ pour stocker la raison du rejet
-        // rejectionReason: reason
+        rejectionReason: reason.trim(),
+        rejectionDetails: details?.trim() || null,
+        rejectedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       })
-      .eq('id', dossierId)
+      .eq('id', id)
       .select(`
         *,
         poste_comptable:posteComptableId(*),
@@ -76,13 +84,53 @@ export async function PUT(
 
     if (updateError) {
       console.error('❌ Erreur rejet dossier:', updateError)
-      throw updateError
+      return NextResponse.json(
+        { error: 'Erreur lors du rejet' },
+        { status: 500 }
+      )
     }
 
-    console.log('❌ Dossier rejeté par CB:', updatedDossier.numeroDossier, 'Raison:', reason)
+    console.log('❌ Dossier rejeté avec succès:', updatedDossier.numeroDossier)
+    
+    // 🔔 NOTIFICATIONS INTELLIGENTES PAR RÔLE
+    try {
+      // Notifier la secrétaire
+      if (dossier.secretaire?.id) {
+        await NotificationsByRole.notifySecretaire({
+          userId: dossier.secretaire.id,
+          dossierId: dossier.id,
+          numeroDossier: dossier.numeroDossier,
+          action: 'dossier_rejected',
+          details: `${reason.trim()}${details ? `\n\nDétails: ${details.trim()}` : ''}`
+        })
+        console.log('🔔 Notification de rejet envoyée à la secrétaire')
+      }
+
+      // Notifier le CB
+      const { data: cbUsers } = await admin
+        .from('users')
+        .select('id')
+        .eq('role', 'CONTROLEUR_BUDGETAIRE')
+        .limit(1)
+
+      if (cbUsers && cbUsers.length > 0) {
+        await NotificationsByRole.notifyCB({
+          userId: cbUsers[0].id,
+          dossierId: dossier.id,
+          numeroDossier: dossier.numeroDossier,
+          action: 'dossier_rejected',
+          details: reason.trim()
+        })
+        console.log('🔔 Notification envoyée au CB')
+      }
+
+    } catch (notificationError) {
+      console.warn('⚠️ Erreur envoi notifications:', notificationError)
+      // Ne pas faire échouer le rejet pour une erreur de notification
+    }
     
     return NextResponse.json({ 
-      success: true, 
+      success: true,
       dossier: updatedDossier,
       message: 'Dossier rejeté avec succès'
     })

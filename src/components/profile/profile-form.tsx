@@ -48,6 +48,12 @@ export function ProfileForm({
   onCancel, 
   isLoading = false 
 }: ProfileFormProps) {
+  
+  // Vérifier que l'utilisateur existe
+  if (!user) {
+    return null
+  }
+  
   const [currentStep, setCurrentStep] = useState(1)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
@@ -55,8 +61,8 @@ export function ProfileForm({
 
   const form = useForm<FormData>({
     defaultValues: {
-      name: user.name || '',
-      email: user.email || '',
+      name: user?.name || '',
+      email: user?.email || '',
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
@@ -98,6 +104,7 @@ export function ProfileForm({
 
   const handleSubmit = async () => {
     const isValid = await validateStep(currentStep)
+    
     if (isValid) {
       const submitData = { ...watchedValues }
       // Ne pas envoyer les mots de passe vides
@@ -125,7 +132,7 @@ export function ProfileForm({
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 px-4">
             <FormField
               control={form.control}
               name="name"
@@ -137,16 +144,16 @@ export function ProfileForm({
                 }
               }}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
                   <FormLabel className="text-sm font-medium">
                     Nom complet *
                   </FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <div className="relative group">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-all duration-300 group-focus-within:scale-110" />
                       <Input
                         placeholder="Ex: Jean Dupont"
-                        className="pl-10"
+                        className="pl-10 transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                         {...field}
                       />
                     </div>
@@ -166,17 +173,17 @@ export function ProfileForm({
                 }
               }}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
                   <FormLabel className="text-sm font-medium">
                     Adresse email *
                   </FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <div className="relative group">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-all duration-300 group-focus-within:scale-110" />
                       <Input
                         type="email"
                         placeholder="Ex: jean.dupont@acge.ga"
-                        className="pl-10"
+                        className="pl-10 transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                         {...field}
                       />
                     </div>
@@ -190,9 +197,9 @@ export function ProfileForm({
 
       case 2:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <Shield className="w-12 h-12 text-primary mx-auto mb-2" />
+          <div className="space-y-6 px-4">
+            <div className="text-center mb-6 animate-fade-in-up">
+              <Shield className="w-12 h-12 text-primary mx-auto mb-2 animate-pulse" />
               <h3 className="text-lg font-semibold">Changement de mot de passe</h3>
               <p className="text-sm text-muted-foreground">
                 Remplissez les champs ci-dessous pour changer votre mot de passe
@@ -210,23 +217,23 @@ export function ProfileForm({
                 }
               }}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
                   <FormLabel className="text-sm font-medium">
                     Mot de passe actuel
                   </FormLabel>
                   <FormControl>
-                    <div className="relative">
+                    <div className="relative group">
                       <Input
                         type={showCurrentPassword ? 'text' : 'password'}
                         placeholder="Votre mot de passe actuel"
-                        className="pr-10"
+                        className="pr-10 transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                         {...field}
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent transition-all duration-300 hover:scale-110"
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                       >
                         {showCurrentPassword ? (
@@ -252,23 +259,23 @@ export function ProfileForm({
                 }
               }}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
                   <FormLabel className="text-sm font-medium">
                     Nouveau mot de passe
                   </FormLabel>
                   <FormControl>
-                    <div className="relative">
+                    <div className="relative group">
                       <Input
                         type={showNewPassword ? 'text' : 'password'}
                         placeholder="Votre nouveau mot de passe"
-                        className="pr-10"
+                        className="pr-10 transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                         {...field}
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent transition-all duration-300 hover:scale-110"
                         onClick={() => setShowNewPassword(!showNewPassword)}
                       >
                         {showNewPassword ? (
@@ -280,7 +287,7 @@ export function ProfileForm({
                     </div>
                   </FormControl>
                   <FormMessage />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground animate-fade-in">
                     Laisser vide pour conserver le mot de passe actuel
                   </p>
                 </FormItem>
@@ -297,23 +304,23 @@ export function ProfileForm({
                     !watchedValues.newPassword || value === watchedValues.newPassword || 'Les mots de passe ne correspondent pas'
                 }}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="animate-fade-in-up" style={{animationDelay: '0.3s'}}>
                     <FormLabel className="text-sm font-medium">
                       Confirmer le nouveau mot de passe
                     </FormLabel>
                     <FormControl>
-                      <div className="relative">
+                      <div className="relative group">
                         <Input
                           type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="Confirmez votre nouveau mot de passe"
-                          className="pr-10"
+                          className="pr-10 transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
                           {...field}
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent transition-all duration-300 hover:scale-110"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         >
                           {showConfirmPassword ? (
@@ -334,9 +341,9 @@ export function ProfileForm({
 
       case 3:
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <div className="space-y-6 px-4">
+            <div className="text-center animate-fade-in-up">
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4 animate-pulse" />
               <h3 className="text-lg font-semibold mb-2">Récapitulatif</h3>
               <p className="text-muted-foreground">
                 Vérifiez les modifications avant de sauvegarder
@@ -344,18 +351,18 @@ export function ProfileForm({
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
+              <Card className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
                 <CardContent className="p-4">
                   <h4 className="font-medium mb-2">Informations personnelles</h4>
                   <div className="space-y-1 text-sm">
                     <p><span className="text-muted-foreground">Nom:</span> {watchedValues.name}</p>
                     <p><span className="text-muted-foreground">Email:</span> {watchedValues.email}</p>
-                    <p><span className="text-muted-foreground">Rôle:</span> {getRoleLabel(user.role)}</p>
+                    <p><span className="text-muted-foreground">Rôle:</span> {getRoleLabel(user?.role || '')}</p>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
                 <CardContent className="p-4">
                   <h4 className="font-medium mb-2">Sécurité</h4>
                   <div className="space-y-1 text-sm">
@@ -363,7 +370,7 @@ export function ProfileForm({
                       {watchedValues.newPassword ? 'Nouveau mot de passe défini' : 'Conservé'}
                     </p>
                     {watchedValues.newPassword && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground animate-fade-in">
                         Le mot de passe sera changé lors de la sauvegarde
                       </p>
                     )}
@@ -380,72 +387,105 @@ export function ProfileForm({
   }
 
   return (
-    <Form {...form}>
-      <div className="space-y-6">
-        {/* Stepper */}
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div className={`
-                  w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
-                  ${currentStep >= step.id 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground'
-                  }
-                `}>
-                  {currentStep > step.id ? (
-                    <CheckCircle className="w-5 h-5" />
-                  ) : (
-                    <Circle className="w-5 h-5" />
-                  )}
-                </div>
-                <div className="mt-2 text-center">
-                  <p className="text-xs font-medium">{step.title}</p>
-                  <p className="text-xs text-muted-foreground">{step.description}</p>
+    <div className="w-full max-w-4xl mx-auto">
+      <Form {...form}>
+        <div className="space-y-6">
+        {/* Stepper amélioré */}
+        <div className="w-full max-w-4xl mx-auto px-4">
+          <div className="flex items-start justify-between relative">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex flex-col items-center flex-1 relative px-2">
+                {/* Ligne de connexion */}
+                {index < steps.length - 1 && (
+                  <div className="absolute top-5 left-1/2 w-full h-px bg-border -translate-x-1/2 -z-10">
+                    <div className={`h-full transition-all duration-300 ${
+                      currentStep > step.id ? 'bg-primary' : 'bg-border'
+                    }`} style={{ width: '100%' }} />
+                  </div>
+                )}
+                
+                {/* Cercle et contenu */}
+                <div className="flex flex-col items-center group relative z-10 w-full">
+                  <div className={`
+                    w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
+                    transition-all duration-300 transform
+                    ${currentStep >= step.id 
+                      ? 'bg-primary text-primary-foreground shadow-lg scale-110' 
+                      : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
+                    }
+                  `}>
+                    {currentStep > step.id ? (
+                      <CheckCircle className="w-5 h-5 animate-fade-in" />
+                    ) : (
+                      <Circle className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div className="mt-2 text-center w-full min-h-[3rem] flex flex-col justify-center">
+                    <p className={`text-xs font-medium transition-colors duration-300 leading-tight ${
+                      currentStep >= step.id ? 'text-primary' : 'text-muted-foreground'
+                    }`}>{step.title}</p>
+                    <p className="text-xs text-muted-foreground leading-tight mt-1 px-1">{step.description}</p>
+                  </div>
                 </div>
               </div>
-              {index < steps.length - 1 && (
-                <div className="flex-1 h-px bg-border mx-4" />
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="min-h-[300px]">
-          {renderStepContent()}
+        {/* Content avec animation */}
+        <div className="min-h-[300px] relative overflow-hidden">
+          <div className="animate-fade-in-up transition-all duration-500">
+            {renderStepContent()}
+          </div>
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-6 border-t">
+        {/* Navigation améliorée */}
+        <div className="flex justify-between pt-6 border-t px-4">
           <Button
             variant="outline"
             onClick={currentStep === 1 ? onCancel : handlePrevious}
             disabled={isLoading}
+            className="transition-all duration-300 hover:scale-105"
           >
             {currentStep === 1 ? (
               'Annuler'
             ) : (
               <>
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <ArrowLeft className="w-4 h-4 mr-2 transition-transform duration-300 group-hover:-translate-x-1" />
                 Précédent
               </>
             )}
           </Button>
 
           {currentStep < steps.length ? (
-            <Button onClick={handleNext} disabled={isLoading}>
+            <Button 
+              onClick={handleNext} 
+              disabled={isLoading}
+              className="transition-all duration-300 hover:scale-105"
+            >
               Suivant
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={isLoading}>
-              {isLoading ? 'Sauvegarde...' : 'Sauvegarder les modifications'}
+            <Button 
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              {isLoading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
+                  Sauvegarde...
+                </div>
+              ) : (
+                'Sauvegarder les modifications'
+              )}
             </Button>
           )}
         </div>
       </div>
     </Form>
+    </div>
   )
 }
+

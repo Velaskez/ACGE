@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit
 
     try {
-      // REQUÊTE ULTRA SIMPLE - SEULEMENT LES COLONNES ESSENTIELLES
+      // REQUÊTE AVEC NATURE DU DOCUMENT
       let query = supabase
         .from('documents')
         .select(`
@@ -48,7 +48,14 @@ export async function GET(request: NextRequest) {
           file_type, 
           file_path,
           is_public,
-          tags
+          tags,
+          nature_document_id,
+          natures_documents!nature_document_id (
+            id,
+            numero,
+            nom,
+            description
+          )
         `, { count: 'exact' })
 
       // Recherche simple
@@ -104,6 +111,14 @@ export async function GET(request: NextRequest) {
           fileUrl: fileUrl,
           isPublic: doc.is_public || false,
           tags: doc.tags || [],
+          category: doc.natures_documents?.nom || 'Non classé',
+          natureDocumentId: doc.nature_document_id,
+          natureDocument: doc.natures_documents ? {
+            id: doc.natures_documents.id,
+            numero: doc.natures_documents.numero,
+            nom: doc.natures_documents.nom,
+            description: doc.natures_documents.description
+          } : null,
           createdAt: doc.created_at,
           updatedAt: doc.created_at, // Utiliser created_at comme updatedAt
           authorId: doc.author_id || 'unknown',

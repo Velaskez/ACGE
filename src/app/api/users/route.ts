@@ -2,6 +2,90 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
 
+const allowedRoles = new Set(['ADMIN', 'SECRETAIRE', 'CONTROLEUR_BUDGETAIRE', 'ORDONNATEUR', 'AGENT_COMPTABLE'])
+
+async function getAuthenticatedUser(request: NextRequest) {
+  try {
+    const admin = getSupabaseAdmin()
+    
+    // D'abord essayer l'authentification via cookies JWT
+    const authToken = request.cookies.get('auth-token')?.value
+    
+    if (authToken) {
+      console.log('🔑 [POST] Token JWT trouvé dans les cookies')
+      
+      try {
+        // Vérifier le token JWT directement
+        const jwt = require('jsonwebtoken')
+        const secret = process.env.NEXTAUTH_SECRET || 'unified-jwt-secret-for-development'
+        
+        if (!secret) {
+          console.log('❌ [POST] NEXTAUTH_SECRET non configuré')
+          return null
+        }
+        
+        const decoded = jwt.verify(authToken, secret)
+        console.log('✅ [POST] Token JWT valide:', decoded.email, decoded.role)
+        
+        // Récupérer les informations complètes de l'utilisateur
+        const { data: userData, error: userError } = await admin
+          .from('users')
+          .select('id, name, email, role')
+          .eq('id', decoded.userId)
+          .single()
+        
+        if (userError || !userData) {
+          console.log('❌ [POST] Utilisateur non trouvé dans public.users:', userError)
+          return null
+        }
+        
+        console.log('✅ [POST] Utilisateur authentifié via JWT:', userData.email, userData.role)
+        return userData
+        
+      } catch (jwtError) {
+        console.log('❌ [POST] Token JWT invalide:', jwtError)
+        // Continuer vers le fallback
+      }
+    }
+    
+    // Fallback vers l'authentification Bearer token (pour compatibilité)
+    const authHeader = request.headers.get('authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      
+      // Vérifier le token avec Supabase Auth
+      const { data: { user }, error } = await admin.auth.getUser(token)
+      
+      if (error || !user) {
+        console.log('❌ [POST] Token Supabase invalide:', error)
+        return null
+      }
+      
+      // Récupérer les informations complètes de l'utilisateur depuis public.users
+      const { data: userData, error: userError } = await admin
+        .from('users')
+        .select('id, name, email, role')
+        .eq('email', user.email)
+        .single()
+      
+      if (userError || !userData) {
+        console.log('❌ [POST] Utilisateur non trouvé dans public.users:', userError)
+        return null
+      }
+      
+      console.log('✅ [POST] Utilisateur authentifié via Supabase:', userData.email, userData.role)
+      return userData
+    }
+    
+    console.log('❌ [POST] Aucun token d\'authentification trouvé')
+    return null
+    
+  } catch (error) {
+    console.log('❌ [POST] Erreur authentification:', error)
+    return null
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('👥 Récupération des utilisateurs...')
@@ -49,6 +133,27 @@ export async function POST(request: NextRequest) {
     console.log('👤 ===== DÉBUT CRÉATION UTILISATEUR =====')
     console.log('👤 Création d\'un nouvel utilisateur...')
     
+    // Vérifier l'authentification
+    const authenticatedUser = await getAuthenticatedUser(request)
+    console.log('👤 [POST] Utilisateur authentifié:', authenticatedUser ? 'Oui' : 'Non')
+
+    if (!authenticatedUser) {
+      console.log('❌ [POST] Non authentifié')
+      return NextResponse.json(
+        { error: 'Non authentifié' },
+        { status: 401 }
+      )
+    }
+
+    // Vérifier les permissions (seuls les admins peuvent créer des utilisateurs)
+    if (authenticatedUser.role !== 'ADMIN') {
+      console.log('❌ [POST] Permissions insuffisantes:', authenticatedUser.role)
+      return NextResponse.json(
+        { error: 'Permissions insuffisantes' },
+        { status: 403 }
+      )
+    }
+    
     const { name, email, password, role } = await request.json()
     console.log('👤 Données reçues:', { name, email, role, hasPassword: !!password })
     console.log('👤 Types:', { 
@@ -68,8 +173,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validation du rôle
-    const allowedRoles = ['ADMIN', 'SECRETAIRE', 'CONTROLEUR_BUDGETAIRE', 'ORDONNATEUR', 'AGENT_COMPTABLE']
-    if (!allowedRoles.includes(role)) {
+    if (!allowedRoles.has(role)) {
       console.log('❌ Rôle invalide:', role)
       return NextResponse.json(
         { error: 'Rôle invalide' },

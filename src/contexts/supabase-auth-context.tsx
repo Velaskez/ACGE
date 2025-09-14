@@ -52,6 +52,27 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const checkAuth = async () => {
     try {
+      // D'abord, essayer de récupérer l'utilisateur via l'API /api/auth/me (système JWT)
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.user) {
+          console.log('✅ Utilisateur trouvé via API auth/me:', data.user.email, data.user.role)
+          setUser({
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+            role: data.user.role
+          })
+          setIsLoading(false)
+          return
+        }
+      }
+      
+      // Si l'API JWT ne fonctionne pas, essayer Supabase Auth
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         await loadUserData(session.user)
@@ -114,19 +135,28 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      // Utiliser l'API de connexion JWT au lieu de Supabase Auth
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
       })
 
-      if (error) {
-        console.error('Erreur connexion:', error)
-        return false
-      }
-
-      if (data.user) {
-        await loadUserData(data.user)
-        return true
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.user) {
+          console.log('✅ Connexion réussie via API JWT:', data.user.email, data.user.role)
+          setUser({
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+            role: data.user.role
+          })
+          return true
+        }
       }
 
       return false
@@ -138,7 +168,11 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut()
+      // Utiliser l'API de déconnexion JWT
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
       setUser(null)
       router.push('/login')
     } catch (error) {
@@ -152,6 +186,21 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const getAccessToken = async (): Promise<string | null> => {
     try {
+      // D'abord essayer de récupérer le token JWT depuis les cookies
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.user) {
+          // Pour les requêtes API, utiliser le token JWT depuis les cookies
+          // Le token est automatiquement inclus dans les cookies
+          return 'jwt-token-from-cookies'
+        }
+      }
+      
+      // Fallback vers Supabase Auth
       const { data: { session } } = await supabase.auth.getSession()
       return session?.access_token || null
     } catch (error) {

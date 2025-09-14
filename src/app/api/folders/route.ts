@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         authorId: 'cmebotahv0000c17w3izkh2k9',
+        // statut: 'BROUILLON', // Temporairement commenté jusqu'à ce que la colonne soit créée
         createdAt: now,
         updatedAt: now
       })
@@ -88,10 +89,16 @@ export async function GET(request: NextRequest) {
     // Utiliser Supabase pour la récupération persistante
     const admin = getSupabaseAdmin()
     
-    // Récupérer les dossiers depuis Supabase
+    // Récupérer les dossiers depuis Supabase avec jointure sur dossiers pour avoir le numeroDossier et statut
     const { data: folders, error } = await admin
       .from('folders')
-      .select('*')
+      .select(`
+        *,
+        dossiers!folderId (
+          numeroDossier,
+          statut
+        )
+      `)
       .order('name', { ascending: true })
 
     if (error) {
@@ -132,6 +139,8 @@ export async function GET(request: NextRequest) {
           
           return {
             ...folder,
+            numeroDossier: folder.dossiers?.[0]?.numeroDossier || null,
+            statut: folder.statut || folder.dossiers?.[0]?.statut || 'BROUILLON', // Par défaut BROUILLON si pas de statut
             _count: {
               documents: documentsCount
             }
@@ -140,6 +149,8 @@ export async function GET(request: NextRequest) {
           console.error(`❌ Erreur comptage documents pour dossier ${folder.id}:`, error)
           return {
             ...folder,
+            numeroDossier: folder.dossiers?.[0]?.numeroDossier || null,
+            statut: folder.statut || folder.dossiers?.[0]?.statut || 'BROUILLON', // Par défaut BROUILLON si pas de statut
             _count: {
               documents: 0
             }

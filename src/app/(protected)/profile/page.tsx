@@ -49,6 +49,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -77,8 +78,8 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user && !profile && formData.name === '' && formData.email === '') {
       setFormData({
-        name: user.name || '',
-        email: user.email || '',
+        name: user?.name || '',
+        email: user?.email || '',
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
@@ -88,10 +89,10 @@ export default function ProfilePage() {
 
   // Fallback sur les données du contexte auth si le profil n'est pas chargé
   const displayProfile = profile || (user ? {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
+    id: user?.id || '',
+    name: user?.name || '',
+    email: user?.email || '',
+    role: user?.role || '',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     _count: { documents: 0, sharedWith: 0 }
@@ -105,17 +106,17 @@ export default function ProfilePage() {
       // Utiliser directement les données du contexte si disponibles
       if (user) {
         setProfile({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
+          id: user?.id || '',
+          name: user?.name || '',
+          email: user?.email || '',
+          role: user?.role || '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           _count: { documents: 0, sharedWith: 0 }
         })
         setFormData({
-          name: user.name || '',
-          email: user.email || '',
+          name: user?.name || '',
+          email: user?.email || '',
           currentPassword: '',
           newPassword: '',
           confirmPassword: ''
@@ -176,37 +177,37 @@ export default function ProfilePage() {
     if (!isEditing) setIsEditing(true)
   }
 
-  const validateForm = () => {
-    if (!formData.name.trim()) {
+  const validateForm = (data = formData) => {
+    if (!data.name.trim()) {
       setError('Le nom est requis')
       return false
     }
 
-    if (!formData.email.trim()) {
+    if (!data.email.trim()) {
       setError('L\'email est requis')
       return false
     }
 
     // Validation email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
+    if (!emailRegex.test(data.email)) {
       setError('Format d\'email invalide')
       return false
     }
 
     // Si un nouveau mot de passe est fourni
-    if (formData.newPassword) {
-      if (!formData.currentPassword) {
+    if (data.newPassword) {
+      if (!data.currentPassword) {
         setError('Le mot de passe actuel est requis pour changer le mot de passe')
         return false
       }
 
-      if (formData.newPassword.length < 6) {
+      if (data.newPassword.length < 6) {
         setError('Le nouveau mot de passe doit contenir au moins 6 caractères')
         return false
       }
 
-      if (formData.newPassword !== formData.confirmPassword) {
+      if (data.newPassword !== data.confirmPassword) {
         setError('La confirmation du mot de passe ne correspond pas')
         return false
       }
@@ -215,10 +216,13 @@ export default function ProfilePage() {
     return true
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (submitData: any) => {
+    // Mettre à jour les données du formulaire avec les données reçues
+    setFormData(submitData)
     
-    if (!validateForm()) return
+    if (!validateForm(submitData)) {
+      return
+    }
 
     try {
       setIsSaving(true)
@@ -226,14 +230,14 @@ export default function ProfilePage() {
       setSuccess('')
 
       const updateData: any = {
-        name: formData.name.trim(),
-        email: formData.email.trim()
+        name: submitData.name.trim(),
+        email: submitData.email.trim()
       }
 
       // Ajouter les mots de passe seulement si nécessaire
-      if (formData.newPassword) {
-        updateData.currentPassword = formData.currentPassword
-        updateData.newPassword = formData.newPassword
+      if (submitData.newPassword) {
+        updateData.currentPassword = submitData.currentPassword
+        updateData.newPassword = submitData.newPassword
       }
 
       const response = await fetch('/api/profile', {
@@ -521,6 +525,27 @@ export default function ProfilePage() {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  {/* Messages d'erreur et de succès */}
+                  {error && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-red-800">
+                        <AlertCircle className="h-4 w-4" />
+                        <span className="font-medium">Erreur</span>
+                      </div>
+                      <p className="mt-1 text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
+                  
+                  {success && (
+                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-800">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="font-medium">Succès</span>
+                      </div>
+                      <p className="mt-1 text-sm text-green-700">{success}</p>
+                    </div>
+                  )}
+
                   {displayProfile && (
                     <ProfileForm
                       user={displayProfile}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verify } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { syncUserWithAuth } from '@/lib/auth-sync'
 
 // GET - Récupérer le profil de l'utilisateur connecté
 export async function GET(request: NextRequest) {
@@ -285,7 +286,8 @@ export async function PUT(request: NextRequest) {
       updateData.password = await bcrypt.hash(newPassword, 12)
     }
 
-    // Mettre à jour l'utilisateur
+    // Étape 1: Mettre à jour l'utilisateur dans public.users
+    console.log('🔧 [PROFILE] Mise à jour dans public.users avec données:', updateData)
     const { data: updatedUser, error: updateErr } = await supabase
       .from('users')
       .update(updateData)
@@ -302,6 +304,23 @@ export async function PUT(request: NextRequest) {
         { error: 'Utilisateur non trouvé' },
         { status: 404 }
       )
+    }
+
+    // Étape 2: Synchroniser avec Supabase Auth
+    const syncResult = await syncUserWithAuth(
+      supabase,
+      email.trim(),
+      {
+        name: name.trim(),
+        email: email.trim(),
+        password: newPassword && newPassword.length >= 6 ? newPassword : undefined
+      },
+      'PROFILE_UPDATE'
+    )
+
+    if (!syncResult.success) {
+      console.warn('⚠️ [PROFILE] Synchronisation Auth échouée:', syncResult.error)
+      // Ne pas échouer, juste logger l'avertissement
     }
 
     return NextResponse.json({

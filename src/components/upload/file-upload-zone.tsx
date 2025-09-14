@@ -167,110 +167,131 @@ export function FileUploadZone({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Zone de drop */}
-      <Card className={`border-2 border-dashed transition-colors ${
+      {/* Zone de drop améliorée */}
+      <Card className={`border-2 border-dashed transition-all duration-300 transform ${
         isDragActive 
-          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
-          : 'border-gray-300 hover:border-gray-400'
+          ? 'border-primary bg-primary/5 scale-[1.02] shadow-lg' 
+          : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/20'
       }`}>
         <CardContent className="p-8">
           <div
             {...getRootProps()}
-            className="text-center cursor-pointer"
+            className="text-center cursor-pointer group"
           >
             <input {...getInputProps()} />
-            <Upload className={`mx-auto h-12 w-12 mb-4 ${
-              isDragActive ? 'text-primary' : 'text-primary'
-            }`} />
+            <div className={`mx-auto h-12 w-12 mb-4 transition-all duration-300 ${
+              isDragActive ? 'text-primary scale-110 animate-bounce' : 'text-primary group-hover:scale-110'
+            }`}>
+              <Upload className="w-full h-full" />
+            </div>
             
             {isDragActive ? (
-                          <p className="text-lg font-medium text-primary">
-              Déposez les fichiers ici...
-            </p>
-            ) : (
-              <div>
-                              <p className="text-lg font-medium text-primary dark:text-primary mb-2">
-                Glissez-déposez vos fichiers ici
-              </p>
-                <p className="text-sm text-primary mb-4">
-                  ou cliquez pour sélectionner des fichiers
+              <div className="animate-fade-in-up">
+                <p className="text-lg font-medium text-primary">
+                  Déposez les fichiers ici...
                 </p>
-                <Button variant="outline">
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="animate-fade-in-up">
+                  <p className="text-lg font-medium text-foreground mb-2">
+                    Glissez-déposez vos fichiers ici
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    ou cliquez pour sélectionner des fichiers
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="animate-fade-in-up transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  style={{animationDelay: '0.1s'}}
+                >
                   Parcourir les fichiers
                 </Button>
               </div>
             )}
             
-            <div className="mt-4 text-xs text-primary">
-              <p className="text-xs text-primary">Formats acceptés : PDF, Word, Excel, Images, Texte</p>
-              <p className="text-xs text-primary">Taille maximale : {maxSize}MB par fichier • Maximum {maxFiles} fichiers</p>
+            <div className="mt-6 text-xs text-muted-foreground space-y-1 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+              <p>Formats acceptés : PDF, Word, Excel, Images, Texte</p>
+              <p>Taille maximale : {maxSize}MB par fichier • Maximum {maxFiles} fichiers</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Messages d'erreur */}
+      {/* Messages d'erreur améliorés */}
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="animate-fade-in">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      {/* Liste des fichiers */}
+      {/* Liste des fichiers améliorée */}
       {files.length > 0 && (
-        <Card>
+        <Card className="animate-fade-in-up transition-all duration-300 hover:shadow-md">
           <CardContent className="p-4">
             <div className="space-y-3">
-              <h3 className="font-medium text-lg">
+              <h3 className="font-medium text-lg flex items-center gap-2 animate-fade-in-up">
+                <File className="w-5 h-5 text-primary" />
                 Fichiers sélectionnés ({files.length})
               </h3>
               
               {files.map((file, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div 
+                  key={index} 
+                  className="flex items-center gap-3 p-3 bg-muted/20 rounded-lg transition-all duration-300 hover:bg-muted/30 hover:scale-[1.01] animate-fade-in-up"
+                  style={{animationDelay: `${index * 0.1}s`}}
+                >
                   {/* Icône et preview */}
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 transition-transform duration-300 hover:scale-110">
                     {file.preview ? (
                       <img
                         src={file.preview}
                         alt={file.name}
-                        className="w-10 h-10 object-cover rounded"
+                        className="w-10 h-10 object-cover rounded shadow-sm"
                       />
                     ) : (
-                      getFileIcon(file)
+                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded">
+                        {getFileIcon(file)}
+                      </div>
                     )}
                   </div>
 
                   {/* Informations du fichier */}
                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-primary dark:text-primary truncate">
-                  {file.name}
-                </p>
-                    <p className="text-xs text-primary">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
                       {formatFileSize(file.size)}
                     </p>
                     
                     {/* Barre de progression */}
                     {file.uploadStatus === 'uploading' && (
-                      <Progress value={file.uploadProgress || 0} className="mt-2 h-2" />
+                      <Progress value={file.uploadProgress || 0} className="mt-2 h-2 animate-pulse" />
                     )}
                     
                     {/* Message d'erreur */}
                     {file.uploadStatus === 'error' && file.errorMessage && (
-                      <p className="text-xs text-destructive mt-1">{file.errorMessage}</p>
+                      <p className="text-xs text-destructive mt-1 animate-fade-in">{file.errorMessage}</p>
                     )}
                   </div>
 
                   {/* Statut et actions */}
                   <div className="flex items-center gap-2">
                     {file.uploadStatus === 'success' && (
-                      <Check className="w-5 h-5 text-muted-foreground" />
+                      <div className="w-5 h-5 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center animate-fade-in">
+                        <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
+                      </div>
                     )}
                     {file.uploadStatus === 'error' && (
-                      <AlertCircle className="w-5 h-5 text-destructive" />
+                      <div className="w-5 h-5 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center animate-fade-in">
+                        <AlertCircle className="w-3 h-3 text-red-600 dark:text-red-400" />
+                      </div>
                     )}
                     {file.uploadStatus === 'uploading' && (
-                      <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                      <Loader2 className="w-5 h-5 text-primary animate-spin" />
                     )}
                     
                     {file.uploadStatus === 'pending' && (
@@ -278,7 +299,7 @@ export function FileUploadZone({
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFile(index)}
-                        className="h-8 w-8 p-0"
+                        className="h-8 w-8 p-0 transition-all duration-300 hover:scale-110 hover:bg-red-100 dark:hover:bg-red-900/20"
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -288,13 +309,13 @@ export function FileUploadZone({
               ))}
             </div>
 
-            {/* Bouton d'upload */}
+            {/* Bouton d'upload amélioré */}
             {files.some(f => f.uploadStatus === 'pending') && (
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-end animate-fade-in-up">
                 <Button 
                   onClick={handleUpload}
                   disabled={isUploading}
-                  className="min-w-32"
+                  className="min-w-32 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover:shadow-xl transition-all duration-300 hover:scale-105 group"
                 >
                   {isUploading ? (
                     <>
@@ -303,7 +324,7 @@ export function FileUploadZone({
                     </>
                   ) : (
                     <>
-                      <Upload className="mr-2 h-4 w-4" />
+                      <Upload className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
                       Uploader {files.filter(f => f.uploadStatus === 'pending').length} fichier(s)
                     </>
                   )}
@@ -315,4 +336,42 @@ export function FileUploadZone({
       )}
     </div>
   )
+}
+
+// Styles CSS pour les animations
+const styles = `
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out;
+  }
+`
+
+// Injecter les styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style')
+  styleSheet.textContent = styles
+  document.head.appendChild(styleSheet)
 }

@@ -142,7 +142,7 @@ export async function PUT(
       .from('folders')
       .update(updateData)
       .eq('id', folderId)
-      .select('id, name, description, parentId, createdAt:created_at, updatedAt:updated_at')
+      .select('id, name, description, parentId, createdAt, updatedAt')
       .single()
 
     if (updateErr) throw updateErr

@@ -11,6 +11,7 @@ Secrétaire → CB → Ordonnateur → AC → Clôture
 
 ### **Secrétaire** (Création et gestion des dossiers)
 - Tableau de bord
+- Dashboard Secrétaire
 - Mes fichiers
 - Upload
 - Dossiers
@@ -194,6 +195,9 @@ Secrétaire → CB → Ordonnateur → AC → Clôture
 4. **Pages dédiées par rôle** ✅
 5. **Navigation basée sur les rôles** ✅
 6. **API endpoints complets** ✅
+7. **Redirection basée sur les rôles** ✅
+8. **Dashboard spécialisé pour la secrétaire** ✅
+9. **Redirection automatique depuis /dashboard** ✅
 
 ---
 

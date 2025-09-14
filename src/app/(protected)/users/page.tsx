@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useRouter } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
+import { AdminGuard } from '@/components/auth/role-guard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -59,7 +60,7 @@ interface User {
   createdAt: string
 }
 
-export default function UsersPage() {
+function UsersPageContent() {
   const { user, getAccessToken } = useSupabaseAuth()
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
@@ -104,8 +105,8 @@ export default function UsersPage() {
       const url = editingUser ? `/api/users/${editingUser.id}` : '/api/users'
       const method = editingUser ? 'PUT' : 'POST'
       
-      console.log('🔑 Récupération du token...')
-      // Récupérer le token d'accès Supabase
+      console.log('🔑 Vérification de l\'authentification...')
+      // Vérifier que l'utilisateur est connecté
       const accessToken = await getAccessToken()
       console.log('🔑 Token récupéré:', accessToken ? 'Oui' : 'Non')
       
@@ -119,9 +120,9 @@ export default function UsersPage() {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include', // Inclure les cookies d'authentification
         body: JSON.stringify(data),
       })
 
@@ -152,7 +153,7 @@ export default function UsersPage() {
     try {
       console.log('🗑️ Suppression utilisateur:', userId)
       
-      // Récupérer le token d'accès Supabase
+      // Vérifier l'authentification
       const accessToken = await getAccessToken()
       if (!accessToken) {
         setError('Non authentifié')
@@ -161,9 +162,7 @@ export default function UsersPage() {
 
       const response = await fetch(`/api/users/${userId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
+        credentials: 'include' // Inclure les cookies d'authentification
       })
 
       console.log('🗑️ Réponse suppression:', response.status)
@@ -234,7 +233,7 @@ export default function UsersPage() {
                 Nouvel utilisateur
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[600px]" showCloseButton={false}>
               <DialogHeader>
                 <DialogTitle>
                   {editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
@@ -341,5 +340,13 @@ export default function UsersPage() {
         </Card>
       </div>
     </MainLayout>
+  )
+}
+
+export default function UsersPage() {
+  return (
+    <AdminGuard>
+      <UsersPageContent />
+    </AdminGuard>
   )
 }

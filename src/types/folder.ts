@@ -6,6 +6,7 @@ export interface Folder {
   id: string
   name: string
   description?: string
+  numeroDossier?: string
   createdAt: string
   updatedAt: string
   authorId: string
