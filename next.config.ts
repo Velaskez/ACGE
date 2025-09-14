@@ -34,10 +34,6 @@ const nextConfig: NextConfig = {
   // Configuration expérimentale
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    turbo: {
-      // Active des optimisations Turbopack sûres côté app router
-      // La persistance du cache est gérée par Next automatiquement
-    },
     // Optimiser les preloads
     optimizeCss: true,
   },
