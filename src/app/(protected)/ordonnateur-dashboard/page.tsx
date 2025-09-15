@@ -3,7 +3,17 @@
 import React from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
-import { MainLayout } from '@/components/layout/main-layout'
+import { createNotification } from '@/lib/notifications'
+import { ErrorDisplay, useErrorHandler } from '@/components/ui/error-display'
+import { 
+  LoadingState, 
+  TableLoadingSkeleton, 
+  ActionLoadingState, 
+  ContextualLoading,
+  useLoadingStates 
+} from '@/components/ui/loading-states'
+import { DossierContentModal } from '@/components/ui/dossier-content-modal'
+import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { OrdonnateurGuard } from '@/components/auth/role-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -48,7 +58,13 @@ import {
   Filter,
   Search,
   RefreshCw,
-  FileCheck
+  FileCheck,
+  AlertCircle,
+  CheckCircle2,
+  Info,
+  Loader2,
+  List,
+  Grid3X3
 } from 'lucide-react'
 
 interface DossierComptable {
@@ -86,13 +102,13 @@ function OrdonnateurDashboardContent() {
   const { user } = useSupabaseAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { error, handleError, retry, clearError, hasError } = useErrorHandler()
+  const { setLoading, isLoading, getProgress } = useLoadingStates()
   
   // États pour la gestion des dossiers
   const [dossiers, setDossiers] = React.useState<DossierComptable[]>([])
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState('')
+  const [isLoadingDossiers, setIsLoadingDossiers] = React.useState(true)
   const [query, setQuery] = React.useState('')
-  const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list')
   const [sortField, setSortField] = React.useState<'numeroDossier' | 'dateDepot' | 'statut' | 'createdAt'>('createdAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
   
@@ -101,6 +117,12 @@ function OrdonnateurDashboardContent() {
   const [ordonnancementOpen, setOrdonnancementOpen] = React.useState(false)
   const [ordonnancementComment, setOrdonnancementComment] = React.useState('')
   const [actionLoading, setActionLoading] = React.useState(false)
+  const [actionResult, setActionResult] = React.useState<{ type: 'success' | 'error', message: string } | null>(null)
+  
+  // États pour la modal de contenu du dossier
+  const [dossierContentOpen, setDossierContentOpen] = React.useState(false)
+  
+  
 
   // Vérifier si l'utilisateur est Ordonnateur
   React.useEffect(() => {
@@ -112,8 +134,9 @@ function OrdonnateurDashboardContent() {
   // Charger les dossiers validés par CB
   const loadDossiers = React.useCallback(async () => {
     try {
-      setIsLoading(true)
-      setError('')
+      setIsLoadingDossiers(true)
+      setLoading('dossiers', true)
+      clearError()
       
       const response = await fetch('/api/dossiers/ordonnateur-pending', {
         credentials: 'include'
@@ -124,20 +147,59 @@ function OrdonnateurDashboardContent() {
         setDossiers(data.dossiers || [])
       } else {
         const errorData = await response.json()
-        setError(errorData.error || 'Erreur lors du chargement des dossiers')
+        const errorMessage = errorData.error || 'Erreur lors du chargement des dossiers'
+        
+        // Déterminer le type d'erreur
+        let errorType: 'network' | 'server' | 'validation' | 'permission' | 'notFound' | 'generic' = 'generic'
+        if (response.status === 401 || response.status === 403) {
+          errorType = 'permission'
+        } else if (response.status === 404) {
+          errorType = 'notFound'
+        } else if (response.status >= 500) {
+          errorType = 'server'
+        } else if (response.status >= 400) {
+          errorType = 'validation'
+        }
+        
+        handleError(errorMessage, errorType, 'Chargement des dossiers')
       }
     } catch (error) {
       console.error('Erreur chargement dossiers:', error)
-      setError('Erreur de connexion')
+      const errorMessage = error instanceof Error ? error.message : 'Erreur de connexion'
+      handleError(errorMessage, 'network', 'Chargement des dossiers')
     } finally {
-      setIsLoading(false)
+      setIsLoadingDossiers(false)
+      setLoading('dossiers', false)
     }
-  }, [])
+  }, [clearError, handleError, setLoading])
 
   // Charger les dossiers au montage
   React.useEffect(() => {
     loadDossiers()
   }, [loadDossiers])
+
+  // Créer une notification pour les nouveaux dossiers
+  React.useEffect(() => {
+    if (dossiers.length > 0 && !isLoadingDossiers) {
+      const nouveauxDossiers = dossiers.filter(d => d.statut === 'VALIDÉ_CB')
+      if (nouveauxDossiers.length > 0) {
+        createNotification({
+          userId: user?.id || '',
+          title: 'Nouveaux dossiers à ordonner',
+          message: `${nouveauxDossiers.length} nouveau${nouveauxDossiers.length > 1 ? 'x' : ''} dossier${nouveauxDossiers.length > 1 ? 's' : ''} validé${nouveauxDossiers.length > 1 ? 's' : ''} par le CB en attente d'ordonnancement.`,
+          type: 'INFO',
+          priority: 'MEDIUM',
+          actionUrl: '/ordonnateur-dashboard',
+          actionLabel: 'Voir les dossiers',
+          metadata: {
+            dossiersCount: nouveauxDossiers.length,
+            dossiersIds: nouveauxDossiers.map(d => d.id),
+            loadedAt: new Date().toISOString()
+          }
+        })
+      }
+    }
+  }, [dossiers, isLoadingDossiers, user?.id])
 
   // Filtrage et tri des dossiers
   const filteredDossiers = React.useMemo(() => {
@@ -189,6 +251,8 @@ function OrdonnateurDashboardContent() {
   const handleOrdonnance = async (dossier: DossierComptable) => {
     try {
       setActionLoading(true)
+      setLoading('ordonnancement', true)
+      setActionResult(null)
       
       const response = await fetch(`/api/dossiers/${dossier.id}/ordonnance`, {
         method: 'PUT',
@@ -198,20 +262,109 @@ function OrdonnateurDashboardContent() {
       })
       
       if (response.ok) {
+        setActionResult({
+          type: 'success',
+          message: `Dossier ${dossier.numeroDossier} ordonné avec succès`
+        })
+
+        // Créer une notification de succès
+        await createNotification({
+          userId: user?.id || '',
+          title: 'Dossier ordonné avec succès',
+          message: `Le dossier ${dossier.numeroDossier} a été ordonné avec succès.\n\nObjet: ${dossier.objetOperation}\nBénéficiaire: ${dossier.beneficiaire}${ordonnancementComment ? `\n\nCommentaire: ${ordonnancementComment}` : ''}`,
+          type: 'SUCCESS',
+          priority: 'MEDIUM',
+          actionUrl: '/ordonnateur-dashboard',
+          actionLabel: 'Voir le dashboard',
+          metadata: {
+            dossierId: dossier.id,
+            numeroDossier: dossier.numeroDossier,
+            ordonnedAt: new Date().toISOString(),
+            comment: ordonnancementComment
+          }
+        })
+
         await loadDossiers() // Recharger la liste
         setOrdonnancementOpen(false)
         setSelectedDossier(null)
         setOrdonnancementComment('')
       } else {
         const errorData = await response.json()
-        setError(errorData.error || 'Erreur lors de l\'ordonnancement')
+        const errorMessage = errorData.error || 'Erreur lors de l\'ordonnancement'
+        
+        setActionResult({
+          type: 'error',
+          message: errorMessage
+        })
+        
+        // Déterminer le type d'erreur
+        let errorType: 'network' | 'server' | 'validation' | 'permission' | 'notFound' | 'generic' = 'generic'
+        if (response.status === 401 || response.status === 403) {
+          errorType = 'permission'
+        } else if (response.status === 404) {
+          errorType = 'notFound'
+        } else if (response.status >= 500) {
+          errorType = 'server'
+        } else if (response.status >= 400) {
+          errorType = 'validation'
+        }
+        
+        handleError(errorMessage, errorType, 'Ordonnancement du dossier')
+        
+        // Créer une notification d'erreur
+        await createNotification({
+          userId: user?.id || '',
+          title: 'Erreur lors de l\'ordonnancement',
+          message: `Impossible d'ordonner le dossier ${dossier.numeroDossier}.\n\nErreur: ${errorMessage}`,
+          type: 'ERROR',
+          priority: 'HIGH',
+          actionUrl: '/ordonnateur-dashboard',
+          actionLabel: 'Réessayer',
+          metadata: {
+            dossierId: dossier.id,
+            numeroDossier: dossier.numeroDossier,
+            error: errorMessage,
+            failedAt: new Date().toISOString()
+          }
+        })
       }
     } catch (error) {
       console.error('Erreur ordonnancement:', error)
-      setError('Erreur lors de l\'ordonnancement')
+      const errorMessage = error instanceof Error ? error.message : 'Erreur de connexion'
+      
+      setActionResult({
+        type: 'error',
+        message: errorMessage
+      })
+      
+      handleError(errorMessage, 'network', 'Ordonnancement du dossier')
+      
+      // Créer une notification d'erreur
+      await createNotification({
+        userId: user?.id || '',
+        title: 'Erreur de connexion',
+        message: `Impossible d'ordonner le dossier ${dossier.numeroDossier}.\n\nErreur de connexion: ${errorMessage}`,
+        type: 'ERROR',
+        priority: 'HIGH',
+        actionUrl: '/ordonnateur-dashboard',
+        actionLabel: 'Réessayer',
+        metadata: {
+          dossierId: dossier.id,
+          numeroDossier: dossier.numeroDossier,
+          error: errorMessage,
+          failedAt: new Date().toISOString()
+        }
+      })
     } finally {
       setActionLoading(false)
+      setLoading('ordonnancement', false)
     }
+  }
+
+  // Fonction pour ouvrir la modal de contenu du dossier
+  const handleDossierClick = (dossier: DossierComptable) => {
+    setSelectedDossier(dossier)
+    setDossierContentOpen(true)
   }
 
   const getStatutBadge = (statut: string) => {
@@ -225,7 +378,7 @@ function OrdonnateurDashboardContent() {
     }
     
     const config = configs[statut as keyof typeof configs] || configs['EN_ATTENTE']
-    return <Badge className={`${config.className} border`}>{config.label}</Badge>
+    return <Badge variant="outline" className={config.className}>{config.label}</Badge>
   }
 
   if (user?.role !== 'ORDONNATEUR') {
@@ -254,21 +407,56 @@ function OrdonnateurDashboardContent() {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Dashboard Ordonnateur</h1>
-            <p className="text-primary text-sm sm:text-base">Ordonnez les dépenses validées par le Contrôleur Budgétaire</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={loadDossiers} className="w-full sm:w-auto">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Rafraîchir
-            </Button>
-          </div>
-        </div>
+    <CompactPageLayout>
+      <PageHeader
+        title="Dashboard Ordonnateur"
+        subtitle="Ordonnez les dépenses validées par le Contrôleur Budgétaire"
+        actions={
+          <Button 
+            variant="outline" 
+            onClick={loadDossiers} 
+            disabled={isLoadingDossiers}
+            className="w-full sm:w-auto h-8"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingDossiers ? 'animate-spin' : ''}`} />
+            {isLoadingDossiers ? 'Chargement...' : 'Rafraîchir'}
+          </Button>
+        }
+      />
+
+        {/* Affichage des erreurs */}
+        {hasError && (
+          <ErrorDisplay
+            error={error}
+            onRetry={() => retry(loadDossiers)}
+            onDismiss={clearError}
+            showRetry={true}
+            showDismiss={true}
+            variant="card"
+            className="animate-in slide-in-from-top-2 duration-300"
+          />
+        )}
+
+        {/* Affichage des résultats d'actions */}
+        {actionResult && (
+          <ActionLoadingState
+            isLoading={actionLoading}
+            loadingMessage="Ordonnancement en cours..."
+            successMessage={actionResult.type === 'success' ? actionResult.message : undefined}
+            errorMessage={actionResult.type === 'error' ? actionResult.message : undefined}
+            onComplete={() => setActionResult(null)}
+            className="animate-in slide-in-from-top-2 duration-300"
+          />
+        )}
+
+        {/* Chargement contextuel */}
+        {isLoading('dossiers') && (
+          <ContextualLoading
+            context="dossiers"
+            isLoading={true}
+            className="animate-in slide-in-from-top-2 duration-300"
+          />
+        )}
 
         {/* Barre de recherche et filtres */}
         <Card>
@@ -344,7 +532,9 @@ function OrdonnateurDashboardContent() {
               <div className="text-2xl font-bold">{dossiers.length}</div>
             </CardContent>
           </Card>
+
         </div>
+
 
         {/* Liste des dossiers */}
         <Card>
@@ -355,14 +545,11 @@ function OrdonnateurDashboardContent() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
+            {isLoadingDossiers ? (
+              <TableLoadingSkeleton rows={5} columns={7} />
             ) : filteredDossiers.length > 0 ? (
-              <Table>
+              (
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Numéro</TableHead>
@@ -376,7 +563,11 @@ function OrdonnateurDashboardContent() {
                 </TableHeader>
                 <TableBody>
                   {filteredDossiers.map((dossier) => (
-                    <TableRow key={dossier.id}>
+                    <TableRow 
+                      key={dossier.id} 
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleDossierClick(dossier)}
+                    >
                       <TableCell className="font-medium">{dossier.numeroDossier}</TableCell>
                       <TableCell className="max-w-xs truncate">{dossier.objetOperation}</TableCell>
                       <TableCell>{dossier.beneficiaire}</TableCell>
@@ -393,21 +584,26 @@ function OrdonnateurDashboardContent() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
-                              setSelectedDossier(dossier)
-                              // Ici on pourrait ouvrir une modal de détails
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
+                              handleDossierClick(dossier)
                             }}>
                               <Eye className="mr-2 h-4 w-4" />
                               Voir détails
                             </DropdownMenuItem>
                             {dossier.statut === 'VALIDÉ_CB' && (
                               <DropdownMenuItem 
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation()
                                   setSelectedDossier(dossier)
                                   setOrdonnancementOpen(true)
                                 }}
@@ -424,6 +620,7 @@ function OrdonnateurDashboardContent() {
                   ))}
                 </TableBody>
               </Table>
+              )
             ) : (
               <div className="text-center py-8">
                 <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
@@ -433,15 +630,12 @@ function OrdonnateurDashboardContent() {
                 </p>
               </div>
             )}
-            {error && (
-              <p className="text-sm text-destructive mt-4">{error}</p>
-            )}
           </CardContent>
         </Card>
 
         {/* Modal d'ordonnancement */}
         <Dialog open={ordonnancementOpen} onOpenChange={setOrdonnancementOpen}>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Ordonner la dépense</DialogTitle>
               <DialogDescription>
@@ -469,16 +663,32 @@ function OrdonnateurDashboardContent() {
               </Button>
               <Button 
                 onClick={() => selectedDossier && handleOrdonnance(selectedDossier)}
-                disabled={actionLoading}
+                disabled={actionLoading || isLoading('ordonnancement')}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {actionLoading ? 'Ordonnancement...' : 'Ordonner'}
+                {actionLoading || isLoading('ordonnancement') ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Ordonnancement...
+                  </>
+                ) : (
+                  'Ordonner'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </MainLayout>
+
+        {/* Modal de contenu du dossier */}
+        <DossierContentModal
+          dossier={selectedDossier}
+          isOpen={dossierContentOpen}
+          onClose={() => {
+            setDossierContentOpen(false)
+            setSelectedDossier(null)
+          }}
+        />
+     </CompactPageLayout>
   )
 }
 

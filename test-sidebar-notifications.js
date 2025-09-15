@@ -1,140 +1,137 @@
+/**
+ * Script de test pour les notifications dans la sidebar
+ * Ce script crée des notifications de test avec différentes priorités et statuts
+ */
+
 const { createClient } = require('@supabase/supabase-js')
-require('dotenv').config()
 
 // Configuration Supabase
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Variables d\'environnement Supabase manquantes')
+  console.error('❌ Variables d\'environnement manquantes')
   process.exit(1)
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: { autoRefreshToken: false, persistSession: false }
+})
 
-async function testSidebarNotifications() {
+async function createTestNotifications() {
   try {
-    console.log('🧪 Test des notifications dans la sidebar...')
-    
-    // 1. Vérifier les notifications en base
-    console.log('📋 1. Vérification des notifications en base...')
-    
-    const { data: allNotifications, error: allError } = await supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    if (allError) {
-      console.error('❌ Erreur récupération toutes notifications:', allError)
-      return false
-    }
-    
-    console.log(`✅ ${allNotifications.length} notifications totales en base`)
-    
-    // Afficher toutes les notifications
-    allNotifications.forEach((notif, index) => {
-      console.log(`   ${index + 1}. ${notif.title} (${notif.type}, ${notif.priority}) - User: ${notif.user_id} - ${notif.is_read ? 'Lue' : 'Non lue'}`)
-    })
-    
-    // 2. Récupérer un utilisateur secrétaire
-    console.log('👤 2. Récupération d\'un utilisateur secrétaire...')
-    
+    console.log('🔍 Création des notifications de test...')
+
+    // Récupérer un utilisateur de test (premier utilisateur trouvé)
     const { data: users, error: usersError } = await supabase
-      .from('users')
-      .select('id, name, email, role')
-      .eq('role', 'SECRETAIRE')
+      .from('profiles')
+      .select('id')
       .limit(1)
-    
+
     if (usersError || !users || users.length === 0) {
-      console.error('❌ Aucun utilisateur secrétaire trouvé:', usersError)
-      return false
+      console.error('❌ Aucun utilisateur trouvé:', usersError)
+      return
     }
-    
-    const secretaire = users[0]
-    console.log(`✅ Secrétaire: ${secretaire.name} (${secretaire.email}) - ID: ${secretaire.id}`)
-    
-    // 3. Vérifier les notifications de cette secrétaire
-    console.log('🔔 3. Vérification des notifications de la secrétaire...')
-    
-    const { data: secretaireNotifications, error: secretaireError } = await supabase
+
+    const userId = users[0].id
+    console.log('👤 Utilisateur de test:', userId)
+
+    // Supprimer les anciennes notifications de test
+    await supabase
       .from('notifications')
-      .select('*')
-      .eq('user_id', secretaire.id)
-      .order('created_at', { ascending: false })
-    
-    if (secretaireError) {
-      console.error('❌ Erreur récupération notifications secrétaire:', secretaireError)
-      return false
+      .delete()
+      .eq('user_id', userId)
+      .like('title', 'Test%')
+
+    // Créer des notifications de test avec différents statuts et priorités
+    const testNotifications = [
+      {
+        user_id: userId,
+        title: 'Test - Notification urgente',
+        message: 'Ceci est une notification urgente pour tester l\'affichage',
+        type: 'URGENT',
+        priority: 'URGENT',
+        is_read: false,
+        created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString() // Il y a 5 minutes
+      },
+      {
+        user_id: userId,
+        title: 'Test - Notification haute priorité',
+        message: 'Notification avec priorité élevée',
+        type: 'WARNING',
+        priority: 'HIGH',
+        is_read: false,
+        created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString() // Il y a 15 minutes
+      },
+      {
+        user_id: userId,
+        title: 'Test - Notification lue',
+        message: 'Cette notification a déjà été lue',
+        type: 'INFO',
+        priority: 'MEDIUM',
+        is_read: true,
+        read_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+        created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString() // Il y a 30 minutes
+      },
+      {
+        user_id: userId,
+        title: 'Test - Notification récente',
+        message: 'Notification créée récemment',
+        type: 'SUCCESS',
+        priority: 'LOW',
+        is_read: false,
+        created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString() // Il y a 2 minutes
+      },
+      {
+        user_id: userId,
+        title: 'Test - Ancienne notification lue',
+        message: 'Ancienne notification déjà lue',
+        type: 'INFO',
+        priority: 'MEDIUM',
+        is_read: true,
+        read_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // Il y a 2 heures
+      }
+    ]
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert(testNotifications)
+
+    if (error) {
+      console.error('❌ Erreur lors de la création des notifications:', error)
+      return
     }
-    
-    console.log(`✅ ${secretaireNotifications.length} notifications pour la secrétaire`)
-    
-    // Afficher les notifications de la secrétaire
-    secretaireNotifications.forEach((notif, index) => {
-      console.log(`   ${index + 1}. ${notif.title} (${notif.type}, ${notif.priority}) - ${notif.is_read ? 'Lue' : 'Non lue'}`)
+
+    console.log('✅ Notifications de test créées avec succès!')
+    console.log('📋 Résumé des notifications créées:')
+    testNotifications.forEach((notif, index) => {
+      console.log(`   ${index + 1}. ${notif.title} (${notif.priority}) - ${notif.is_read ? 'Lue' : 'Non lue'}`)
     })
-    
-    // 4. Vérifier les statistiques
-    console.log('📊 4. Vérification des statistiques...')
-    
-    const unreadCount = secretaireNotifications.filter(n => !n.is_read).length
-    const highPriorityCount = secretaireNotifications.filter(n => !n.is_read && n.priority === 'HIGH').length
-    const urgentCount = secretaireNotifications.filter(n => !n.is_read && n.priority === 'URGENT').length
-    
-    console.log(`📊 Stats: ${secretaireNotifications.length} total, ${unreadCount} non lues, ${highPriorityCount} haute priorité, ${urgentCount} urgentes`)
-    
-    // 5. Créer une notification de test pour la sidebar
-    console.log('🔔 5. Création d\'une notification de test pour la sidebar...')
-    
-    const testNotification = {
-      user_id: secretaire.id,
-      title: 'Test Sidebar - Notification visible',
-      message: 'Cette notification devrait être visible dans la sidebar de l\'interface secrétaire.',
-      type: 'INFO',
-      priority: 'MEDIUM',
-      action_url: '/secretaire-dashboard',
-      action_label: 'Voir le dashboard'
-    }
-    
-    const { data: insertedNotification, error: insertError } = await supabase
-      .from('notifications')
-      .insert(testNotification)
-      .select()
-    
-    if (insertError) {
-      console.error('❌ Erreur création notification test:', insertError)
-      return false
-    }
-    
-    console.log('✅ Notification de test créée:', insertedNotification[0].id)
-    
-    return true
-    
+
+    // Vérifier le tri attendu
+    console.log('\n🔍 Vérification du tri attendu:')
+    console.log('1. Notifications non lues en premier (par ordre de priorité)')
+    console.log('2. Puis notifications lues (par date de création décroissante)')
+    console.log('\nOrdre attendu:')
+    console.log('1. Test - Notification urgente (URGENT, non lue)')
+    console.log('2. Test - Notification récente (LOW, non lue)')
+    console.log('3. Test - Notification haute priorité (HIGH, non lue)')
+    console.log('4. Test - Notification lue (MEDIUM, lue)')
+    console.log('5. Test - Ancienne notification lue (MEDIUM, lue)')
+
   } catch (error) {
-    console.error('❌ Erreur générale:', error)
-    return false
+    console.error('❌ Erreur lors de la création des notifications de test:', error)
   }
 }
 
-// Exécuter le test
-async function main() {
-  console.log('🎯 Test des notifications dans la sidebar')
-  
-  const success = await testSidebarNotifications()
-  
-  if (success) {
-    console.log('🎉 Test réussi!')
-    console.log('📋 Instructions:')
-    console.log('   1. Rafraîchissez votre interface secrétaire (F5)')
-    console.log('   2. Ouvrez la console du navigateur (F12)')
-    console.log('   3. Regardez les logs qui commencent par "🔍 useNotifications:"')
-    console.log('   4. Vérifiez la section "Notifications" dans la sidebar')
-    console.log('   5. Vous devriez voir la notification "Test Sidebar - Notification visible"')
-    console.log('')
-    console.log('🔍 Si les notifications n\'apparaissent pas, vérifiez les logs de la console pour voir les erreurs.')
-  } else {
-    console.log('❌ Le test a échoué. Vérifiez les logs ci-dessus.')
-  }
-}
-
-main().catch(console.error)
+// Exécuter le script
+createTestNotifications()
+  .then(() => {
+    console.log('\n✅ Script terminé!')
+    process.exit(0)
+  })
+  .catch((error) => {
+    console.error('❌ Erreur fatale:', error)
+    process.exit(1)
+  })

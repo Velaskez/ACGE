@@ -27,7 +27,7 @@ export function AutoModal({
   return (
     <ModalWrapper isOpen={open} onOpenChange={onOpenChange}>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={className}>
+        <DialogContent className={className} showCloseButton={false}>
           {(title || description) && (
             <DialogHeader>
               {title && <DialogTitle>{title}</DialogTitle>}

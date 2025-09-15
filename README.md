@@ -56,25 +56,30 @@ Une application web moderne et responsive pour la gestion de l'agence comptable 
    npm install
    ```
 
-3. **Configuration de l'environnement**
+3. **Configuration automatique de l'environnement**
    ```bash
-   cp .env.example .env.local
-   ```
+   # Configuration automatique avec la clé de service role
+   npm run setup:env
    
-   Modifier le fichier `.env.local` avec vos configurations :
-   ```env
-   DATABASE_URL="postgresql://username:password@localhost:5432/acge_db"
-   NEXTAUTH_URL="http://localhost:3000"
-   NEXTAUTH_SECRET="your-secret-key-here"
+   # Ou forcer le remplacement si le fichier existe déjà
+   npm run setup:env:force
    ```
 
-4. **Configuration de la base de données**
+4. **Récupérer votre clé anon Supabase**
+   - Allez sur https://supabase.com/dashboard
+   - Sélectionnez votre projet
+   - Allez dans Settings > API
+   - Copiez la clé "anon public" et remplacez `your-anon-key-here` dans `.env.local`
+
+   > 📝 **Note** : Consultez [SETUP_QUICK.md](./SETUP_QUICK.md) pour un guide de configuration détaillé.
+
+5. **Configuration de la base de données**
    ```bash
    npx prisma generate
    npx prisma db push
    ```
 
-5. **Démarrer l'application**
+6. **Démarrer l'application**
    ```bash
    npm run dev
    ```

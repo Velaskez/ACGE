@@ -173,7 +173,7 @@ export function FileUploadZone({
           ? 'border-primary bg-primary/5 scale-[1.02] shadow-lg' 
           : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/20'
       }`}>
-        <CardContent className="p-8">
+        <CardContent className="p-4">
           <div
             {...getRootProps()}
             className="text-center cursor-pointer group"
@@ -230,7 +230,7 @@ export function FileUploadZone({
       {/* Liste des fichiers améliorée */}
       {files.length > 0 && (
         <Card className=" transition-all duration-300 hover:shadow-md">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="space-y-3">
               <h3 className="font-medium text-lg flex items-center gap-2 ">
                 <File className="w-5 h-5 text-primary" />

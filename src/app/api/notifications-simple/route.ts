@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .order('is_read', { ascending: true }) // Non lues en premier
+      .order('created_at', { ascending: false }) // Puis par date décroissante
       .limit(50)
     
     console.log('🔍 API notifications-simple: Résultat requête:', { 

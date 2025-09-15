@@ -3,7 +3,7 @@
 import React from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { AgentComptableGuard } from '@/components/auth/role-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -94,7 +94,6 @@ function ACDashboardContent() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState('')
   const [query, setQuery] = React.useState('')
-  const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list')
   const [sortField, setSortField] = React.useState<'numeroDossier' | 'dateDepot' | 'statut' | 'createdAt'>('createdAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
   
@@ -301,7 +300,7 @@ function ACDashboardContent() {
     }
     
     const config = configs[statut as keyof typeof configs] || configs['EN_ATTENTE']
-    return <Badge className={`${config.className} border`}>{config.label}</Badge>
+    return <Badge variant="outline" className={config.className}>{config.label}</Badge>
   }
 
   if (user?.role !== 'AGENT_COMPTABLE') {
@@ -330,119 +329,93 @@ function ACDashboardContent() {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Dashboard Agent Comptable</h1>
-            <p className="text-primary text-sm sm:text-base">Effectuez les paiements et enregistrez les recettes</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={loadDossiers} className="w-full sm:w-auto">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Rafraîchir
+    <CompactPageLayout>
+      <PageHeader
+        title="Dashboard Agent Comptable"
+        subtitle="Effectuez les paiements et enregistrez les recettes"
+        actions={
+          <Button 
+            variant="outline" 
+            onClick={loadDossiers} 
+            className="w-full sm:w-auto h-8"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Rafraîchir
+          </Button>
+        }
+      />
+
+      <ContentSection
+        title="Recherche et filtres"
+        actions={
+          <div className="flex gap-2">
+            <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
+              <SelectTrigger className="w-[180px] h-8">
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Date de création</SelectItem>
+                <SelectItem value="numeroDossier">Numéro dossier</SelectItem>
+                <SelectItem value="dateDepot">Date de dépôt</SelectItem>
+                <SelectItem value="statut">Statut</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="h-8"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
+        }
+      >
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Rechercher par numéro, objet ou bénéficiaire..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-10 h-8"
+          />
         </div>
+      </ContentSection>
 
-        {/* Barre de recherche et filtres */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Rechercher par numéro, objet ou bénéficiaire..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Trier par" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="createdAt">Date de création</SelectItem>
-                    <SelectItem value="numeroDossier">Numéro dossier</SelectItem>
-                    <SelectItem value="dateDepot">Date de dépôt</SelectItem>
-                    <SelectItem value="statut">Statut</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                >
-                  {sortOrder === 'asc' ? '↑' : '↓'}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
+      <CompactStats
+        stats={[
+          {
+            label: "À comptabiliser",
+            value: dossiers.filter(d => d.statut === 'VALIDÉ_ORDONNATEUR').length,
+            icon: <Clock className="h-4 w-4 text-yellow-600" />,
+            color: "text-yellow-600"
+          },
+          {
+            label: "Payés",
+            value: dossiers.filter(d => d.statut === 'PAYÉ').length,
+            icon: <CreditCard className="h-4 w-4 text-purple-600" />,
+            color: "text-purple-600"
+          },
+          {
+            label: "Terminés",
+            value: dossiers.filter(d => d.statut === 'TERMINÉ').length,
+            icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+            color: "text-green-600"
+          },
+          {
+            label: "Total",
+            value: dossiers.length,
+            icon: <FileText className="h-4 w-4 text-primary" />,
+            color: "text-primary"
+          }
+        ]}
+        columns={4}
+      />
 
-        {/* Stats rapides */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">À comptabiliser</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.statut === 'VALIDÉ_ORDONNATEUR').length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Payés</CardTitle>
-              <CreditCard className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.statut === 'PAYÉ').length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Terminés</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.statut === 'TERMINÉ').length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total</CardTitle>
-              <FileText className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{dossiers.length}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Liste des dossiers */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Dossiers à comptabiliser</CardTitle>
-            <CardDescription>
-              {filteredDossiers.length} dossier{filteredDossiers.length > 1 ? 's' : ''} trouvé{filteredDossiers.length > 1 ? 's' : ''}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <ContentSection
+        title="Dossiers à comptabiliser"
+        subtitle={`${filteredDossiers.length} dossier${filteredDossiers.length > 1 ? 's' : ''} trouvé${filteredDossiers.length > 1 ? 's' : ''}`}
+      >
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -537,23 +510,20 @@ function ACDashboardContent() {
                 </TableBody>
               </Table>
             ) : (
-              <div className="text-center py-8">
-                <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-medium">Aucun dossier</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Aucun dossier ordonné en attente de comptabilisation.
-                </p>
-              </div>
+              <EmptyState
+                icon={<FileText className="h-10 w-10 text-muted-foreground" />}
+                title="Aucun dossier"
+                description="Aucun dossier ordonné en attente de comptabilisation."
+              />
             )}
             {error && (
               <p className="text-sm text-destructive mt-4">{error}</p>
             )}
-          </CardContent>
-        </Card>
+      </ContentSection>
 
         {/* Modal de paiement */}
         <Dialog open={paiementOpen} onOpenChange={setPaiementOpen}>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Effectuer le paiement</DialogTitle>
               <DialogDescription>
@@ -614,7 +584,7 @@ function ACDashboardContent() {
 
         {/* Modal de recette */}
         <Dialog open={recetteOpen} onOpenChange={setRecetteOpen}>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Enregistrer la recette</DialogTitle>
               <DialogDescription>
@@ -675,7 +645,7 @@ function ACDashboardContent() {
 
         {/* Modal de clôture */}
         <Dialog open={clotureOpen} onOpenChange={setClotureOpen}>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Clôturer le dossier</DialogTitle>
               <DialogDescription>
@@ -711,8 +681,7 @@ function ACDashboardContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </MainLayout>
+    </CompactPageLayout>
   )
 }
 

@@ -3,7 +3,7 @@
 import React from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { ControleurBudgetaireGuard } from '@/components/auth/role-guard'
 import { DiagnosticPanel } from '@/components/debug/diagnostic-panel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -113,7 +113,6 @@ function CBDashboardContent() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState('')
   const [query, setQuery] = React.useState('')
-  const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list')
   const [sortField, setSortField] = React.useState<'numeroDossier' | 'dateDepot' | 'statut' | 'createdAt'>('createdAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'en_attente' | 'valide' | 'rejete'>('all')
@@ -428,12 +427,12 @@ function CBDashboardContent() {
     }
     
     const config = configs[statut as keyof typeof configs] || configs['EN_ATTENTE']
-    return <Badge className={`${config.className} border`}>{config.label}</Badge>
+    return <Badge variant="outline" className={config.className}>{config.label}</Badge>
   }
 
   if (user?.role !== 'CONTROLEUR_BUDGETAIRE') {
     return (
-      <MainLayout>
+      <CompactPageLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
           <Card className="w-full max-w-md">
             <CardHeader>
@@ -452,167 +451,141 @@ function CBDashboardContent() {
             </CardContent>
           </Card>
         </div>
-      </MainLayout>
+      </CompactPageLayout>
     )
   }
 
   // Si on est en mode consultation de dossier, afficher l'interface de consultation
   if (currentFolder) {
     return (
-      <MainLayout>
-        <div className="space-y-6">
-          {/* Header avec bouton retour */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={handleBackToList}>
+      <CompactPageLayout>
+        {/* Header avec bouton retour */}
+        <PageHeader
+          title="Consultation du dossier"
+          subtitle={currentFolder.name || 'Dossier sans nom'}
+          actions={
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={handleBackToList} className="w-full sm:w-auto h-8">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Retour aux dossiers
               </Button>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-primary">
-                  Consultation du dossier
-                </h1>
-                <p className="text-primary text-sm sm:text-base">
-                  {currentFolder.name || 'Dossier sans nom'}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button variant="outline" onClick={() => currentFolder && loadFolderDocuments(currentFolder.id)} className="w-full sm:w-auto">
+              <Button variant="outline" onClick={() => currentFolder && loadFolderDocuments(currentFolder.id)} className="w-full sm:w-auto h-8">
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Rafraîchir
               </Button>
             </div>
-          </div>
+          }
+        />
 
-          {/* Stats du dossier */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Documents</CardTitle>
-                <FileText className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{documents.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Taille totale</CardTitle>
-                <FolderOpen className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {documents.reduce((total, doc) => total + (doc.size || 0), 0) > 0 
-                    ? `${(documents.reduce((total, doc) => total + (doc.size || 0), 0) / 1024 / 1024).toFixed(1)} MB`
-                    : '0 MB'
-                  }
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Dossier</CardTitle>
-                <FolderOpen className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm font-medium">{currentFolder.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {currentFolder.description || 'Aucune description'}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Stats du dossier */}
+        <CompactStats
+          stats={[
+            {
+              label: "Documents",
+              value: documents.length,
+              icon: <FileText className="h-4 w-4 text-primary" />,
+              color: "text-primary"
+            },
+            {
+              label: "Taille totale",
+              value: documents.reduce((total, doc) => total + (doc.size || 0), 0) > 0 
+                ? `${(documents.reduce((total, doc) => total + (doc.size || 0), 0) / 1024 / 1024).toFixed(1)} MB`
+                : '0 MB',
+              icon: <FolderOpen className="h-4 w-4 text-primary" />,
+              color: "text-primary"
+            },
+            {
+              label: "Dossier",
+              value: currentFolder.name,
+              icon: <FolderOpen className="h-4 w-4 text-primary" />,
+              color: "text-primary"
+            }
+          ]}
+          columns={3}
+        />
 
-          {/* Liste des documents */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents du dossier</CardTitle>
-              <CardDescription>
-                {documents.length} document{documents.length > 1 ? 's' : ''} dans ce dossier
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {documentsLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
-              ) : documentsError ? (
-                <div className="text-center py-8">
-                  <AlertCircle className="mx-auto h-10 w-10 text-red-500" />
-                  <h3 className="mt-2 text-sm font-medium text-red-600">Erreur de chargement</h3>
-                  <p className="mt-1 text-sm text-red-500">{documentsError}</p>
-                </div>
-              ) : documents.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>Catégorie</TableHead>
-                      <TableHead>Taille</TableHead>
-                      <TableHead>Date de création</TableHead>
-                      <TableHead className="w-20">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {documents.map((document) => (
-                      <TableRow key={document.id}>
-                        <TableCell className="font-medium">{document.fileName || document.name}</TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {document.category || 'Non classé'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {document.fileSize ? `${(document.fileSize / 1024 / 1024).toFixed(1)} MB` : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(document.createdAt).toLocaleDateString('fr-FR')}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewDocument(document)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Voir
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDownloadDocument(document)}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Télécharger
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditDocument(document)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Modifier
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleShareDocument(document)}>
-                                <Share2 className="mr-2 h-4 w-4" />
-                                Partager
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-medium">Aucun document</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Ce dossier ne contient aucun document.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Liste des documents */}
+        <ContentSection
+          title="Documents du dossier"
+          subtitle={`${documents.length} document${documents.length > 1 ? 's' : ''} dans ce dossier`}
+        >
+          {documentsLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : documentsError ? (
+            <EmptyState
+              icon={<AlertCircle className="h-10 w-10 text-red-500" />}
+              title="Erreur de chargement"
+              description={documentsError}
+            />
+          ) : documents.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Catégorie</TableHead>
+                  <TableHead>Taille</TableHead>
+                  <TableHead>Date de création</TableHead>
+                  <TableHead className="w-20">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {documents.map((document) => (
+                  <TableRow key={document.id}>
+                    <TableCell className="font-medium">{document.fileName || document.name}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {document.category || 'Non classé'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {document.fileSize ? `${(document.fileSize / 1024 / 1024).toFixed(1)} MB` : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(document.createdAt).toLocaleDateString('fr-FR')}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewDocument(document)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Voir
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownloadDocument(document)}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Télécharger
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditDocument(document)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleShareDocument(document)}>
+                            <Share2 className="mr-2 h-4 w-4" />
+                            Partager
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <EmptyState
+              icon={<FileText className="h-10 w-10 text-muted-foreground" />}
+              title="Aucun document"
+              description="Ce dossier ne contient aucun document."
+            />
+          )}
+        </ContentSection>
 
           {/* Modales pour les documents */}
           {selectedDocument && (
@@ -640,139 +613,113 @@ function CBDashboardContent() {
               />
             </>
           )}
-        </div>
         
         {/* Panel de diagnostic */}
         <DiagnosticPanel />
-      </MainLayout>
+      </CompactPageLayout>
     )
   }
 
   return (
-    <MainLayout><div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Dashboard Contrôleur Budgétaire</h1>
-            <p className="text-primary text-sm sm:text-base">Validez ou rejetez les dossiers en attente</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={loadDossiers} className="w-full sm:w-auto">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Rafraîchir
+    <CompactPageLayout>
+      <PageHeader
+        title="Dashboard Contrôleur Budgétaire"
+        subtitle="Validez ou rejetez les dossiers en attente"
+        actions={
+          <Button 
+            variant="outline" 
+            onClick={loadDossiers} 
+            className="w-full sm:w-auto h-8"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Rafraîchir
+          </Button>
+        }
+      />
+
+      <ContentSection
+        title="Recherche et filtres"
+        actions={
+          <div className="flex gap-2">
+            <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
+              <SelectTrigger className="w-[180px] h-8">
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Date de création</SelectItem>
+                <SelectItem value="numeroDossier">Numéro dossier</SelectItem>
+                <SelectItem value="dateDepot">Date de dépôt</SelectItem>
+                <SelectItem value="statut">Statut</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="h-8"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
+        }
+      >
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Rechercher par numéro, objet ou bénéficiaire..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-10 h-8"
+          />
         </div>
+      </ContentSection>
 
-        {/* Barre de recherche et filtres */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Rechercher par numéro, objet ou bénéficiaire..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Trier par" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="createdAt">Date de création</SelectItem>
-                    <SelectItem value="numeroDossier">Numéro dossier</SelectItem>
-                    <SelectItem value="dateDepot">Date de dépôt</SelectItem>
-                    <SelectItem value="statut">Statut</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                >
-                  {sortOrder === 'asc' ? '↑' : '↓'}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
+      <CompactStats
+        stats={[
+          {
+            label: "En attente",
+            value: dossiers.filter(d => d.statut === 'EN_ATTENTE').length,
+            icon: <Clock className="h-4 w-4 text-yellow-600" />,
+            color: "text-yellow-600"
+          },
+          {
+            label: "Validés",
+            value: dossiers.filter(d => d.statut === 'VALIDÉ_CB').length,
+            icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+            color: "text-green-600"
+          },
+          {
+            label: "Rejetés",
+            value: dossiers.filter(d => d.statut === 'REJETÉ_CB').length,
+            icon: <XCircle className="h-4 w-4 text-red-600" />,
+            color: "text-red-600"
+          },
+          {
+            label: "Total",
+            value: dossiers.length,
+            icon: <FileText className="h-4 w-4 text-primary" />,
+            color: "text-primary"
+          }
+        ]}
+        columns={4}
+      />
 
-        {/* Stats rapides */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">En attente</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.statut === 'EN_ATTENTE').length}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Navigation horizontale par statut */}
+      <CBStatusNavigation
+        dossiers={dossiers}
+        currentFilter={statusFilter}
+        onFilterChange={setStatusFilter}
+      />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Validés</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.statut === 'VALIDÉ_CB').length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Rejetés</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.statut === 'REJETÉ_CB').length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total</CardTitle>
-              <FileText className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{dossiers.length}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Navigation horizontale par statut */}
-        <CBStatusNavigation
-          dossiers={dossiers}
-          currentFilter={statusFilter}
-          onFilterChange={setStatusFilter}
-        />
-
-        {/* Liste des dossiers */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {statusFilter === 'all' && 'Tous les dossiers'}
-              {statusFilter === 'en_attente' && 'Dossiers en attente'}
-              {statusFilter === 'valide' && 'Dossiers validés'}
-              {statusFilter === 'rejete' && 'Dossiers rejetés'}
-            </CardTitle>
-            <CardDescription>
-              {filteredDossiers.length} dossier{filteredDossiers.length > 1 ? 's' : ''} trouvé{filteredDossiers.length > 1 ? 's' : ''}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <ContentSection
+        title={
+          statusFilter === 'all' ? 'Tous les dossiers' :
+          statusFilter === 'en_attente' ? 'Dossiers en attente' :
+          statusFilter === 'valide' ? 'Dossiers validés' :
+          statusFilter === 'rejete' ? 'Dossiers rejetés' : 'Dossiers'
+        }
+        subtitle={`${filteredDossiers.length} dossier${filteredDossiers.length > 1 ? 's' : ''} trouvé${filteredDossiers.length > 1 ? 's' : ''}`}
+      >
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -902,23 +849,20 @@ function CBDashboardContent() {
                 </TableBody>
               </Table>
             ) : (
-              <div className="text-center py-8">
-                <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-medium">Aucun dossier</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Aucun dossier en attente de validation.
-                </p>
-              </div>
+              <EmptyState
+                icon={<FileText className="h-10 w-10 text-muted-foreground" />}
+                title="Aucun dossier"
+                description="Aucun dossier en attente de validation."
+              />
             )}
             {error && (
               <p className="text-sm text-destructive mt-4">{error}</p>
             )}
-          </CardContent>
-        </Card>
+      </ContentSection>
 
         {/* Modal de validation */}
         <Dialog open={validationOpen} onOpenChange={setValidationOpen}>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Valider le dossier</DialogTitle>
               <DialogDescription>
@@ -942,7 +886,7 @@ function CBDashboardContent() {
 
         {/* Modal de rejet */}
         <Dialog open={rejectionOpen} onOpenChange={setRejectionOpen}>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Rejeter le dossier</DialogTitle>
               <DialogDescription>
@@ -981,7 +925,7 @@ function CBDashboardContent() {
 
         {/* Modal de détails du dossier */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl" showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Détails du dossier</DialogTitle>
               <DialogDescription>
@@ -1098,11 +1042,10 @@ function CBDashboardContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
       
       {/* Panel de diagnostic */}
       <DiagnosticPanel />
-    </MainLayout>
+    </CompactPageLayout>
   )
 }
 

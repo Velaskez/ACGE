@@ -207,7 +207,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
   return (
     <ModalWrapper isOpen={isOpen} onOpenChange={onClose}>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto" showCloseButton={false}>
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -228,9 +228,9 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Informations du document - Version compacte */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-100">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <h3 className="font-medium text-blue-900 break-all">{document.title}</h3>
@@ -318,8 +318,8 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
               Partager avec un nouvel utilisateur
             </h4>
             
-            <form onSubmit={handleShare} className="space-y-4">
-              <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
+            <form onSubmit={handleShare} className="space-y-3">
+              <div className="flex flex-col lg:grid lg:grid-cols-3 gap-3">
                 <div className="lg:col-span-2 relative">
                   <Label htmlFor="email">Email de l'utilisateur</Label>
                   <Input
@@ -338,10 +338,11 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                   {showUserSuggestions && userSearchResults.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
                       {userSearchResults.map(user => (
-                        <button
+                        <Button
                           key={user.id}
                           type="button"
-                          className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
+                          variant="ghost"
+                          className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 h-auto justify-start"
                           onClick={() => selectUser(user)}
                         >
                           <User className="h-4 w-4 text-primary flex-shrink-0" />
@@ -349,7 +350,7 @@ export function DocumentShareModal({ document, isOpen, onClose, onShared }: Docu
                             <p className="font-medium text-sm truncate">{user.name}</p>
                             <p className="text-xs text-primary break-all">{user.email}</p>
                           </div>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}

@@ -1,10 +1,11 @@
 'use client'
 
 import React from 'react'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, ContentSection } from '@/components/shared/compact-page-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   FileText,
   Users,
@@ -158,41 +159,31 @@ const roleInfo = [
 
 export default function HelpPage() {
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-primary mb-2">Centre d'aide ACGE</h1>
-          <p className="text-lg text-muted-foreground">
-            Trouvez rapidement l'aide dont vous avez besoin
-          </p>
+    <CompactPageLayout>
+      {/* Header */}
+      <PageHeader
+        title="Centre d'aide ACGE"
+        subtitle="Trouvez rapidement l'aide dont vous avez besoin"
+      />
+
+      {/* Recherche rapide */}
+      <ContentSection
+        title="Recherche rapide"
+        subtitle="Tapez votre question ou votre problème pour trouver une solution"
+      >
+        <div className="flex space-x-2">
+          <Input
+            type="text"
+            placeholder="Comment créer un dossier ?"
+            className="flex-1 h-8"
+          />
+          <Button className="h-8">Rechercher</Button>
         </div>
+      </ContentSection>
 
-        {/* Recherche rapide */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <HelpCircle className="mr-2 h-5 w-5" />
-              Recherche rapide
-            </CardTitle>
-            <CardDescription>
-              Tapez votre question ou votre problème pour trouver une solution
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                placeholder="Comment créer un dossier ?"
-                className="flex-1 px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <Button>Rechercher</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Sections d'aide */}
-        <div className="grid gap-6 md:grid-cols-2">
+      {/* Sections d'aide */}
+      <ContentSection title="Sections d'aide">
+        <div className="grid gap-4 md:grid-cols-2">
           {helpSections.map((section) => {
             const IconComponent = section.icon
             return (
@@ -227,83 +218,67 @@ export default function HelpPage() {
             )
           })}
         </div>
+      </ContentSection>
 
-        {/* Rôles et permissions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="mr-2 h-5 w-5" />
-              Rôles et permissions
-            </CardTitle>
-            <CardDescription>
-              Comprendre les différents rôles dans l'application et leurs responsabilités
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {roleInfo.map((role) => (
-                <div key={role.role} className="border rounded-lg p-4">
-                  <div className="flex items-center mb-3">
-                    <Badge className={role.color}>{role.title}</Badge>
-                  </div>
-                  <h4 className="font-medium mb-2">{role.description}</h4>
-                  <ul className="space-y-1">
-                    {role.permissions.map((permission, index) => (
-                      <li key={index} className="text-sm text-muted-foreground flex items-center">
-                        <div className="w-1 h-1 bg-muted-foreground rounded-full mr-2"></div>
-                        {permission}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+      {/* Rôles et permissions */}
+      <ContentSection
+        title="Rôles et permissions"
+        subtitle="Comprendre les différents rôles dans l'application et leurs responsabilités"
+      >
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {roleInfo.map((role) => (
+            <div key={role.role} className="border rounded-lg p-3">
+              <div className="flex items-center mb-3">
+                <Badge className={role.color}>{role.title}</Badge>
+              </div>
+              <h4 className="font-medium mb-2">{role.description}</h4>
+              <ul className="space-y-1">
+                {role.permissions.map((permission, index) => (
+                  <li key={index} className="text-sm text-muted-foreground flex items-center">
+                    <div className="w-1 h-1 bg-muted-foreground rounded-full mr-2"></div>
+                    {permission}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
+      </ContentSection>
 
-        {/* Contact et support */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <MessageCircle className="mr-2 h-5 w-5" />
-              Besoin d'aide supplémentaire ?
-            </CardTitle>
-            <CardDescription>
-              Notre équipe de support est là pour vous aider
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-center p-4 border rounded-lg">
-                <Mail className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                <h4 className="font-medium mb-1">Email</h4>
-                <p className="text-sm text-muted-foreground mb-2">support@acge.gabon</p>
-                <Button variant="outline" size="sm">
-                  Envoyer un email
-                </Button>
-              </div>
-              
-              <div className="text-center p-4 border rounded-lg">
-                <Phone className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                <h4 className="font-medium mb-1">Téléphone</h4>
-                <p className="text-sm text-muted-foreground mb-2">+241 XX XX XX XX</p>
-                <Button variant="outline" size="sm">
-                  Appeler
-                </Button>
-              </div>
-              
-              <div className="text-center p-4 border rounded-lg">
-                <HelpCircle className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-                <h4 className="font-medium mb-1">Support technique</h4>
-                <p className="text-sm text-muted-foreground mb-2">24h/7j</p>
-                <Button variant="outline" size="sm">
-                  Contacter
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </MainLayout>
+      {/* Contact et support */}
+      <ContentSection
+        title="Besoin d'aide supplémentaire ?"
+        subtitle="Notre équipe de support est là pour vous aider"
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="text-center p-3 border rounded-lg">
+            <Mail className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+            <h4 className="font-medium mb-1">Email</h4>
+            <p className="text-sm text-muted-foreground mb-2">support@acge.gabon</p>
+            <Button variant="outline" size="sm" className="h-8">
+              Envoyer un email
+            </Button>
+          </div>
+          
+          <div className="text-center p-3 border rounded-lg">
+            <Phone className="h-8 w-8 mx-auto mb-2 text-green-600" />
+            <h4 className="font-medium mb-1">Téléphone</h4>
+            <p className="text-sm text-muted-foreground mb-2">+241 XX XX XX XX</p>
+            <Button variant="outline" size="sm" className="h-8">
+              Appeler
+            </Button>
+          </div>
+          
+          <div className="text-center p-3 border rounded-lg">
+            <HelpCircle className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+            <h4 className="font-medium mb-1">Support technique</h4>
+            <p className="text-sm text-muted-foreground mb-2">24h/7j</p>
+            <Button variant="outline" size="sm" className="h-8">
+              Contacter
+            </Button>
+          </div>
+        </div>
+      </ContentSection>
+    </CompactPageLayout>
   )
 }

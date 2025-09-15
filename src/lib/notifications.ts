@@ -19,7 +19,14 @@ export interface CreateNotificationParams {
  */
 export async function createNotification(params: CreateNotificationParams): Promise<boolean> {
   try {
-    const admin = getSupabaseAdmin()
+    // Essayer d'obtenir l'admin, mais ne pas faire échouer si indisponible
+    let admin
+    try {
+      admin = getSupabaseAdmin()
+    } catch (error) {
+      console.warn('⚠️ Service Supabase admin indisponible pour les notifications:', error instanceof Error ? error.message : 'Erreur inconnue')
+      return false
+    }
     
     if (!admin) {
       console.warn('⚠️ Service Supabase indisponible pour les notifications')

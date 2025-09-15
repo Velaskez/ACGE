@@ -263,16 +263,16 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
     if (!previewUrl || !canPreview(document.fileType || undefined)) {
       return (
-        <div className="p-8 text-center text-primary">
-          <div className="mb-4">
+        <div className="p-8 text-center">
+          <div className="mb-6">
             {getFileIcon(document.fileType || undefined)}
           </div>
-          <h3 className="text-lg font-medium mb-2">Aperçu non disponible</h3>
-          <p className="text-sm mb-4">
+          <h3 className="text-xl font-semibold mb-3 text-foreground">Aperçu non disponible</h3>
+          <p className="text-sm mb-6 text-muted-foreground">
             Ce type de fichier ne peut pas être prévisualisé dans le navigateur.
             Vous pouvez le télécharger pour l'ouvrir avec l'application appropriée.
           </p>
-          <Button onClick={handleDownload} variant="outline">
+          <Button onClick={handleDownload} variant="outline" size="sm">
             <Download className="w-4 h-4 mr-2" />
             Télécharger pour ouvrir
           </Button>
@@ -283,11 +283,11 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
     switch (previewType) {
       case 'image':
         return (
-          <div className="relative bg-gray-50 min-h-96 flex items-center justify-center overflow-hidden">
+          <div className="relative bg-white min-h-80 flex items-center justify-center overflow-hidden p-3">
             <img 
               src={previewUrl} 
               alt={document.fileName || 'Image'}
-              className="max-w-full max-h-96 transition-transform duration-200"
+              className="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform duration-200"
               style={{ 
                 transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
                 transformOrigin: 'center'
@@ -299,10 +299,10 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
       case 'pdf':
         return (
-          <div className="bg-gray-50" style={{ height: isFullscreen ? '70vh' : '500px' }}>
+          <div className="bg-white rounded-lg shadow-inner" style={{ height: isFullscreen ? '70vh' : '500px' }}>
             <iframe 
               src={previewUrl}
-              className="w-full h-full border-0"
+              className="w-full h-full border-0 rounded-lg"
               title={document.fileName || 'PDF'}
               onError={() => setError('Impossible de charger le PDF')}
             />
@@ -311,11 +311,11 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
       case 'video':
         return (
-          <div className="bg-primary flex items-center justify-center" style={{ height: isFullscreen ? '60vh' : '400px' }}>
+          <div className="bg-black flex items-center justify-center rounded-lg" style={{ height: isFullscreen ? '60vh' : '400px' }}>
             <video 
               src={previewUrl}
               controls
-              className="max-w-full max-h-full"
+              className="max-w-full max-h-full rounded-lg"
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onError={() => setError('Impossible de lire la vidéo')}
@@ -327,13 +327,13 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
       case 'audio':
         return (
-          <div className="p-8 text-center bg-gray-50">
-            <Music className="mx-auto h-16 w-16 mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-4">{document.fileName}</h3>
+          <div className="p-8 text-center bg-white rounded-lg">
+            <Music className="mx-auto h-16 w-16 mb-6 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-6 text-foreground">{document.fileName}</h3>
             <audio 
               src={previewUrl}
               controls 
-              className="mx-auto"
+              className="mx-auto w-full max-w-md"
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onError={() => setError('Impossible de lire l\'audio')}
@@ -357,7 +357,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
       case 'office':
         return (
-          <div className="p-8 text-center text-primary">
+          <div className="p-4 text-center text-primary">
             <FileSpreadsheet className="mx-auto h-16 w-16 mb-4" />
             <h3 className="text-lg font-medium mb-2">Document Office</h3>
             <p className="text-sm mb-4">
@@ -372,7 +372,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
 
       default:
         return (
-          <div className="p-8 text-center text-primary">
+          <div className="p-4 text-center text-primary">
             <FileText className="mx-auto h-16 w-16 mb-4" />
             <h3 className="text-lg font-medium mb-2">Format non supporté</h3>
             <p className="text-sm">Téléchargez le fichier pour l'ouvrir.</p>
@@ -386,45 +386,43 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent 
           showCloseButton={false}
-          className={`w-full max-w-5xl mx-auto transition-all duration-300 ${
-            isFullscreen ? 'max-h-[98vh] w-[98vw]' : 'max-h-[85vh]'
-          } overflow-hidden flex flex-col`}>
-        <DialogHeader className="flex-shrink-0 pb-2">
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              {getFileIcon(document.fileType || undefined)}
+          className={`w-full max-w-6xl mx-auto transition-all duration-300 ${
+            isFullscreen ? 'max-h-[98vh] w-[98vw]' : 'max-h-[90vh]'
+          } overflow-hidden flex flex-col shadow-2xl border-0`}>
+        <DialogHeader className="flex-shrink-0 pb-2 border-b">
+          <DialogTitle className="flex items-center justify-between h-10">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="flex-shrink-0">
+                {getFileIcon(document.fileType || undefined)}
+              </div>
               <div className="min-w-0 flex-1">
-                <span className="truncate text-base sm:text-lg block">{document.title}</span>
-                <p className="text-xs text-muted-foreground break-all">
+                <span className="truncate text-base font-semibold block leading-tight">{document.title}</span>
+                <p className="text-xs text-muted-foreground break-all leading-tight">
                   {document.fileName}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowMetadata(!showMetadata)}
-                className="hidden sm:flex"
+                className="h-8 px-3"
               >
                 <Info className="h-4 w-4" />
                 <span className="ml-1">Infos</span>
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                <X className="h-4 w-4" />
-                <span className="sr-only">Fermer</span>
               </Button>
             </div>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+        <div className="flex-1 overflow-hidden flex flex-col space-y-3">
           {/* Métadonnées compactes - Version compacte */}
           <div className={`transition-all duration-300 overflow-hidden ${
             showMetadata ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
           }`}>
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-md border border-blue-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 <div className="min-w-0">
                   <Label className="text-sm font-medium text-blue-900 block mb-1">Fichier</Label>
                   <p className="text-sm text-blue-800 break-all">{document.fileName}</p>
@@ -473,58 +471,68 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
           </div>
 
           {/* Barre d'outils de prévisualisation - Version compacte */}
-          {canPreview(document.fileType) && (
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 p-3 bg-gray-100 rounded-lg">
+          {canPreview(document.fileType || undefined) && (
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 p-3 bg-gray-50 rounded-md">
               <div className="flex flex-wrap items-center gap-2">
                 {previewType === 'image' && (
-                  <div className="flex items-center gap-1 border rounded-md bg-white px-2 py-1">
-                    <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={zoom <= 25} className="p-1 h-8 w-8">
-                      <ZoomOut className="h-4 w-4" />
+                  <div className="flex items-center gap-1 border rounded-md bg-white px-2 py-1 h-8">
+                    <Button variant="ghost" size="sm" onClick={handleZoomOut} disabled={zoom <= 25} className="p-1 h-6 w-6 flex items-center justify-center">
+                      <ZoomOut className="h-3.5 w-3.5" />
                     </Button>
-                    <span className="text-sm font-medium min-w-12 text-center">{zoom}%</span>
-                    <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoom >= 300} className="p-1 h-8 w-8">
-                      <ZoomIn className="h-4 w-4" />
+                    <span className="text-sm font-medium min-w-12 text-center px-1">{zoom}%</span>
+                    <Button variant="ghost" size="sm" onClick={handleZoomIn} disabled={zoom >= 300} className="p-1 h-6 w-6 flex items-center justify-center">
+                      <ZoomIn className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={handleRotate} className="p-1 h-8 w-8">
-                      <RotateCw className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" onClick={handleRotate} className="p-1 h-6 w-6 flex items-center justify-center">
+                      <RotateCw className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <Badge variant={document.isPublic ? 'default' : 'secondary'} className="flex-shrink-0">
+                  <Badge variant={document.isPublic ? 'default' : 'secondary'} className="flex-shrink-0 h-6 px-2 text-xs">
                     {document.isPublic ? 'Public' : 'Privé'}
                   </Badge>
                   {document._count && (
-                    <Badge variant="outline" className="flex-shrink-0 text-xs">
+                    <Badge variant="outline" className="flex-shrink-0 h-6 px-2 text-xs">
                       Document
                     </Badge>
                   )}
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm" 
                   onClick={() => setShowMetadata(!showMetadata)}
-                  className="sm:hidden"
+                  className="sm:hidden h-8 w-8 p-0"
+                  title="Informations"
                 >
                   <Info className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleFullscreen} className="flex-shrink-0">
-                  <Maximize2 className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-1">{isFullscreen ? 'Réduire' : 'Plein écran'}</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleFullscreen} 
+                  className="h-8 w-8 p-0"
+                  title={isFullscreen ? 'Réduire' : 'Plein écran'}
+                >
+                  {isFullscreen ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </Button>
-                <Button onClick={handleDownload} size="sm" className="flex-shrink-0">
+                <Button 
+                  onClick={handleDownload} 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  title="Télécharger"
+                >
                   <Download className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-2">Télécharger</span>
                 </Button>
               </div>
             </div>
           )}
 
           {/* Zone de prévisualisation */}
-          <div className="flex-1 border rounded-lg overflow-hidden bg-white">
+          <div className="flex-1 border-0 rounded-lg overflow-hidden bg-white shadow-inner">
             {renderPreviewContent()}
           </div>
         </div>

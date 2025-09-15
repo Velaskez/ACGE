@@ -60,7 +60,7 @@ export async function PUT(
     const { data: updatedDossier, error: updateError } = await admin
       .from('dossiers')
       .update({
-        statut: 'ORDONNANCÉ',
+        statut: 'VALIDÉ_ORDONNATEUR',
         ordonnancementComment: commentaire?.trim() || null,
         montantOrdonnance: montant ? parseFloat(montant) : null,
         ordonnancedAt: new Date().toISOString(),

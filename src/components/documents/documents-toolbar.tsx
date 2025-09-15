@@ -3,7 +3,6 @@
 import { ContentToolbar } from '@/components/shared/content-toolbar'
 import { SearchSuggestion } from '@/components/ui/search-suggestions'
 
-type ViewMode = 'list' | 'grid'
 type SortField = 'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'
 type SortOrder = 'asc' | 'desc'
 
@@ -12,8 +11,6 @@ interface DocumentsToolbarProps {
   onSearchQueryChange: (value: string) => void
   onSearchSelect?: (suggestion: SearchSuggestion) => void
   onSearchSubmit?: () => void
-  viewMode: ViewMode
-  onViewModeChange: (mode: ViewMode) => void
   sortField: SortField
   sortOrder: SortOrder
   onSortFieldChange: (field: SortField) => void
@@ -36,8 +33,6 @@ export function DocumentsToolbar({
   onSearchQueryChange,
   onSearchSelect,
   onSearchSubmit,
-  viewMode,
-  onViewModeChange,
   sortField,
   sortOrder,
   onSortFieldChange,
@@ -53,8 +48,6 @@ export function DocumentsToolbar({
       onSearchSelect={onSearchSelect}
       onSearchSubmit={onSearchSubmit}
       searchPlaceholder="Rechercher des fichiers..."
-      viewMode={viewMode}
-      onViewModeChange={onViewModeChange}
       sortField={sortField}
       sortOrder={sortOrder}
       sortOptions={documentSortOptions}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, ContentSection } from '@/components/shared/compact-page-layout'
 import { FileUploadZone } from '@/components/upload/file-upload-zone'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -164,176 +164,141 @@ export default function UploadPage() {
 
   if (isSuccess) {
     return (
-      <MainLayout>
+      <CompactPageLayout>
         <div className="max-w-2xl mx-auto py-12">
-          <Card className="text-center  transition-all duration-300 hover:shadow-lg">
-            <CardContent className="pt-6">
+          <Card className="text-center transition-all duration-300 hover:shadow-lg">
+            <CardContent className="pt-4">
               <div className="mx-auto w-16 h-16 bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 rounded-full flex items-center justify-center mb-4 animate-pulse">
                 <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2 " style={{animationDelay: '0.1s'}}>
+              <h2 className="text-2xl font-bold text-foreground mb-2" style={{animationDelay: '0.1s'}}>
                 Upload réussi !
               </h2>
-              <p className="text-muted-foreground mb-4 " style={{animationDelay: '0.2s'}}>
+              <p className="text-muted-foreground mb-4" style={{animationDelay: '0.2s'}}>
                 Vos fichiers ont été uploadés avec succès.
               </p>
-              <p className="text-sm text-muted-foreground " style={{animationDelay: '0.3s'}}>
+              <p className="text-sm text-muted-foreground" style={{animationDelay: '0.3s'}}>
                 Redirection vers la liste des documents...
               </p>
             </CardContent>
           </Card>
         </div>
-      </MainLayout>
+      </CompactPageLayout>
     )
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header amélioré */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 ">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => router.back()}
-              className="transition-all duration-300 hover:scale-110 hover:bg-muted/80"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-gradient-to-r from-primary/10 to-primary/20 rounded-lg">
-                  <Upload className="w-6 h-6 text-primary" />
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-primary">
-                  Upload de Fichiers
-                </h1>
-              </div>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                Ajoutez de nouveaux fichiers à l'application avec des métadonnées
-              </p>
-            </div>
-          </div>
+    <CompactPageLayout>
+      {/* Header compact réutilisable */}
+      <PageHeader
+        title="Upload de Fichiers"
+        subtitle="Ajoutez de nouveaux fichiers à l'application avec des métadonnées"
+        actions={
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => router.back()}
+            className="h-8"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Retour
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Zone d'upload principal */}
+        <div className="lg:col-span-2">
+          <ContentSection
+            title="Sélection des fichiers"
+            subtitle="Glissez-déposez vos fichiers ou cliquez pour les sélectionner"
+          >
+            <FileUploadZone onUpload={handleUpload} />
+          </ContentSection>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Zone d'upload principal */}
-          <div className="lg:col-span-2 " style={{animationDelay: '0.1s'}}>
-            <Card className="transition-all duration-300 hover:shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="w-5 h-5 text-primary" />
-                  Sélection des fichiers
-                </CardTitle>
-                <CardDescription>
-                  Glissez-déposez vos fichiers ou cliquez pour les sélectionner
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FileUploadZone onUpload={handleUpload} />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Options d'organisation */}
-          <div className="space-y-6">
-            {/* Tags */}
-            <Card className=" transition-all duration-300 hover:shadow-lg" style={{animationDelay: '0.2s'}}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-primary" />
-                  Tags
-                </CardTitle>
-                <CardDescription>
-                  Ajoutez des tags pour faciliter la recherche
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Ajouter un tag..."
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyPress={handleTagInputKeyPress}
-                    className="transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]"
-                  />
-                  <Button 
-                    onClick={addTag} 
-                    size="sm"
-                    className="transition-all duration-300 hover:scale-105"
-                  >
-                    Ajouter
-                  </Button>
-                </div>
-
-                {metadata.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 ">
-                    {metadata.tags.map((tag, index) => (
-                      <Badge
-                        key={tag}
-                        variant="secondary"
-                        className="cursor-pointer transition-all duration-300 hover:scale-110 hover:bg-primary/20 "
-                        style={{animationDelay: `${index * 0.1}s`}}
-                        onClick={() => removeTag(tag)}
-                      >
-                        {tag} ×
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Dossier de destination */}
-            <Card className=" transition-all duration-300 hover:shadow-lg" style={{animationDelay: '0.3s'}}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FolderOpen className="w-5 h-5 text-primary" />
-                  Dossier
-                </CardTitle>
-                <CardDescription>
-                  Sélectionnez le dossier de destination
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Select
-                  value={metadata.folderId || 'root'}
-                  onValueChange={(value) => setMetadata(prev => ({ 
-                    ...prev, 
-                    folderId: value === 'root' ? undefined : value 
-                  }))}
+        {/* Options d'organisation */}
+        <div className="space-y-4">
+          {/* Tags */}
+          <ContentSection
+            title="Tags"
+            subtitle="Ajoutez des tags pour faciliter la recherche"
+          >
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Ajouter un tag..."
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyPress={handleTagInputKeyPress}
+                  className="h-8"
+                />
+                <Button 
+                  onClick={addTag} 
+                  size="sm"
+                  className="h-8"
                 >
-                  <SelectTrigger className="transition-all duration-300 hover:border-primary/50 focus:scale-[1.02]">
-                    <SelectValue placeholder="Racine (aucun dossier)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="root">Racine (aucun dossier)</SelectItem>
-                    {foldersLoading ? (
-                      <SelectItem value="loading" disabled>Chargement...</SelectItem>
-                    ) : (
-                      folders.map((folder) => (
-                        <SelectItem key={folder.id} value={folder.id}>
-                          {folder.name}
-                          {folder.documentCount !== undefined && ` (${folder.documentCount})`}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                  Ajouter
+                </Button>
+              </div>
 
-        {/* Messages d'erreur */}
-        {error && (
-          <Alert variant="destructive" className="">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+              {metadata.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {metadata.tags.map((tag, index) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-primary/20"
+                      onClick={() => removeTag(tag)}
+                    >
+                      {tag} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </ContentSection>
+
+          {/* Dossier de destination */}
+          <ContentSection
+            title="Dossier"
+            subtitle="Sélectionnez le dossier de destination"
+          >
+            <Select
+              value={metadata.folderId || 'root'}
+              onValueChange={(value) => setMetadata(prev => ({ 
+                ...prev, 
+                folderId: value === 'root' ? undefined : value 
+              }))}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Racine (aucun dossier)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="root">Racine (aucun dossier)</SelectItem>
+                {foldersLoading ? (
+                  <SelectItem value="loading" disabled>Chargement...</SelectItem>
+                ) : (
+                  folders.map((folder) => (
+                    <SelectItem key={folder.id} value={folder.id}>
+                      {folder.name}
+                      {folder.documentCount !== undefined && ` (${folder.documentCount})`}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </ContentSection>
+        </div>
       </div>
-    </MainLayout>
+
+      {/* Messages d'erreur */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+    </CompactPageLayout>
   )
 }
 

@@ -35,19 +35,16 @@ export function LoadingScreen({ isLoading, onComplete }: LoadingScreenProps) {
   return (
     <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
       <div className="flex flex-col items-center space-y-6">
-        {/* Logo avec animation subtile */}
+        {/* Logo avec effet glassmorphism */}
         <div className="relative group">
-          <div className="absolute -inset-4 bg-primary/10 rounded-full blur-xl group-hover:bg-primary/20 transition-all duration-1000"></div>
+          <div className="absolute -inset-4 glassmorphism-subtle rounded-full group-hover:glassmorphism transition-all duration-1000"></div>
           <div className="relative">
             <Image
               src="/logo-tresor-public.svg"
               alt="Logo Trésor Public"
               width={100}
               height={100}
-              className="animate-pulse"
-              style={{
-                filter: 'drop-shadow(0 0 30px rgba(30, 64, 175, 0.4))'
-              }}
+              className="animate-pulse drop-shadow-lg"
             />
           </div>
         </div>

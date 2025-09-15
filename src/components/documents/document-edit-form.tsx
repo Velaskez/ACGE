@@ -37,6 +37,8 @@ interface DocumentEditFormProps {
   onSubmit: (data: any) => void
   onCancel: () => void
   isLoading?: boolean
+  categories?: Array<{ value: string; label: string }>
+  categoriesLoading?: boolean
 }
 
 interface FormData {
@@ -53,14 +55,9 @@ const steps = [
   { id: 3, title: 'Validation', description: 'Vérification des modifications' }
 ]
 
-const categories = [
-  { value: 'ordre-recette', label: 'Ordre de recette' },
-  { value: 'ordre-paiement', label: 'Ordre de paiement' },
-  { value: 'courier', label: 'Courier' },
-  { value: 'facture', label: 'Facture' },
-  { value: 'contrat', label: 'Contrat' },
-  { value: 'rapport', label: 'Rapport' },
-  { value: 'autre', label: 'Autre' }
+// Catégories par défaut (fallback)
+const defaultCategories = [
+  { value: 'Non classé', label: 'Non classé' }
 ]
 
 const formatFileSize = (bytes: number) => {
@@ -85,7 +82,9 @@ export function DocumentEditForm({
   document, 
   onSubmit, 
   onCancel, 
-  isLoading = false 
+  isLoading = false,
+  categories = defaultCategories,
+  categoriesLoading = false
 }: DocumentEditFormProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [folders, setFolders] = useState<FolderItem[]>([])
@@ -257,11 +256,21 @@ export function DocumentEditForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
+                      {categoriesLoading ? (
+                        <SelectItem value="loading" disabled>
+                          Chargement des catégories...
                         </SelectItem>
-                      ))}
+                      ) : categories.length > 0 ? (
+                        categories.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-categories" disabled>
+                          Aucune catégorie disponible
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />

@@ -6,6 +6,9 @@ import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useSidebarData } from '@/hooks/use-sidebar-data'
 import { useNotifications } from '@/hooks/use-notifications'
 import { cn } from '@/lib/utils'
+import { SidebarNotificationItem } from '@/components/notifications/sidebar-notification-item'
+import { NotificationStats } from '@/components/notifications/notification-stats'
+import { EmptyNotifications } from '@/components/notifications/empty-notifications'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -175,7 +178,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
   const pathname = usePathname()
   const { user } = useSupabaseAuth()
   const { stats, isLoading } = useSidebarData()
-  const { notifications, stats: notificationStats, markAsRead } = useNotifications()
+  const { notifications, stats: notificationStats, markAsRead, refreshNotifications, isLoading: notificationsLoading } = useNotifications()
 
   // Filtrer les éléments de navigation selon le rôle
   const filteredNav = mainNav.filter((item: NavItem) => {
@@ -232,10 +235,10 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
       )}>
         <div className="flex flex-col h-full overflow-hidden">
           <div className="flex-1 overflow-y-auto sidebar-scroll">
-            <div className="space-y-4 py-4">
+            <div className="space-y-3 py-3">
             {/* Navigation principale */}
             <div className="px-3 py-2">
-              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight truncate text-primary">
+              <h2 className="mb-1 px-3 text-lg font-semibold tracking-tight truncate text-primary">
                 Navigation
               </h2>
               <div className="space-y-1">
@@ -268,7 +271,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
             {/* Navigation rapide - Visible uniquement pour les admins */}
             {user?.role === 'ADMIN' && (
               <div className="px-3 py-2">
-                <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight truncate text-primary">
+                <h2 className="mb-1 px-3 text-lg font-semibold tracking-tight truncate text-primary">
                   Accès rapide
                 </h2>
                 <div className="space-y-1">
@@ -315,69 +318,37 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
 
             {/* Notifications */}
             <div className="px-3 py-2">
-              <div className="flex items-center justify-between mb-2 px-4">
+              <div className="flex items-center justify-between mb-1 px-3">
                 <h2 className="text-lg font-semibold tracking-tight truncate flex-1 text-primary">
                   Notifications
                 </h2>
-                {notificationStats && notificationStats.unreadCount > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <div className="h-2 w-2 bg-red-500 rounded-full"></div>
-                    <span className="text-xs text-muted-foreground">
-                      {notificationStats.unreadCount}
-                    </span>
-                  </div>
-                )}
+                <NotificationStats stats={notificationStats} />
               </div>
               <div className="px-1 max-h-[200px] overflow-y-auto">
                 <div className="space-y-1">
                   {notifications.length > 0 ? (
                     notifications.slice(0, 3).map((notification) => (
-                      <Tooltip key={notification.id}>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start h-auto p-2 text-left"
-                            onClick={() => markAsRead(notification.id)}
-                          >
-                            <div className="flex items-start space-x-2 w-full">
-                              <Bell className={`h-3 w-3 mt-0.5 flex-shrink-0 ${
-                                notification.isRead ? 'text-muted-foreground' : 'text-primary'
-                              }`} />
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-xs font-medium truncate ${
-                                  notification.isRead ? 'text-muted-foreground' : 'text-primary'
-                                }`}>
-                                  {notification.title}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {notification.message}
-                                </p>
-                              </div>
-                              {!notification.isRead && (
-                                <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                              )}
-                            </div>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-[200px]">
-                          <p>{notification.title}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <SidebarNotificationItem
+                        key={notification.id}
+                        notification={notification}
+                        onMarkAsRead={markAsRead}
+                      />
                     ))
                   ) : (
-                    <div className="px-4 py-4 text-center">
-                      <Bell className="h-4 w-4 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-xs text-muted-foreground">
-                        Aucune notification
-                      </p>
-                    </div>
+                    <EmptyNotifications 
+                      onRefresh={refreshNotifications}
+                      isLoading={notificationsLoading}
+                    />
                   )}
                 </div>
-                {notifications.length > 3 && (
+                {notifications.length > 0 && (
                   <div className="px-2 pt-2">
                     <Link href="/notifications">
                       <Button variant="ghost" size="sm" className="w-full text-xs">
-                        Voir toutes les notifications
+                        {notifications.length > 3 
+                          ? `Voir toutes les notifications (${notifications.length})`
+                          : 'Voir toutes les notifications'
+                        }
                       </Button>
                     </Link>
                   </div>
@@ -387,7 +358,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
 
             {/* Aide */}
             <div className="px-3 py-2">
-              <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight truncate text-primary">
+              <h2 className="mb-1 px-3 text-lg font-semibold tracking-tight truncate text-primary">
                 Aide
               </h2>
               <div className="space-y-1">
@@ -438,7 +409,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
             <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight truncate text-primary">
               Statistiques
             </h2>
-            <div className="space-y-2 px-4">
+            <div className="space-y-2 px-3">
               {isLoading ? (
                 // Skeleton pour le chargement
                 Array.from({ length: 3 }).map((_, index) => (

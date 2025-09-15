@@ -3,7 +3,7 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { SecretaireGuard } from '@/components/auth/role-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -230,7 +230,7 @@ function SecretaireRejectedContent() {
     }
     
     const config = configs[statut as keyof typeof configs] || configs['EN_ATTENTE']
-    return <Badge className={`${config.className} border`}>{config.label}</Badge>
+    return <Badge variant="outline" className={config.className}>{config.label}</Badge>
   }
 
   // Fonction pour ouvrir le modal d'édition
@@ -713,125 +713,100 @@ function SecretaireRejectedContent() {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => router.push('/folders')}
-                className="p-0 h-auto"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Retour
-              </Button>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Mes Dossiers Rejetés</h1>
-            <p className="text-primary text-sm sm:text-base">Consultez et gérez vos dossiers rejetés par le contrôleur budgétaire</p>
-          </div>
+    <CompactPageLayout>
+      <PageHeader
+        title="Mes Dossiers Rejetés"
+        subtitle="Consultez et gérez vos dossiers rejetés par le contrôleur budgétaire"
+        actions={
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={loadDossiers} className="w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              onClick={loadDossiers} 
+              className="w-full sm:w-auto h-8"
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Rafraîchir
             </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => router.push('/folders')}
+              className="w-full sm:w-auto h-8"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour
+            </Button>
           </div>
+        }
+      />
+
+      <ContentSection
+        title="Recherche et filtres"
+        actions={
+          <div className="flex gap-2">
+            <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
+              <SelectTrigger className="w-[180px] h-8">
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Date de création</SelectItem>
+                <SelectItem value="numeroDossier">Numéro dossier</SelectItem>
+                <SelectItem value="dateDepot">Date de dépôt</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="h-8"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Rechercher par numéro, objet, bénéficiaire ou nom de dossier..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-10 h-8"
+          />
         </div>
+      </ContentSection>
 
-        {/* Barre de recherche et filtres */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Rechercher par numéro, objet, bénéficiaire ou nom de dossier..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Trier par" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="createdAt">Date de création</SelectItem>
-                    <SelectItem value="numeroDossier">Numéro dossier</SelectItem>
-                    <SelectItem value="dateDepot">Date de dépôt</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                >
-                  {sortOrder === 'asc' ? '↑' : '↓'}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
+      <CompactStats
+        stats={[
+          {
+            label: "Total Rejetés",
+            value: dossiers.length,
+            icon: <XCircle className="h-4 w-4 text-red-600" />,
+            color: "text-red-600"
+          },
+          {
+            label: "Ce mois",
+            value: dossiers.filter(d => {
+              const dossierDate = new Date(d.createdAt)
+              const now = new Date()
+              return dossierDate.getMonth() === now.getMonth() && dossierDate.getFullYear() === now.getFullYear()
+            }).length,
+            icon: <Clock className="h-4 w-4 text-blue-600" />,
+            color: "text-blue-600"
+          },
+          {
+            label: "Avec nom de dossier",
+            value: dossiers.filter(d => d.folderName).length,
+            icon: <FileText className="h-4 w-4 text-green-600" />,
+            color: "text-green-600"
+          }
+        ]}
+        columns={3}
+      />
 
-        {/* Stats rapides */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Rejetés</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{dossiers.length}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ce mois</CardTitle>
-              <Clock className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => {
-                  const dossierDate = new Date(d.createdAt)
-                  const now = new Date()
-                  return dossierDate.getMonth() === now.getMonth() && dossierDate.getFullYear() === now.getFullYear()
-                }).length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avec nom de dossier</CardTitle>
-              <FileText className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.folderName).length}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Liste des dossiers rejetés */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Mes dossiers rejetés</CardTitle>
-            <CardDescription>
-              {filteredDossiers.length} dossier{filteredDossiers.length > 1 ? 's' : ''} rejeté{filteredDossiers.length > 1 ? 's' : ''} trouvé{filteredDossiers.length > 1 ? 's' : ''}
-              <br />
-              <span className="text-xs text-muted-foreground">
-                💡 Cliquez sur une ligne pour ouvrir le dossier ou voir les détails
-              </span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <ContentSection
+        title="Mes dossiers rejetés"
+        subtitle={`${filteredDossiers.length} dossier${filteredDossiers.length > 1 ? 's' : ''} rejeté${filteredDossiers.length > 1 ? 's' : ''} trouvé${filteredDossiers.length > 1 ? 's' : ''} - 💡 Cliquez sur une ligne pour ouvrir le dossier ou voir les détails`}
+      >
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -970,12 +945,11 @@ function SecretaireRejectedContent() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+      </ContentSection>
 
         {/* Modal de détails du dossier */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl" showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Détails du dossier rejeté</DialogTitle>
               <DialogDescription>
@@ -1141,7 +1115,7 @@ function SecretaireRejectedContent() {
 
         {/* Modal de confirmation de resoumission */}
         <Dialog open={resubmitOpen} onOpenChange={setResubmitOpen}>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Resoumettre le dossier</DialogTitle>
               <DialogDescription>
@@ -1167,7 +1141,7 @@ function SecretaireRejectedContent() {
 
         {/* Modal de confirmation de suppression */}
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-          <DialogContent>
+          <DialogContent showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Supprimer le dossier</DialogTitle>
               <DialogDescription>
@@ -1190,8 +1164,7 @@ function SecretaireRejectedContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </MainLayout>
+    </CompactPageLayout>
   )
 }
 

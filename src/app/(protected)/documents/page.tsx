@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 // import { Badge } from '@/components/ui/badge'
@@ -46,7 +46,6 @@ import { DocumentDeleteConfirmation } from '@/components/documents/document-dele
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
 import { DocumentsFilters, type DocumentFilters } from '@/components/documents/documents-filters'
 import { ActiveFiltersDisplay } from '@/components/documents/active-filters-display'
-import { DocumentGridItem } from '@/components/documents/document-grid-item'
 import { useFolders } from '@/hooks/use-folders'
 import { useSearchParams } from 'next/navigation'
 import { SearchSuggestion } from '@/components/ui/search-suggestions'
@@ -63,7 +62,6 @@ import {
 import { DocumentItem } from '@/types/document'
 
 
-type ViewMode = 'list' | 'grid'
 type SortField = 'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'
 type SortOrder = 'asc' | 'desc'
 
@@ -76,7 +74,6 @@ export default function DocumentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [sortField, setSortField] = useState<SortField>('createdAt')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [selectedDocument, setSelectedDocument] = useState<DocumentItem | null>(null)
@@ -424,33 +421,28 @@ export default function DocumentsPage() {
 
   if (isLoading) {
     return (
-      <MainLayout>
+      <CompactPageLayout>
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2">Chargement des fichiers...</p>
         </div>
-      </MainLayout>
+      </CompactPageLayout>
     )
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">
-              Mes Documents
-            </h1>
-            <p className="text-primary text-sm sm:text-base">
-              {documents.length} fichier(s) au total
-            </p>
-          </div>
-          <Button onClick={() => router.push('/upload')} className="w-full sm:w-auto">
-            <Plus className="mr-2 h-4 w-4" />
+    <CompactPageLayout>
+      {/* Header compact réutilisable */}
+      <PageHeader
+        title="Mes Documents"
+        subtitle={`${documents.length} fichier(s) au total`}
+        actions={
+          <Button onClick={() => router.push('/upload')} className="w-full sm:w-auto h-8">
+            <Plus className="h-4 w-4 mr-1" />
             Ajouter des fichiers
           </Button>
-        </div>
+        }
+      />
 
         {/* Barre d'outils Documents */}
         <DocumentsToolbar
@@ -458,8 +450,6 @@ export default function DocumentsPage() {
           onSearchQueryChange={handleSearchQueryChange}
           onSearchSelect={handleSearchSelect}
           onSearchSubmit={handleSearchSubmit}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
           sortField={sortField}
           sortOrder={sortOrder}
           onSortFieldChange={setSortField}
@@ -481,179 +471,127 @@ export default function DocumentsPage() {
           </Alert>
         )}
 
-        {/* Liste des documents */}
-        {viewMode === 'list' ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents</CardTitle>
-              <CardDescription>
-                {filteredDocuments.length} document(s) affiché(s)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8 sm:w-12"></TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/10"
-                      onClick={() => handleSort('title')}
-                    >
-                      <div className="flex items-center gap-2">
-                        Nom
-                        {sortField === 'title' && (
-                          sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="hidden md:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/10"
-                      onClick={() => handleSort('fileSize')}
-                    >
-                      <div className="flex items-center gap-2">
-                        Taille
-                        {sortField === 'fileSize' && (
-                          sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="hidden sm:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/10"
-                      onClick={() => handleSort('createdAt')}
-                    >
-                      <div className="flex items-center gap-2">
-                        Date d'ajout
-                        {sortField === 'createdAt' && (
-                          sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead className="hidden lg:table-cell">Propriétaire</TableHead>
-                    <TableHead className="w-10 sm:w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredDocuments.map((document) => (
-                    <TableRow key={document.id}>
-                      <TableCell>
-                        {getFileIcon(document.fileType || 'unknown')}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{document.title}</div>
-                          <div className="text-xs sm:text-sm text-primary">{document.fileName || 'Sans fichier'}</div>
-                          {document.description && (
-                            <div className="hidden sm:block text-xs text-primary mt-1">{document.description}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{formatFileSize(document.fileSize || 0)}</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        {new Date(document.createdAt).toLocaleDateString('fr-FR')}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">{document.author?.name || 'Inconnu'}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleView(document)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Aperçu
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownload(document)}>
-                              <Download className="mr-2 h-4 w-4" />
-                              Télécharger
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEdit(document)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Modifier
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              setSelectedDocument(document)
-                              setShowShareModal(true)
-                            }}>
-                              <Share2 className="mr-2 h-4 w-4" />
-                              Partager
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(document.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        {/* Liste des documents avec section réutilisable */}
+        <ContentSection>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-8 sm:w-12"></TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/10"
+                  onClick={() => handleSort('title')}
+                >
+                  <div className="flex items-center gap-2">
+                    Nom
+                    {sortField === 'title' && (
+                      sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="hidden md:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/10"
+                  onClick={() => handleSort('fileSize')}
+                >
+                  <div className="flex items-center gap-2">
+                    Taille
+                    {sortField === 'fileSize' && (
+                      sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="hidden sm:table-cell cursor-pointer hover:bg-gray-50 dark:hover:bg-primary/10"
+                  onClick={() => handleSort('createdAt')}
+                >
+                  <div className="flex items-center gap-2">
+                    Date d'ajout
+                    {sortField === 'createdAt' && (
+                      sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">Propriétaire</TableHead>
+                <TableHead className="w-10 sm:w-12"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredDocuments.map((document) => (
+                <TableRow key={document.id}>
+                  <TableCell>
+                    {getFileIcon(document.fileType || 'unknown')}
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{document.title}</div>
+                      <div className="text-xs sm:text-sm text-primary">{document.fileName || 'Sans fichier'}</div>
+                      {document.description && (
+                        <div className="hidden sm:block text-xs text-primary mt-1">{document.description}</div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">{formatFileSize(document.fileSize || 0)}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {new Date(document.createdAt).toLocaleDateString('fr-FR')}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">{document.author?.name || 'Inconnu'}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleView(document)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Aperçu
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDownload(document)}>
+                          <Download className="mr-2 h-4 w-4" />
+                          Télécharger
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(document)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedDocument(document)
+                          setShowShareModal(true)
+                        }}>
+                          <Share2 className="mr-2 h-4 w-4" />
+                          Partager
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => handleDelete(document.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
-              {filteredDocuments.length === 0 && (
-                <div className="text-center py-8">
-                  <Upload className="mx-auto h-12 w-12 text-primary mb-4" />
-                                     <p className="text-lg font-medium text-primary dark:text-primary">
-                     {searchQuery ? 'Aucun document trouvé' : 'Aucun document'}
-                   </p>
-                  <p className="text-primary mb-4">
-                    {searchQuery 
-                      ? 'Essayez de modifier votre recherche'
-                      : 'Commencez par uploader vos premiers fichiers'
-                    }
-                  </p>
-                  {!searchQuery && (
-                    <Button onClick={() => router.push('/upload')}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Ajouter des fichiers
-                    </Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          /* Vue en grille */
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 p-1">
-            {filteredDocuments.length > 0 ? (
-              filteredDocuments.map((document) => (
-                <DocumentGridItem
-                  key={document.id}
-                  document={document}
-                  onView={handleView}
-                  onEdit={handleEdit}
-                  onDownload={handleDownload}
-                  onShare={(doc) => {
-                    setSelectedDocument(doc)
-                    setShowShareModal(true)
-                  }}
-                  onDelete={handleDelete}
-                />
-              ))
-            ) : (
-              <div className="col-span-full text-center py-12">
-                <FileText className="mx-auto h-12 w-12 text-primary" />
-                <h3 className="mt-4 text-lg font-semibold">Aucun document trouvé</h3>
-                <p className="text-primary">
-                  {searchQuery || Object.values(filters).some(v => v && v !== 'updatedAt' && v !== 'desc')
-                    ? 'Aucun document ne correspond à vos critères de recherche.'
-                    : 'Commencez par ajouter des documents à votre collection.'
-                  }
-                </p>
-                <Button className="mt-4" onClick={() => router.push('/upload')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Ajouter des fichiers
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+          {filteredDocuments.length === 0 && (
+            <EmptyState
+              icon={<Upload className="h-10 w-10" />}
+              title={searchQuery ? 'Aucun document trouvé' : 'Aucun document'}
+              description={searchQuery 
+                ? 'Essayez de modifier votre recherche'
+                : 'Commencez par uploader vos premiers fichiers'
+              }
+              action={!searchQuery ? {
+                label: 'Ajouter des fichiers',
+                onClick: () => router.push('/upload')
+              } : undefined}
+            />
+          )}
+        </ContentSection>
 
       {/* Modal d'aperçu */}
       {showPreview && selectedDocument && (
@@ -763,7 +701,7 @@ export default function DocumentsPage() {
         filters={filters}
         onApplyFilters={handleApplyFilters}
         folders={folders}
-      />
-    </MainLayout>
+        />
+    </CompactPageLayout>
   )
 }

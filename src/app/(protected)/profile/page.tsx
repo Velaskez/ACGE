@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, ContentSection } from '@/components/shared/compact-page-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -313,135 +313,134 @@ export default function ProfilePage() {
   }
 
   return (
-    <MainLayout>
+    <CompactPageLayout>
+      {/* Header */}
+      <PageHeader
+        title="Mon Profil"
+        subtitle="Gérez vos informations personnelles et vos paramètres de compte"
+      />
+
+      {/* Messages */}
+      {error && (
+        <Alert variant="destructive" className="animate-in slide-in-from-top-2 duration-300">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 animate-in slide-in-from-top-2 duration-300">
+          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription className="text-green-800 dark:text-green-200">{success}</AlertDescription>
+        </Alert>
+      )}
+
       {isLoading ? (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Skeleton pour les informations du profil */}
-            <div className="lg:col-span-1">
-              <Card className="transition-all duration-300 hover:shadow-lg">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-6 w-6" />
-                    <Skeleton className="h-7 w-48" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Skeleton pour les informations du profil */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-6 w-6" />
+                  <Skeleton className="h-7 w-48" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-16 h-16 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-36" />
+                    <Skeleton className="h-4 w-52" />
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="w-16 h-16 rounded-full" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-6 w-36" />
-                      <Skeleton className="h-4 w-52" />
+                </div>
+                
+                <Skeleton className="h-px w-full" />
+                
+                <div className="space-y-4">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Skeleton pour le formulaire de modification */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-6 w-6" />
+                  <Skeleton className="h-7 w-40" />
+                </div>
+                <Skeleton className="h-4 w-72" />
+              </CardHeader>
+              <CardContent className="space-y-8">
+                {/* Informations personnelles */}
+                <div className="space-y-6">
+                  <Skeleton className="h-6 w-44" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-3">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-10 w-full" />
                     </div>
                   </div>
-                  
-                  <Skeleton className="h-px w-full" />
-                  
-                  <div className="space-y-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-4 w-20" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
 
-            {/* Skeleton pour le formulaire de modification */}
-            <div className="lg:col-span-2">
-              <Card className="transition-all duration-300 hover:shadow-lg">
-                <CardHeader>
+                <Skeleton className="h-px w-full" />
+
+                {/* Changement de mot de passe */}
+                <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <Skeleton className="h-6 w-6" />
-                    <Skeleton className="h-7 w-40" />
-                  </div>
-                  <Skeleton className="h-4 w-72" />
-                </CardHeader>
-                <CardContent className="space-y-8">
-                  {/* Informations personnelles */}
-                  <div className="space-y-6">
                     <Skeleton className="h-6 w-44" />
+                  </div>
+                  <Skeleton className="h-4 w-80" />
+
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <Skeleton className="h-4 w-36" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-4 w-32" />
                         <Skeleton className="h-10 w-full" />
                       </div>
                       <div className="space-y-3">
-                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-40" />
                         <Skeleton className="h-10 w-full" />
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <Skeleton className="h-px w-full" />
-
-                  {/* Changement de mot de passe */}
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-6 w-6" />
-                      <Skeleton className="h-6 w-44" />
-                    </div>
-                    <Skeleton className="h-4 w-80" />
-
-                    <div className="space-y-6">
-                      <div className="space-y-3">
-                        <Skeleton className="h-4 w-36" />
-                        <Skeleton className="h-10 w-full" />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <Skeleton className="h-4 w-32" />
-                          <Skeleton className="h-10 w-full" />
-                        </div>
-                        <div className="space-y-3">
-                          <Skeleton className="h-4 w-40" />
-                          <Skeleton className="h-10 w-full" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Boutons */}
-                  <div className="flex justify-end gap-3">
-                    <Skeleton className="h-10 w-24" />
-                    <Skeleton className="h-10 w-48" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                {/* Boutons */}
+                <div className="flex justify-end gap-3">
+                  <Skeleton className="h-10 w-24" />
+                  <Skeleton className="h-10 w-48" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       ) : (
-        <div className="space-y-8">
-          {/* Messages */}
-          {error && (
-            <Alert variant="destructive" className="animate-in slide-in-from-top-2 duration-300">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {success && (
-            <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 animate-in slide-in-from-top-2 duration-300">
-              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertDescription className="text-green-800 dark:text-green-200">{success}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Informations du profil */}
-            <div className="lg:col-span-1">
-              <Card className="card-elevated group ">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-3 text-xl text-foreground">
-                    <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors duration-200">
-                      <Shield className="h-6 w-6 text-primary" />
-                    </div>
-                    Informations du compte
-                  </CardTitle>
-                </CardHeader>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Informations du profil */}
+          <div className="lg:col-span-1">
+            <ContentSection
+              title="Informations du compte"
+              subtitle="Vos informations personnelles et statistiques"
+            >
+              <Card>
                 <CardContent className="space-y-6">
                   {displayProfile && (
                     <>
@@ -498,32 +497,24 @@ export default function ProfilePage() {
                   )}
                 </CardContent>
               </Card>
-            </div>
+            </ContentSection>
+          </div>
 
-            {/* Formulaire de modification */}
-            <div className="lg:col-span-2">
-              <Card className="card-elevated ">
-                <CardHeader className="pb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-3 text-xl text-foreground">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <User className="h-6 w-6 text-primary" />
-                        </div>
-                        Modifier le profil
-                      </CardTitle>
-                      <CardDescription className="mt-2 text-base text-muted-foreground">
-                        Mettez à jour vos informations personnelles et votre mot de passe
-                      </CardDescription>
-                    </div>
-                    {isEditing && (
-                      <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 px-3 py-1 rounded-full ">
-                        <Edit3 className="h-4 w-4" />
-                        Mode édition
-                      </div>
-                    )}
+          {/* Formulaire de modification */}
+          <div className="lg:col-span-2">
+            <ContentSection
+              title="Modifier le profil"
+              subtitle="Mettez à jour vos informations personnelles et votre mot de passe"
+              actions={
+                isEditing && (
+                  <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 px-3 py-1 rounded-full">
+                    <Edit3 className="h-4 w-4" />
+                    Mode édition
                   </div>
-                </CardHeader>
+                )
+              }
+            >
+              <Card>
                 <CardContent>
                   {/* Messages d'erreur et de succès */}
                   {error && (
@@ -556,10 +547,10 @@ export default function ProfilePage() {
                   )}
                 </CardContent>
               </Card>
-            </div>
+            </ContentSection>
           </div>
         </div>
       )}
-    </MainLayout>
+    </CompactPageLayout>
   )
 }

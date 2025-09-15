@@ -29,17 +29,17 @@ export function FormSummary({
   className
 }: FormSummaryProps) {
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("space-y-4", className)}>
       <div className="text-center">
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
         <h3 className="text-lg font-semibold mb-2">{title}</h3>
         <p className="text-muted-foreground">{description}</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {sections.map((section, sectionIndex) => (
           <Card key={sectionIndex}>
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <h4 className="font-medium mb-2">{section.title}</h4>
               <div className="space-y-1 text-sm">
                 {section.items.map((item, itemIndex) => (

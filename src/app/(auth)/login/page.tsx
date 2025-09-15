@@ -117,16 +117,17 @@ export default function LoginPage() {
         <div className="relative z-10 w-full max-w-md mx-auto">
           {/* Logo et titre */}
           <div className="text-center mb-8 sm:mb-12">
-            <div className="mb-6 sm:mb-8 group">
+            <div className="mb-6 sm:mb-8 group relative">
+              {/* Effet glassmorphism derrière le logo */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="glassmorphism-subtle rounded-full w-32 h-32 sm:w-40 sm:h-40 group-hover:glassmorphism transition-all duration-500"></div>
+              </div>
               <Image
                 src="/logo-tresor-public.svg"
                 alt="Logo Trésor Public Gabon"
                 width={120}
                 height={120}
-                className="mx-auto transition-all duration-500 group-hover:scale-110 group-hover:drop-shadow-2xl group-hover:blur-none drop-shadow-lg filter brightness-110 blur-sm sm:w-[150px] sm:h-[150px]"
-                style={{
-                  filter: 'drop-shadow(0 0 20px rgba(30, 64, 175, 0.3)) drop-shadow(0 0 40px rgba(30, 64, 175, 0.1))'
-                }}
+                className="relative z-10 mx-auto transition-all duration-500 group-hover:scale-110 drop-shadow-lg sm:w-[150px] sm:h-[150px]"
               />
             </div>
             <h1 className="text-4xl sm:text-5xl font-bold text-primary mb-3 sm:mb-4">ACGE</h1>
@@ -141,7 +142,7 @@ export default function LoginPage() {
             </div>
 
             <div className="p-6 sm:p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
                   <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
                     <div className="flex items-center gap-2 text-destructive">
@@ -211,9 +212,11 @@ export default function LoginPage() {
                       onBlur={() => setCapsLockOn(false)}
                       disabled={isLoading}
                     />
-                    <button
+                    <Button
                       type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors duration-200"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors duration-200 h-auto p-0"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -221,7 +224,7 @@ export default function LoginPage() {
                       ) : (
                         <Eye className="h-5 w-5" />
                       )}
-                    </button>
+                    </Button>
                   </div>
                   
                   {capsLockOn && (

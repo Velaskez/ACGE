@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -45,19 +45,17 @@ import {
 import { useFolders } from '@/hooks/use-folders'
 import { FoldersToolbar } from '@/components/folders/folders-toolbar'
 import { FoldersFilters, FolderFilters } from '@/components/folders/folders-filters'
-import { FolderGridItem } from '@/components/folders/folder-grid-item'
 import { FolderCreationForm } from '@/components/folders/folder-creation-form'
 import { ModalWrapper } from '@/components/ui/modal-wrapper'
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
 import { DocumentsFilters, DocumentFilters } from '@/components/documents/documents-filters'
-import { DocumentGridItem } from '@/components/documents/document-grid-item'
 import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
 import { UploadModal } from '@/components/upload/upload-modal'
 import { DeleteConfirmationModal } from '@/components/ui/delete-confirmation-modal'
 import { SuccessModal } from '@/components/ui/success-modal'
-import { FolderOpen, Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, ArrowLeft, Download, Share2, Upload, Send, Clock } from 'lucide-react'
+import { FolderOpen, Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, ArrowLeft, Download, Share2, Upload, Send, Clock, RefreshCw } from 'lucide-react'
 import { SearchSuggestion } from '@/components/ui/search-suggestions'
 import { DocumentItem } from '@/types/document'
 import { Folder } from '@/types/folder'
@@ -84,7 +82,6 @@ export default function FoldersPage() {
   const [name, setName] = React.useState('')
   const [description, setDescription] = React.useState('')
   const [creating, setCreating] = React.useState(false)
-  const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('grid')
   const [sortField, setSortField] = React.useState<'name' | 'createdAt' | 'updatedAt' | 'documentCount'>('updatedAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
   const [editingFolder, setEditingFolder] = React.useState<any>(null)
@@ -148,7 +145,6 @@ export default function FoldersPage() {
   
   // États pour les documents (comme dans documents/page.tsx)
   const [documentSearchQuery, setDocumentSearchQuery] = React.useState('')
-  const [documentViewMode, setDocumentViewMode] = React.useState<'list' | 'grid'>('grid')
   const [documentSortField, setDocumentSortField] = React.useState<'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'>('updatedAt')
   const [documentSortOrder, setDocumentSortOrder] = React.useState<'asc' | 'desc'>('desc')
   
@@ -402,7 +398,7 @@ export default function FoldersPage() {
         const folderStatus = f.statut
         switch (statusFilter) {
           case 'en_attente':
-            return folderStatus === 'EN_ATTENTE' || !folderStatus
+            return folderStatus === 'BROUILLON' || folderStatus === 'EN_ATTENTE' || !folderStatus
           case 'valide':
             return folderStatus === 'VALIDÉ_CB' || folderStatus === 'VALIDÉ_ORDONNATEUR' || folderStatus === 'PAYÉ' || folderStatus === 'TERMINÉ'
           case 'rejete':
@@ -746,85 +742,58 @@ export default function FoldersPage() {
   // Rendu conditionnel : soit la liste des dossiers, soit le contenu d'un dossier
   if (folderId && currentFolder) {
     return (
-      <MainLayout>
-        <div className="space-y-6">
-          {/* Header avec breadcrumb */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" onClick={handleBackToFolders}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour aux dossiers
+      <CompactPageLayout>
+        {/* Header compact avec breadcrumb */}
+        <PageHeader
+          title={currentFolder.name}
+          subtitle={currentFolder.description || 'Documents du dossier'}
+          actions={
+            <>
+              <Button variant="outline" onClick={handleBackToFolders} className="w-full sm:w-auto h-8">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
               </Button>
-              <div className="border-l pl-4 flex-1 min-w-0">
-                <div className="flex items-center space-x-2 text-sm text-primary mb-1">
-                  <span>Dossiers</span>
-                  <span>/</span>
-                  <span className="font-medium text-foreground">{currentFolder.name}</span>
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-primary">{currentFolder.name}</h1>
-                <p className="text-primary text-sm sm:text-base">
-                  {currentFolder.description || 'Documents du dossier'}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button variant="outline" onClick={() => loadFolderDocuments(folderId)} className="w-full sm:w-auto">
-                Rafraîchir
+              <Button variant="outline" onClick={() => loadFolderDocuments(folderId)} className="w-full sm:w-auto h-8">
+                <RefreshCw className="h-4 w-4" />
               </Button>
-              <Button onClick={handleOpenUploadModal} className="w-full sm:w-auto">
-                <Upload className="mr-2 h-4 w-4" />
+              <Button onClick={handleOpenUploadModal} className="w-full sm:w-auto h-8">
+                <Upload className="h-4 w-4 mr-1" />
                 Ajouter des documents
               </Button>
-            </div>
-          </div>
+            </>
+          }
+        />
 
-          {/* Stats du dossier */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Documents</CardTitle>
-                <FileText className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{documents.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Taille totale</CardTitle>
-                <FolderOpen className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {documents.reduce((total, doc) => total + (doc.fileSize || 0), 0) > 0 
-                    ? `${(documents.reduce((total, doc) => total + (doc.fileSize || 0), 0) / 1024 / 1024).toFixed(1)} MB`
-                    : '0 MB'
-                  }
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Dernière modification</CardTitle>
-                <Clock className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm">
-                  {currentFolder.updatedAt 
-                    ? new Date(currentFolder.updatedAt).toLocaleDateString('fr-FR')
-                    : 'Date inconnue'
-                  }
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Stats compactes du dossier */}
+        <CompactStats
+          stats={[
+            {
+              label: "Documents",
+              value: documents.length,
+              icon: <FileText className="h-4 w-4 text-primary" />
+            },
+            {
+              label: "Taille totale",
+              value: documents.reduce((total, doc) => total + (doc.fileSize || 0), 0) > 0 
+                ? `${(documents.reduce((total, doc) => total + (doc.fileSize || 0), 0) / 1024 / 1024).toFixed(1)} MB`
+                : '0 MB',
+              icon: <FolderOpen className="h-4 w-4 text-primary" />
+            },
+            {
+              label: "Dernière modification",
+              value: currentFolder.updatedAt 
+                ? new Date(currentFolder.updatedAt).toLocaleDateString('fr-FR')
+                : 'Date inconnue',
+              icon: <Clock className="h-4 w-4 text-primary" />
+            }
+          ]}
+          columns={3}
+        />
 
           {/* Barre d'outils pour les documents */}
           <DocumentsToolbar
             searchQuery={documentSearchQuery}
             onSearchQueryChange={setDocumentSearchQuery}
-            viewMode={documentViewMode}
-            onViewModeChange={setDocumentViewMode}
             sortField={documentSortField}
             sortOrder={documentSortOrder}
             onSortFieldChange={setDocumentSortField}
@@ -833,143 +802,129 @@ export default function FoldersPage() {
           />
 
           {/* Contenu des documents */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents du dossier</CardTitle>
-              <CardDescription>
-                {documents.length} document{documents.length > 1 ? 's' : ''} dans ce dossier
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {documentsLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-full" />
+          <ContentSection
+            title="Documents du dossier"
+            subtitle={`${documents.length} document${documents.length > 1 ? 's' : ''} dans ce dossier`}
+          >
+            {documentsLoading ? (
+              <div className="space-y-2 p-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : documentsError ? (
+              <div className="text-center py-8 px-4 text-destructive">
+                {documentsError}
+              </div>
+            ) : filteredDocuments.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Catégorie</TableHead>
+                    <TableHead>Taille</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Date de création</TableHead>
+                    <TableHead className="w-20">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDocuments.map((document) => (
+                    <TableRow key={document.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="h-4 w-4 text-blue-600" />
+                          <span className="truncate">
+                            {document.fileName || document.title}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {document.category || 'Non classé'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {document.fileSize ? 
+                          `${(document.fileSize / 1024 / 1024).toFixed(1)} MB` : 
+                          'N/A'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        {document.fileType || 'Type inconnu'}
+                      </TableCell>
+                      <TableCell>
+                        {document.createdAt ? new Date(document.createdAt).toLocaleDateString('fr-FR') : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleViewDocument(document)
+                              }}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              Voir
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDownloadDocument(document)
+                              }}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Télécharger
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleShareDocument(document)
+                              }}
+                            >
+                              <Share2 className="mr-2 h-4 w-4" />
+                              Partager
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEditDocument(document)
+                              }}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteDocument(document)
+                              }}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </div>
-              ) : documentsError ? (
-                <div className="text-center py-8 text-destructive">
-                  {documentsError}
-                </div>
-              ) : filteredDocuments.length > 0 ? (
-                documentViewMode === 'list' ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nom</TableHead>
-                        <TableHead>Catégorie</TableHead>
-                        <TableHead>Taille</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Date de création</TableHead>
-                        <TableHead className="w-20">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredDocuments.map((document) => (
-                        <TableRow key={document.id}>
-                          <TableCell className="font-medium">{document.fileName || document.title}</TableCell>
-                          <TableCell>
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {document.category || 'Non classé'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {document.fileSize ? 
-                              `${(document.fileSize / 1024 / 1024).toFixed(1)} MB` : 
-                              'Taille inconnue'
-                            }
-                          </TableCell>
-                          <TableCell>{document.fileType || 'Type inconnu'}</TableCell>
-                          <TableCell>
-                            {document.createdAt ? new Date(document.createdAt).toLocaleDateString('fr-FR') : 'Date inconnue'}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenuItem 
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleViewDocument(document)
-                                  }}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  Voir
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDownloadDocument(document)
-                                  }}
-                                >
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Télécharger
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleShareDocument(document)
-                                  }}
-                                >
-                                  <Share2 className="mr-2 h-4 w-4" />
-                                  Partager
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleEditDocument(document)
-                                  }}
-                                >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Modifier
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDeleteDocument(document)
-                                  }}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Supprimer
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 p-1">
-                    {filteredDocuments.map((document) => (
-                      <DocumentGridItem
-                        key={document.id}
-                        document={document}
-                        onView={handleViewDocument}
-                        onEdit={handleEditDocument}
-                        onDownload={handleDownloadDocument}
-                        onShare={handleShareDocument}
-                        onDelete={handleDeleteDocument}
-                      />
-                    ))}
-                  </div>
-                )
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-10 w-10 text-primary" />
-                  <h3 className="mt-2 text-sm font-medium">Aucun document</h3>
-                  <p className="mt-1 text-sm text-primary">
-                    Ce dossier ne contient aucun document.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </TableBody>
+              </Table>
+            ) : (
+              <EmptyState
+                icon={<FileText className="h-10 w-10" />}
+                title="Aucun document"
+                description="Ce dossier ne contient aucun document."
+              />
+            )}
+          </ContentSection>
 
           {/* Modales pour les documents */}
           {selectedDocument && (
@@ -1009,27 +964,27 @@ export default function FoldersPage() {
             folderId={folderId}
             onUploadSuccess={handleUploadSuccess}
           />
-        </div>
-      </MainLayout>
+      </CompactPageLayout>
     )
   }
 
   // Vue par défaut : liste des dossiers
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Dossiers</h1>
-            <p className="text-primary text-sm sm:text-base">Gérez vos dossiers et accédez rapidement à vos documents</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={refresh} className="w-full sm:w-auto">Rafraîchir</Button>
+    <CompactPageLayout>
+      {/* Header compact réutilisable */}
+      <PageHeader
+        title="Dossiers"
+        subtitle={stats ? `${stats.totalFolders} dossiers, ${stats.totalDocuments} documents` : 'Chargement...'}
+        actions={
+          <>
+            <Button variant="outline" onClick={refresh} className="w-full sm:w-auto h-8">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
             <ModalWrapper isOpen={open} onOpenChange={handleCloseDialog}>
               <Dialog open={open} onOpenChange={handleCloseDialog}>
                 <DialogTrigger asChild>
-                  <Button className="w-full sm:w-auto">
-                    <Plus className="mr-2 h-4 w-4" />
+                  <Button className="w-full sm:w-auto h-8">
+                    <Plus className="h-4 w-4 mr-1" />
                     Nouveau dossier
                   </Button>
                 </DialogTrigger>
@@ -1053,8 +1008,9 @@ export default function FoldersPage() {
               </DialogContent>
             </Dialog>
             </ModalWrapper>
-          </div>
-        </div>
+          </>
+        }
+      />
 
         {/* Navigation horizontale par statut */}
         <FolderStatusNavigation
@@ -1068,8 +1024,6 @@ export default function FoldersPage() {
           searchQuery={query}
           onSearchQueryChange={setQuery}
           onSearchSelect={handleSearchSelect}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
           sortField={sortField}
           sortOrder={sortOrder}
           onSortFieldChange={setSortField}
@@ -1077,136 +1031,112 @@ export default function FoldersPage() {
           onOpenFilters={() => setIsFiltersOpen(true)}
         />
 
-        {/* Stats rapides */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total dossiers</CardTitle>
-              <FolderOpen className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{stats?.totalFolders ?? 0}</div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total documents</CardTitle>
-              <FileText className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{stats?.totalDocuments ?? 0}</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        {/* Stats compactes */}
+        <CompactStats
+          stats={[
+            {
+              label: "Total dossiers",
+              value: stats?.totalFolders ?? 0,
+              icon: <FolderOpen className="h-4 w-4 text-primary" />
+            },
+            {
+              label: "Total documents",
+              value: stats?.totalDocuments ?? 0,
+              icon: <FileText className="h-4 w-4 text-primary" />
+            }
+          ]}
+          columns={2}
+        />
 
         {/* Liste des dossiers */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Mes dossiers</CardTitle>
-            <CardDescription>
-              Derniers dossiers mis à jour
-              <br />
-              <span className="text-xs text-muted-foreground">
-                💡 Cliquez sur une ligne pour ouvrir le dossier
-              </span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <ContentSection>
             {isLoading ? (
-              <div className="space-y-3">
+              <div className="space-y-2 p-4">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
+                  <Skeleton key={i} className="h-8 w-full" />
                 ))}
               </div>
             ) : filteredFolders && filteredFolders.length > 0 ? (
-              viewMode === 'list' ? (
+              (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>N° Dossier</TableHead>
-                      <TableHead>Nom</TableHead>
-                      <TableHead className="hidden sm:table-cell">Description</TableHead>
-                      <TableHead className="hidden md:table-cell">État</TableHead>
-                      <TableHead className="hidden md:table-cell">Documents</TableHead>
-                      <TableHead className="hidden lg:table-cell">Taille</TableHead>
-                      <TableHead className="hidden xl:table-cell">Créé le</TableHead>
-                      <TableHead className="hidden xl:table-cell">Modifié le</TableHead>
-                      <TableHead className="w-10 sm:w-12">Actions</TableHead>
+                      <TableHead className="h-8">N° Dossier</TableHead>
+                      <TableHead className="h-8">Nom</TableHead>
+                      <TableHead className="hidden sm:table-cell h-8">Description</TableHead>
+                      <TableHead className="hidden md:table-cell h-8">État</TableHead>
+                      <TableHead className="hidden md:table-cell h-8">Documents</TableHead>
+                      <TableHead className="hidden lg:table-cell h-8">Taille</TableHead>
+                      <TableHead className="hidden xl:table-cell h-8">Créé le</TableHead>
+                      <TableHead className="hidden xl:table-cell h-8">Modifié le</TableHead>
+                      <TableHead className="w-10 sm:w-12 h-8">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredFolders.map((folder) => (
                       <TableRow 
                         key={folder.id} 
-                        className="cursor-pointer hover:bg-muted/50"
+                        className="cursor-pointer hover:bg-muted/50 h-10"
                         onClick={() => handleOpenFolder(folder)}
                       >
-                        <TableCell className="font-medium">
-                          <span className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                        <TableCell className="font-medium py-2">
+                          <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
                             {(folder as FolderWithNumero).numeroDossier || 'Non défini'}
                           </span>
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium py-2">
                           <div className="flex items-center space-x-2">
-                            <FolderOpen className="h-4 w-4 text-primary" />
-                            <span>{folder.name}</span>
+                            <FolderOpen className="h-3 w-3 text-primary" />
+                            <span className="text-sm">{folder.name}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell max-w-xs truncate text-muted-foreground">
-                          {folder.description || 'Aucune description'}
+                        <TableCell className="hidden sm:table-cell max-w-xs truncate text-muted-foreground py-2">
+                          <span className="text-xs">{folder.description || 'Aucune description'}</span>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">
+                        <TableCell className="hidden md:table-cell py-2">
                           {(() => {
                             const status = (folder as FolderWithNumero).statut
                             const statusInfo = getFolderStatusInfo(status)
                             const IconComponent = statusInfo.icon
                             return (
-                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${statusInfo.color}`}>
-                                <IconComponent className="h-3 w-3" />
+                              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border ${statusInfo.color}`}>
+                                <IconComponent className="h-2.5 w-2.5" />
                                 {statusInfo.label}
                               </span>
                             )
                           })()}
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">
+                        <TableCell className="hidden md:table-cell py-2">
                           <div className="flex items-center space-x-1">
                             <FileText className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm font-medium">{folder._count?.documents || 0}</span>
+                            <span className="text-xs font-medium">{folder._count?.documents || 0}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <span className="text-sm text-muted-foreground">
+                        <TableCell className="hidden lg:table-cell py-2">
+                          <span className="text-xs text-muted-foreground">
                             {folder._count?.documents ? `${(folder._count.documents * 0.5).toFixed(1)} MB` : '0 MB'}
                           </span>
                         </TableCell>
-                        <TableCell className="hidden xl:table-cell">
-                          <span className="text-sm text-muted-foreground">
+                        <TableCell className="hidden xl:table-cell py-2">
+                          <span className="text-xs text-muted-foreground">
                             {folder.createdAt ? new Date(folder.createdAt).toLocaleDateString('fr-FR') : 'Date inconnue'}
                           </span>
                         </TableCell>
-                        <TableCell className="hidden xl:table-cell">
-                          <span className="text-sm text-muted-foreground">
+                        <TableCell className="hidden xl:table-cell py-2">
+                          <span className="text-xs text-muted-foreground">
                             {folder.updatedAt ? new Date(folder.updatedAt).toLocaleDateString('fr-FR') : 'Date inconnue'}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-2">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button 
                                 variant="ghost" 
                                 size="sm"
                                 onClick={(e) => e.stopPropagation()}
+                                className="h-6 w-6 p-0"
                               >
-                                <MoreHorizontal className="w-4 h-4" />
+                                <MoreHorizontal className="w-3 h-3" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -1216,7 +1146,7 @@ export default function FoldersPage() {
                                   handleOpenFolder(folder)
                                 }}
                               >
-                                <Eye className="mr-2 h-4 w-4" />
+                                <Eye className="mr-2 h-3 w-3" />
                                 Voir les documents
                               </DropdownMenuItem>
                               <DropdownMenuItem 
@@ -1225,7 +1155,7 @@ export default function FoldersPage() {
                                   handleEditFolder(folder)
                                 }}
                               >
-                                <Edit className="mr-2 h-4 w-4" />
+                                <Edit className="mr-2 h-3 w-3" />
                                 Modifier
                               </DropdownMenuItem>
                               {/* Bouton de soumission - seulement si le dossier n'est pas déjà soumis */}
@@ -1237,7 +1167,7 @@ export default function FoldersPage() {
                                   }}
                                   className="text-blue-600"
                                 >
-                                  <Send className="mr-2 h-4 w-4" />
+                                  <Send className="mr-2 h-3 w-3" />
                                   Soumettre au CB
                                 </DropdownMenuItem>
                               )}
@@ -1249,7 +1179,7 @@ export default function FoldersPage() {
                                 }}
                                 className="text-red-600"
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <Trash2 className="mr-2 h-3 w-3" />
                                 Supprimer
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1259,38 +1189,24 @@ export default function FoldersPage() {
                     ))}
                   </TableBody>
                 </Table>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
-                  {filteredFolders.map((folder) => (
-                    <FolderGridItem
-                      key={folder.id}
-                      folder={folder}
-                      onView={handleOpenFolder}
-                      onEdit={handleEditFolder}
-                      onDelete={(folderId) => setDeleteConfirm(folderId)}
-                      onSubmit={(folderId) => setSubmitConfirm(folderId)}
-                    />
-                  ))}
-                </div>
               )
             ) : (
-              <div className="text-center py-8">
-                <FolderOpen className="mx-auto h-10 w-10 text-primary" />
+              <div className="text-center py-8 px-4">
+                <FolderOpen className="mx-auto h-8 w-8 text-primary" />
                 <h3 className="mt-2 text-sm font-medium">Aucun dossier</h3>
-                <p className="mt-1 text-sm text-primary">Créez votre premier dossier pour organiser vos documents.</p>
-                                 <div className="mt-4">
-                   <Button onClick={() => setOpen(true)}>
-                     <Plus className="mr-2 h-4 w-4" />
-                     Nouveau dossier
-                   </Button>
-                 </div>
+                <p className="mt-1 text-xs text-muted-foreground">Créez votre premier dossier pour organiser vos documents.</p>
+                <div className="mt-4">
+                  <Button onClick={() => setOpen(true)} size="sm">
+                    <Plus className="mr-1 h-3 w-3" />
+                    Nouveau dossier
+                  </Button>
+                </div>
               </div>
             )}
             {error && (
-              <p className="text-sm text-destructive mt-4">{error}</p>
+              <p className="text-xs text-destructive mt-4 px-4">{error}</p>
             )}
-          </CardContent>
-        </Card>
+          </ContentSection>
 
         {/* Dialogue de confirmation de suppression */}
         <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
@@ -1385,9 +1301,8 @@ export default function FoldersPage() {
              ]
            }}
          />
-      </div>
-    </MainLayout>
-  )
+      </CompactPageLayout>
+    )
 }
 
 

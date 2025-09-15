@@ -267,7 +267,7 @@ export function DiagnosticPanel() {
                           Créé: {new Date(dossier.createdAt).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
-                      <Badge className={getStatutBadgeColor(dossier.statut)}>
+                      <Badge variant="outline" className={getStatutBadgeColor(dossier.statut)}>
                         {dossier.statut}
                       </Badge>
                     </div>

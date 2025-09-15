@@ -3,7 +3,6 @@
 import { ContentToolbar } from '@/components/shared/content-toolbar'
 import { SearchSuggestion } from '@/components/ui/search-suggestions'
 
-type ViewMode = 'list' | 'grid'
 type SortField = 'name' | 'createdAt' | 'updatedAt' | 'documentCount'
 type SortOrder = 'asc' | 'desc'
 
@@ -11,8 +10,6 @@ interface FoldersToolbarProps {
   searchQuery: string
   onSearchQueryChange: (value: string) => void
   onSearchSelect?: (suggestion: SearchSuggestion) => void
-  viewMode: ViewMode
-  onViewModeChange: (mode: ViewMode) => void
   sortField: SortField
   sortOrder: SortOrder
   onSortFieldChange: (field: SortField) => void
@@ -33,8 +30,6 @@ export function FoldersToolbar({
   searchQuery,
   onSearchQueryChange,
   onSearchSelect,
-  viewMode,
-  onViewModeChange,
   sortField,
   sortOrder,
   onSortFieldChange,
@@ -49,8 +44,6 @@ export function FoldersToolbar({
       onSearchQueryChange={onSearchQueryChange}
       onSearchSelect={onSearchSelect}
       searchPlaceholder="Rechercher des dossiers..."
-      viewMode={viewMode}
-      onViewModeChange={onViewModeChange}
       sortField={sortField}
       sortOrder={sortOrder}
       sortOptions={folderSortOptions}

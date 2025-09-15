@@ -66,7 +66,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <main className={`min-h-screen transition-all duration-300 md:ml-64 lg:ml-72 xl:ml-80 ${
         hideHeader ? 'pt-0' : 'pt-16'
       }`}>
-        <div className="p-3 w-full sm:p-6">
+        <div className="p-3 w-full sm:p-4">
           <div className="max-w-full overflow-x-hidden">
             {children}
           </div>

@@ -31,6 +31,27 @@ interface CreateNotificationData {
   metadata?: Record<string, any>
 }
 
+// Fonction utilitaire pour transformer les données snake_case en camelCase
+function transformNotificationData(rawNotification: any): Notification {
+  return {
+    id: rawNotification.id,
+    userId: rawNotification.user_id,
+    title: rawNotification.title,
+    message: rawNotification.message,
+    type: rawNotification.type,
+    priority: rawNotification.priority,
+    isRead: rawNotification.is_read,
+    readAt: rawNotification.read_at ? new Date(rawNotification.read_at) : null,
+    expiresAt: rawNotification.expires_at ? new Date(rawNotification.expires_at) : null,
+    actionUrl: rawNotification.action_url,
+    actionLabel: rawNotification.action_label,
+    metadata: rawNotification.metadata,
+    createdAt: new Date(rawNotification.created_at),
+    updatedAt: new Date(rawNotification.updated_at),
+    user: {} as any // Placeholder, pas utilisé dans ce contexte
+  }
+}
+
 export function useNotifications(): UseNotificationsReturn {
   const { user } = useSupabaseAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -92,14 +113,18 @@ export function useNotifications(): UseNotificationsReturn {
       // Utiliser les statistiques de l'API
       setStats(statsData)
 
-      setNotifications(notificationsData || [])
+      // Transformer les données snake_case en camelCase
+      const transformedNotifications = notificationsData ? 
+        notificationsData.map(transformNotificationData) : []
+      
+      setNotifications(transformedNotifications)
       console.log(`✅ useNotifications: ${notificationsData?.length || 0} notifications chargées`)
       
       // Log des notifications pour debug
       if (notificationsData && notificationsData.length > 0) {
         console.log('📋 useNotifications: Notifications trouvées:')
         notificationsData.forEach((notif, index) => {
-          console.log(`   ${index + 1}. ${notif.title} (${notif.type}, ${notif.priority}) - ${notif.is_read ? 'Lue' : 'Non lue'}`)
+          console.log(`   ${index + 1}. ${notif.title} (${notif.type}, ${notif.priority}) - ${notif.isRead ? 'Lue' : 'Non lue'}`)
         })
       }
       
@@ -143,7 +168,7 @@ export function useNotifications(): UseNotificationsReturn {
       setNotifications(prev => 
         prev.map(notification => 
           notification.id === notificationId 
-            ? { ...notification, is_read: true, read_at: new Date().toISOString() }
+            ? { ...notification, isRead: true, readAt: new Date() }
             : notification
         )
       )
@@ -189,8 +214,8 @@ export function useNotifications(): UseNotificationsReturn {
       setNotifications(prev => 
         prev.map(notification => ({
           ...notification,
-          is_read: true,
-          read_at: new Date().toISOString()
+          isRead: true,
+          readAt: new Date()
         }))
       )
 
@@ -305,9 +330,9 @@ export function useNotifications(): UseNotificationsReturn {
       
       // Recalculer les stats
       const updatedNotifications = notifications.filter(n => n.id !== notificationId)
-      const unreadCount = updatedNotifications.filter(n => !n.is_read).length
-      const highPriorityCount = updatedNotifications.filter(n => !n.is_read && n.priority === 'HIGH').length
-      const urgentCount = updatedNotifications.filter(n => !n.is_read && n.priority === 'URGENT').length
+      const unreadCount = updatedNotifications.filter(n => !n.isRead).length
+      const highPriorityCount = updatedNotifications.filter(n => !n.isRead && n.priority === 'HIGH').length
+      const urgentCount = updatedNotifications.filter(n => !n.isRead && n.priority === 'URGENT').length
 
       setStats({
         totalNotifications: updatedNotifications.length,
@@ -351,9 +376,9 @@ export function useNotifications(): UseNotificationsReturn {
       
       // Recalculer les stats
       const updatedNotifications = notifications.filter(n => !notificationIds.includes(n.id))
-      const unreadCount = updatedNotifications.filter(n => !n.is_read).length
-      const highPriorityCount = updatedNotifications.filter(n => !n.is_read && n.priority === 'HIGH').length
-      const urgentCount = updatedNotifications.filter(n => !n.is_read && n.priority === 'URGENT').length
+      const unreadCount = updatedNotifications.filter(n => !n.isRead).length
+      const highPriorityCount = updatedNotifications.filter(n => !n.isRead && n.priority === 'HIGH').length
+      const urgentCount = updatedNotifications.filter(n => !n.isRead && n.priority === 'URGENT').length
 
       setStats({
         totalNotifications: updatedNotifications.length,

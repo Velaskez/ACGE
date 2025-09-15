@@ -3,7 +3,7 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { ControleurBudgetaireGuard } from '@/components/auth/role-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -102,6 +102,18 @@ function CBRejectedContent() {
   // États pour les actions
   const [selectedDossier, setSelectedDossier] = React.useState<DossierComptable | null>(null)
   const [detailsOpen, setDetailsOpen] = React.useState(false)
+  
+  // États pour la suppression
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false)
+  const [dossierToDelete, setDossierToDelete] = React.useState<DossierComptable | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const [deleteError, setDeleteError] = React.useState('')
+  
+  // États pour la suppression en masse
+  const [selectedDossiers, setSelectedDossiers] = React.useState<string[]>([])
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = React.useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = React.useState(false)
+  const [bulkDeleteError, setBulkDeleteError] = React.useState('')
   
   // États pour l'affichage du contenu du dossier
   const [currentFolder, setCurrentFolder] = React.useState<any>(null)
@@ -275,6 +287,142 @@ function CBRejectedContent() {
     }
   }
 
+  // Fonctions pour la suppression des dossiers rejetés
+  const handleDeleteDossier = (dossier: DossierComptable) => {
+    setDossierToDelete(dossier)
+    setDeleteModalOpen(true)
+    setDeleteError('')
+  }
+
+  const confirmDeleteDossier = async () => {
+    if (!dossierToDelete) return
+
+    try {
+      setIsDeleting(true)
+      setDeleteError('')
+
+      console.log('🗑️ Suppression du dossier rejeté:', dossierToDelete.numeroDossier)
+
+      const response = await fetch(`/api/dossiers/cb-rejected/${dossierToDelete.id}/delete`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Dossier supprimé avec succès:', data)
+        
+        // Recharger la liste des dossiers
+        await loadDossiers()
+        
+        // Fermer la modal
+        setDeleteModalOpen(false)
+        setDossierToDelete(null)
+      } else {
+        const errorData = await response.json()
+        setDeleteError(errorData.error || 'Erreur lors de la suppression')
+        console.error('❌ Erreur suppression:', errorData)
+      }
+    } catch (error) {
+      console.error('❌ Erreur suppression dossier:', error)
+      setDeleteError('Erreur de connexion lors de la suppression')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const cancelDeleteDossier = () => {
+    setDeleteModalOpen(false)
+    setDossierToDelete(null)
+    setDeleteError('')
+  }
+
+  // Fonctions pour la suppression en masse
+  const handleSelectDossier = (dossierId: string) => {
+    setSelectedDossiers(prev => 
+      prev.includes(dossierId) 
+        ? prev.filter(id => id !== dossierId)
+        : [...prev, dossierId]
+    )
+  }
+
+  const handleSelectAllDossiers = () => {
+    if (selectedDossiers.length === filteredDossiers.length) {
+      setSelectedDossiers([])
+    } else {
+      setSelectedDossiers(filteredDossiers.map(d => d.id))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedDossiers.length === 0) return
+    setBulkDeleteModalOpen(true)
+    setBulkDeleteError('')
+  }
+
+  const confirmBulkDelete = async () => {
+    if (selectedDossiers.length === 0) return
+
+    try {
+      setIsBulkDeleting(true)
+      setBulkDeleteError('')
+
+      console.log('🗑️ Suppression en masse de', selectedDossiers.length, 'dossiers rejetés')
+
+      // Supprimer les dossiers un par un
+      const deletePromises = selectedDossiers.map(async (dossierId) => {
+        const response = await fetch(`/api/dossiers/cb-rejected/${dossierId}/delete`, {
+          method: 'DELETE',
+          credentials: 'include'
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Erreur lors de la suppression')
+        }
+        
+        return response.json()
+      })
+
+      const results = await Promise.allSettled(deletePromises)
+      
+      // Compter les succès et échecs
+      const successes = results.filter(r => r.status === 'fulfilled').length
+      const failures = results.filter(r => r.status === 'rejected').length
+
+      console.log(`✅ Suppression en masse terminée: ${successes} succès, ${failures} échecs`)
+
+      if (failures > 0) {
+        setBulkDeleteError(`${successes} dossiers supprimés avec succès, ${failures} échecs`)
+      }
+
+      // Recharger la liste des dossiers
+      await loadDossiers()
+      
+      // Réinitialiser la sélection
+      setSelectedDossiers([])
+      
+      // Fermer la modal après un délai si il y a des erreurs
+      if (failures === 0) {
+        setBulkDeleteModalOpen(false)
+      } else {
+        setTimeout(() => {
+          setBulkDeleteModalOpen(false)
+        }, 3000)
+      }
+    } catch (error) {
+      console.error('❌ Erreur suppression en masse:', error)
+      setBulkDeleteError('Erreur de connexion lors de la suppression en masse')
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
+  const cancelBulkDelete = () => {
+    setBulkDeleteModalOpen(false)
+    setBulkDeleteError('')
+  }
+
   // Filtrage et tri des dossiers
   const filteredDossiers = React.useMemo(() => {
     let items = dossiers
@@ -329,7 +477,7 @@ function CBRejectedContent() {
     }
     
     const config = configs[statut as keyof typeof configs] || configs['EN_ATTENTE']
-    return <Badge className={`${config.className} border`}>{config.label}</Badge>
+    return <Badge variant="outline" className={config.className}>{config.label}</Badge>
   }
 
   if (user?.role !== 'CONTROLEUR_BUDGETAIRE') {
@@ -547,121 +695,110 @@ function CBRejectedContent() {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => router.push('/cb-dashboard')}
-                className="p-0 h-auto"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Retour
-              </Button>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Dossiers Rejetés</h1>
-            <p className="text-primary text-sm sm:text-base">Consultez les dossiers rejetés par le contrôleur budgétaire</p>
-          </div>
+    <CompactPageLayout>
+      <PageHeader
+        title="Dossiers Rejetés"
+        subtitle="Consultez les dossiers rejetés par le contrôleur budgétaire"
+        actions={
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={loadDossiers} className="w-full sm:w-auto">
+            {selectedDossiers.length > 0 && (
+              <Button 
+                variant="destructive" 
+                onClick={handleBulkDelete}
+                className="w-full sm:w-auto bg-red-600 hover:bg-red-700 h-8"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Supprimer ({selectedDossiers.length})
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              onClick={loadDossiers} 
+              className="w-full sm:w-auto h-8"
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Rafraîchir
             </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => router.push('/cb-dashboard')}
+              className="w-full sm:w-auto h-8"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour
+            </Button>
           </div>
+        }
+      />
+
+      <ContentSection
+        title="Recherche et filtres"
+        actions={
+          <div className="flex gap-2">
+            <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
+              <SelectTrigger className="w-[180px] h-8">
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Date de création</SelectItem>
+                <SelectItem value="numeroDossier">Numéro dossier</SelectItem>
+                <SelectItem value="dateDepot">Date de dépôt</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="h-8"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Rechercher par numéro, objet, bénéficiaire ou nom de dossier..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-10 h-8"
+          />
         </div>
+      </ContentSection>
 
-        {/* Barre de recherche et filtres */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Rechercher par numéro, objet, bénéficiaire ou nom de dossier..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Trier par" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="createdAt">Date de création</SelectItem>
-                    <SelectItem value="numeroDossier">Numéro dossier</SelectItem>
-                    <SelectItem value="dateDepot">Date de dépôt</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                >
-                  {sortOrder === 'asc' ? '↑' : '↓'}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
+      <CompactStats
+        stats={[
+          {
+            label: "Total Rejetés",
+            value: dossiers.length,
+            icon: <XCircle className="h-4 w-4 text-red-600" />,
+            color: "text-red-600"
+          },
+          {
+            label: "Ce mois",
+            value: dossiers.filter(d => {
+              const dossierDate = new Date(d.createdAt)
+              const now = new Date()
+              return dossierDate.getMonth() === now.getMonth() && dossierDate.getFullYear() === now.getFullYear()
+            }).length,
+            icon: <Clock className="h-4 w-4 text-blue-600" />,
+            color: "text-blue-600"
+          },
+          {
+            label: "Avec nom de dossier",
+            value: dossiers.filter(d => d.folderName).length,
+            icon: <FileText className="h-4 w-4 text-green-600" />,
+            color: "text-green-600"
+          }
+        ]}
+        columns={3}
+      />
 
-        {/* Stats rapides */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Rejetés</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{dossiers.length}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ce mois</CardTitle>
-              <Clock className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => {
-                  const dossierDate = new Date(d.createdAt)
-                  const now = new Date()
-                  return dossierDate.getMonth() === now.getMonth() && dossierDate.getFullYear() === now.getFullYear()
-                }).length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avec nom de dossier</CardTitle>
-              <FileText className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.folderName).length}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Liste des dossiers rejetés */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Dossiers rejetés</CardTitle>
-            <CardDescription>
-              {filteredDossiers.length} dossier{filteredDossiers.length > 1 ? 's' : ''} rejeté{filteredDossiers.length > 1 ? 's' : ''} trouvé{filteredDossiers.length > 1 ? 's' : ''}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <ContentSection
+        title="Dossiers rejetés"
+        subtitle={`${filteredDossiers.length} dossier${filteredDossiers.length > 1 ? 's' : ''} rejeté${filteredDossiers.length > 1 ? 's' : ''} trouvé${filteredDossiers.length > 1 ? 's' : ''}`}
+      >
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -672,6 +809,14 @@ function CBRejectedContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedDossiers.length === filteredDossiers.length && filteredDossiers.length > 0}
+                        onChange={handleSelectAllDossiers}
+                        className="rounded border-gray-300"
+                      />
+                    </TableHead>
                     <TableHead>Numéro</TableHead>
                     <TableHead>Nom du dossier</TableHead>
                     <TableHead>Objet</TableHead>
@@ -699,6 +844,17 @@ function CBRejectedContent() {
                         }
                       }}
                     >
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedDossiers.includes(dossier.id)}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            handleSelectDossier(dossier.id)
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{dossier.numeroDossier}</TableCell>
                       <TableCell className="max-w-xs truncate font-medium">
                         {dossier.folderName ? (
@@ -761,6 +917,17 @@ function CBRejectedContent() {
                                 Dossier rejeté - Pas de contenu
                               </DropdownMenuItem>
                             )}
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                handleDeleteDossier(dossier)
+                              }}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Supprimer définitivement
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -769,13 +936,11 @@ function CBRejectedContent() {
                 </TableBody>
               </Table>
             ) : (
-              <div className="text-center py-8">
-                <XCircle className="mx-auto h-10 w-10 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-medium">Aucun dossier rejeté</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Aucun dossier rejeté trouvé.
-                </p>
-              </div>
+              <EmptyState
+                icon={<XCircle className="h-10 w-10 text-muted-foreground" />}
+                title="Aucun dossier rejeté"
+                description="Aucun dossier rejeté trouvé."
+              />
             )}
             {error && (
               <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
@@ -785,12 +950,11 @@ function CBRejectedContent() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+      </ContentSection>
 
         {/* Modal de détails du dossier */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl" showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>Détails du dossier rejeté</DialogTitle>
               <DialogDescription>
@@ -882,8 +1046,144 @@ function CBRejectedContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </MainLayout>
+
+        {/* Modal de confirmation de suppression */}
+        <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+          <DialogContent className="max-w-md" showCloseButton={false}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <Trash2 className="h-5 w-5" />
+                Supprimer le dossier rejeté
+              </DialogTitle>
+              <DialogDescription>
+                Cette action est irréversible. Le dossier sera définitivement supprimé de la base de données.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {dossierToDelete && (
+              <div className="space-y-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h4 className="font-medium text-red-800 mb-2">Dossier à supprimer :</h4>
+                  <div className="space-y-1 text-sm">
+                    <p><strong>Numéro :</strong> {dossierToDelete.numeroDossier}</p>
+                    <p><strong>Objet :</strong> {dossierToDelete.objetOperation}</p>
+                    <p><strong>Bénéficiaire :</strong> {dossierToDelete.beneficiaire}</p>
+                    <p><strong>Poste comptable :</strong> {dossierToDelete.poste_comptable?.numero} - {dossierToDelete.poste_comptable?.intitule}</p>
+                    <p><strong>Secrétaire :</strong> {dossierToDelete.secretaire?.name}</p>
+                  </div>
+                </div>
+                
+                {deleteError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <p className="text-sm text-red-600">{deleteError}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={cancelDeleteDossier}
+                disabled={isDeleting}
+              >
+                Annuler
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmDeleteDossier}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer définitivement
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de confirmation de suppression en masse */}
+        <Dialog open={bulkDeleteModalOpen} onOpenChange={setBulkDeleteModalOpen}>
+          <DialogContent className="max-w-md" showCloseButton={false}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <Trash2 className="h-5 w-5" />
+                Supprimer {selectedDossiers.length} dossier{selectedDossiers.length > 1 ? 's' : ''} rejeté{selectedDossiers.length > 1 ? 's' : ''}
+              </DialogTitle>
+              <DialogDescription>
+                Cette action est irréversible. Les dossiers seront définitivement supprimés de la base de données.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="font-medium text-red-800 mb-2">
+                  {selectedDossiers.length} dossier{selectedDossiers.length > 1 ? 's' : ''} à supprimer :
+                </h4>
+                <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
+                  {selectedDossiers.map(dossierId => {
+                    const dossier = dossiers.find(d => d.id === dossierId)
+                    return dossier ? (
+                      <p key={dossierId} className="text-red-700">
+                        • {dossier.numeroDossier} - {dossier.objetOperation}
+                      </p>
+                    ) : null
+                  })}
+                </div>
+              </div>
+              
+              {bulkDeleteError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <p className="text-sm text-red-600">{bulkDeleteError}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={cancelBulkDelete}
+                disabled={isBulkDeleting}
+              >
+                Annuler
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmBulkDelete}
+                disabled={isBulkDeleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isBulkDeleting ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer {selectedDossiers.length} dossier{selectedDossiers.length > 1 ? 's' : ''}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+    </CompactPageLayout>
   )
 }
 

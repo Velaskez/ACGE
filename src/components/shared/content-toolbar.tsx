@@ -9,13 +9,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { SortAsc, SortDesc, Filter, Search } from 'lucide-react'
-import { ViewModeToggle } from '@/components/shared/view-mode-toggle'
 import { SearchSuggestions, type SearchSuggestion } from '@/components/ui/search-suggestions'
 import { useSearchSuggestions } from '@/hooks/use-search-suggestions'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
-type ViewMode = 'list' | 'grid'
 type SortOrder = 'asc' | 'desc'
 
 interface SortOption {
@@ -29,8 +27,6 @@ interface ContentToolbarProps<T = string> {
   onSearchSelect?: (suggestion: SearchSuggestion) => void
   onSearchSubmit?: () => void
   searchPlaceholder?: string
-  viewMode: ViewMode
-  onViewModeChange: (mode: ViewMode) => void
   sortField: T
   sortOrder: SortOrder
   sortOptions: SortOption[]
@@ -48,8 +44,6 @@ export function ContentToolbar<T = string>({
   onSearchSelect,
   onSearchSubmit,
   searchPlaceholder = "Rechercher...",
-  viewMode,
-  onViewModeChange,
   sortField,
   sortOrder,
   sortOptions,
@@ -68,7 +62,7 @@ export function ContentToolbar<T = string>({
   return (
     <div
       className={cn(
-        'flex w-full flex-col gap-3 rounded-md border bg-background p-3 sm:flex-row sm:items-center',
+        'flex w-full flex-col gap-2 sm:flex-row sm:items-center',
         className,
       )}
     >
@@ -131,11 +125,6 @@ export function ContentToolbar<T = string>({
           )}
         </Button>
 
-        {/* Mode d'affichage */}
-        <ViewModeToggle
-          viewMode={viewMode}
-          onViewModeChange={onViewModeChange}
-        />
 
         {/* Filtres additionnels */}
         {showFilters && onOpenFilters && (

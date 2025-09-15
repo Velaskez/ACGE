@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { useModal } from '@/contexts/modal-context'
-import { Search, Settings, LogOut, User, Menu, X } from 'lucide-react'
+import { Search, Settings, LogOut, User, Menu, X, Bell } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SearchSuggestions, type SearchSuggestion } from '@/components/ui/search-suggestions'
 import { useSearchSuggestions } from '@/hooks/use-search-suggestions'
+import { useNotifications } from '@/hooks/use-notifications'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const { hideHeader } = useModal()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const { stats: notificationStats } = useNotifications()
 
   // Hook pour les suggestions de recherche optimisé
   const { 
@@ -69,9 +71,9 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
     <header className={`fixed top-0 left-0 right-0 z-[9999] bg-background border-b transition-all duration-300 ${
       hideHeader ? 'transform -translate-y-full opacity-0' : 'transform translate-y-0 opacity-100'
     }`}>
-      <div className="relative flex h-16 items-center px-2 sm:px-4">
+      <div className="relative flex h-16 items-center px-2 sm:px-3">
         {/* Logo */}
-        <div className={`flex items-center gap-2 sm:gap-4 ${searchOpen ? 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto' : ''}` }>
+        <div className={`flex items-center gap-2 sm:gap-3 ${searchOpen ? 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto' : ''}` }>
           {/* Mobile menu button */}
           <Button
             variant="ghost"
@@ -84,11 +86,16 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </Button>
 
           <div className="flex items-center space-x-3">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => window.location.href = '/dashboard'}
-              className="group cursor-pointer transition-all duration-300 hover:scale-105"
+              className="group cursor-pointer transition-all duration-300 hover:scale-105 relative p-0 h-auto"
               aria-label="Retour à l'accueil"
             >
+              {/* Effet glassmorphism derrière le logo */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="glassmorphism-subtle rounded-full w-12 h-12 sm:w-14 sm:h-14 group-hover:glassmorphism transition-all duration-300"></div>
+              </div>
               <Image
                 src="/logo-tresor-public.svg"
                 alt="Trésor Public Gabon"
@@ -96,12 +103,9 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
                 height={48}
                 sizes="(max-width: 640px) 40px, 48px"
                 priority
-                className="object-contain w-10 h-10 sm:w-12 sm:h-12 transition-all duration-300 group-hover:scale-105 drop-shadow-md"
-                style={{
-                  filter: 'drop-shadow(0 0 8px rgba(30, 64, 175, 0.2))'
-                }}
+                className="relative z-10 object-contain w-10 h-10 sm:w-12 sm:h-12 transition-all duration-300 group-hover:scale-105 drop-shadow-md"
               />
-            </button>
+            </Button>
             <h1 className="text-lg sm:text-xl font-semibold text-primary">ACGE</h1>
           </div>
         </div>
@@ -121,7 +125,7 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
         </div>
 
         {/* Actions */}
-        <div className={`ml-auto flex items-center gap-2 sm:gap-4 ${searchOpen ? 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto' : ''}` }>
+        <div className={`ml-auto flex items-center gap-2 sm:gap-3 ${searchOpen ? 'opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto' : ''}` }>
           {/* Recherche (mobile) alignée à droite */}
           <Button
             variant="ghost"
@@ -134,6 +138,22 @@ export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </Button>
           {/* Toggle de thème */}
           <ThemeToggle />
+
+          {/* Icône de notifications */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative min-h-[44px] min-w-[44px]"
+            onClick={() => window.location.href = '/notifications'}
+            aria-label="Notifications"
+          >
+            <Bell className="h-5 w-5" />
+            {notificationStats && notificationStats.unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                {notificationStats.unreadCount}
+              </span>
+            )}
+          </Button>
 
           {/* Menu utilisateur */}
           {user && (

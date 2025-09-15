@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, ContentSection, CompactStats } from '@/components/shared/compact-page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -169,100 +169,95 @@ export default function TestDocumentsPage() {
   const totalTests = testResults.length
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">
-              🧪 Test Page Documents
-            </h1>
-            <p className="text-muted-foreground">
-              Test complet de la page des documents et de ses APIs
-            </p>
-          </div>
+    <CompactPageLayout>
+      <PageHeader
+        title="🧪 Test Page Documents"
+        subtitle="Test complet de la page des documents et de ses APIs"
+        actions={
           <div className="flex gap-2">
-            <Button onClick={runAllTests} disabled={isRunning}>
+            <Button onClick={runAllTests} disabled={isRunning} size="sm">
               {isRunning ? 'Tests en cours...' : 'Lancer tous les tests'}
             </Button>
-            <Button variant="outline" onClick={clearResults}>
+            <Button variant="outline" onClick={clearResults} size="sm">
               Effacer les résultats
             </Button>
           </div>
-        </div>
+        }
+      />
 
         {/* Résumé */}
         {totalTests > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>📊 Résumé des Tests</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{successCount}</div>
-                  <div className="text-sm text-muted-foreground">Réussis</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{errorCount}</div>
-                  <div className="text-sm text-muted-foreground">Échecs</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">{warningCount}</div>
-                  <div className="text-sm text-muted-foreground">Avertissements</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{totalTests}</div>
-                  <div className="text-sm text-muted-foreground">Total</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CompactStats
+            stats={[
+              {
+                label: 'Réussis',
+                value: successCount,
+                icon: <div className="text-2xl">✅</div>,
+                className: 'text-green-600'
+              },
+              {
+                label: 'Échecs',
+                value: errorCount,
+                icon: <div className="text-2xl">❌</div>,
+                className: 'text-red-600'
+              },
+              {
+                label: 'Avertissements',
+                value: warningCount,
+                icon: <div className="text-2xl">⚠️</div>,
+                className: 'text-yellow-600'
+              },
+              {
+                label: 'Total',
+                value: totalTests,
+                icon: <div className="text-2xl">📊</div>,
+                className: 'text-blue-600'
+              }
+            ]}
+            columns={4}
+          />
         )}
 
         {/* Résultats des tests */}
         {testResults.length > 0 && (
-          <div className="space-y-4">
-            {testResults.map((result, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{result.name}</CardTitle>
-                    {getStatusBadge(result.status)}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="mb-2">{result.message}</p>
-                  {result.details && (
-                    <details className="mt-2">
-                      <summary className="cursor-pointer text-sm text-muted-foreground">
-                        Voir les détails
-                      </summary>
-                      <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
-                        {JSON.stringify(result.details, null, 2)}
-                      </pre>
-                    </details>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <ContentSection title="Résultats des tests">
+            <div className="space-y-3">
+              {testResults.map((result, index) => (
+                <Card key={index}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{result.name}</CardTitle>
+                      {getStatusBadge(result.status)}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="mb-2 text-sm">{result.message}</p>
+                    {result.details && (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-sm text-muted-foreground">
+                          Voir les détails
+                        </summary>
+                        <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
+                          {JSON.stringify(result.details, null, 2)}
+                        </pre>
+                      </details>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ContentSection>
         )}
 
         {/* Instructions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>📋 Instructions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="list-decimal list-inside space-y-2 text-sm">
-              <li>Cliquez sur "Lancer tous les tests" pour exécuter la suite de tests</li>
-              <li>Les tests vérifient l'authentification, l'API documents, l'API téléchargement et la structure des données</li>
-              <li>Un statut 401 (Non authentifié) est normal pour les tests d'API</li>
-              <li>Consultez les détails de chaque test pour plus d'informations</li>
-            </ol>
-          </CardContent>
-        </Card>
-      </div>
-    </MainLayout>
+        <ContentSection title="📋 Instructions">
+          <ol className="list-decimal list-inside space-y-2 text-sm">
+            <li>Cliquez sur "Lancer tous les tests" pour exécuter la suite de tests</li>
+            <li>Les tests vérifient l'authentification, l'API documents, l'API téléchargement et la structure des données</li>
+            <li>Un statut 401 (Non authentifié) est normal pour les tests d'API</li>
+            <li>Consultez les détails de chaque test pour plus d'informations</li>
+          </ol>
+        </ContentSection>
+    </CompactPageLayout>
   )
 }

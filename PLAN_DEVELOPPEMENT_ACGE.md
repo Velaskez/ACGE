@@ -198,6 +198,8 @@ Secrétaire → CB → Ordonnateur → AC → Clôture
 7. **Redirection basée sur les rôles** ✅
 8. **Dashboard spécialisé pour la secrétaire** ✅
 9. **Redirection automatique depuis /dashboard** ✅
+10. **Suppression des dossiers rejetés par le CB** ✅
+11. **Gestion de la mémoire et nettoyage de la base de données** ✅
 
 ---
 
@@ -227,6 +229,13 @@ Secrétaire → CB → Ordonnateur → AC → Clôture
 3. Exports et rapports
 4. Recherche avancée
 
+### ✅ **Sprint 5 - Gestion Mémoire (TERMINÉ)**
+1. ✅ Suppression des dossiers rejetés par le CB
+2. ✅ Interface de suppression individuelle et en masse
+3. ✅ API sécurisée pour la suppression
+4. ✅ Modals de confirmation et gestion d'erreurs
+5. ✅ Tests complets de la fonctionnalité
+
 ---
 
 ## 📊 **ESTIMATION GLOBALE**
@@ -245,8 +254,9 @@ Secrétaire → CB → Ordonnateur → AC → Clôture
 3. ✅ **Interface AC** (TERMINÉ)
 4. ✅ **Navigation basée sur les rôles** (TERMINÉ)
 5. ✅ **API endpoints complets** (TERMINÉ)
+6. ✅ **Suppression des dossiers rejetés CB** (TERMINÉ)
 
-**🎉 WORKFLOW COMPLET IMPLÉMENTÉ !** 
+**🎉 WORKFLOW COMPLET + GESTION MÉMOIRE IMPLÉMENTÉS !** 
 
 Le workflow Secrétaire → CB → Ordonnateur → AC est maintenant entièrement fonctionnel avec :
 - ✅ Pages dédiées pour chaque rôle
@@ -254,6 +264,7 @@ Le workflow Secrétaire → CB → Ordonnateur → AC est maintenant entièremen
 - ✅ Navigation adaptative selon les rôles
 - ✅ API endpoints complets
 - ✅ Interface utilisateur cohérente et intuitive
+- ✅ Gestion de la mémoire et suppression des dossiers rejetés
 
 ---
 
@@ -262,8 +273,9 @@ Le workflow Secrétaire → CB → Ordonnateur → AC est maintenant entièremen
 - **Les utilisateurs sont déjà opérationnels** avec leurs différents rôles
 - **La Phase 3 (Super Administrateur) est complètement terminée**
 - **La Phase 1 (Base technique) est complètement terminée**
-- **Seules les interfaces CB, Ordonnateur et AC manquent**
-- **Le workflow de validation des dossiers doit être implémenté**
+- **Toutes les interfaces CB, Ordonnateur et AC sont terminées**
+- **Le workflow de validation des dossiers est entièrement implémenté**
+- **La gestion de la mémoire avec suppression des dossiers rejetés est opérationnelle**
 
 ---
 
@@ -272,5 +284,5 @@ Le workflow Secrétaire → CB → Ordonnateur → AC est maintenant entièremen
 Ce fichier doit être mis à jour à chaque étape de développement pour refléter l'état actuel du projet.
 
 **Dernière mise à jour :** $(date)
-**Statut :** WORKFLOW COMPLET IMPLÉMENTÉ ✅
+**Statut :** WORKFLOW COMPLET + GESTION MÉMOIRE IMPLÉMENTÉS ✅
 **Prochaine étape :** Améliorations (notifications, historique, exports)

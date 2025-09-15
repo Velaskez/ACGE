@@ -298,7 +298,7 @@ export function FolderCreationForm({
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="" >
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <h4 className="font-medium mb-2">Informations de base</h4>
                   <div className="space-y-1 text-sm">
                     <p><span className="text-muted-foreground">Nom:</span> {formData.name}</p>
@@ -308,7 +308,7 @@ export function FolderCreationForm({
               </Card>
               
               <Card className="" >
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <h4 className="font-medium mb-2">Informations comptables</h4>
                   <div className="space-y-1 text-sm">
                     <p><span className="text-muted-foreground">Poste:</span> {selectedPoste ? `${selectedPoste.numero} - ${selectedPoste.intitule}` : 'Non sélectionné'}</p>
@@ -318,7 +318,7 @@ export function FolderCreationForm({
               </Card>
               
               <Card className="" >
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <h4 className="font-medium mb-2">Détails de l'opération</h4>
                   <div className="space-y-1 text-sm">
                     <p><span className="text-muted-foreground">Objet:</span> {formData.objetOperation}</p>
@@ -329,7 +329,7 @@ export function FolderCreationForm({
               </Card>
               
               <Card className="" >
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <h4 className="font-medium mb-2">Informations système</h4>
                   <div className="space-y-1 text-sm">
                     <p><span className="text-muted-foreground">Numéro dossier:</span> {formData.numeroDossier || generateNumeroDossier()}</p>

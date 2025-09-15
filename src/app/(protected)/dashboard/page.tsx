@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MainLayout } from '@/components/layout/main-layout'
+import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRouter } from 'next/navigation'
@@ -204,202 +204,112 @@ export default function DashboardPage() {
   const roleConfig = getRoleConfig()
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">{roleConfig.title}</h1>
-            <p className="text-primary text-sm sm:text-base">
-              {roleConfig.description}
-            </p>
-          </div>
+    <CompactPageLayout>
+      <PageHeader
+        title={roleConfig.title}
+        subtitle={roleConfig.description}
+        actions={
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {error && (
-              <Button variant="outline" size="sm" onClick={refreshData} className="w-full sm:w-auto">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refreshData} 
+                className="w-full sm:w-auto h-8"
+              >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Actualiser
               </Button>
             )}
-            <Button onClick={roleConfig.primaryAction.action} className="w-full sm:w-auto">
+            <Button 
+              onClick={roleConfig.primaryAction.action} 
+              className="w-full sm:w-auto h-8"
+            >
               <roleConfig.primaryAction.icon className="mr-2 h-4 w-4" />
               {roleConfig.primaryAction.label}
             </Button>
           </div>
+        }
+      />
+
+      {/* Error state */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <p className="text-sm text-destructive">
+              Erreur lors du chargement des données: {error}
+            </p>
+          </div>
         </div>
+      )}
 
-        {/* Error state */}
-        {error && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-                <p className="text-sm text-destructive">
-                  Erreur lors du chargement des données: {error}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      <CompactStats
+        stats={[
+          {
+            label: "Total Fichiers",
+            value: isLoading ? <Skeleton className="h-8 w-16" /> : (stats?.totalDocuments?.toLocaleString() || 0),
+            icon: <FileText className="h-4 w-4 text-red-600" />,
+            color: "text-red-600"
+          },
+          {
+            label: "Dossiers",
+            value: isLoading ? <Skeleton className="h-8 w-16" /> : (stats?.totalFolders?.toLocaleString() || 0),
+            icon: <FolderOpen className="h-4 w-4 text-orange-600" />,
+            color: "text-orange-600"
+          },
+          {
+            label: "Espace utilisé",
+            value: isLoading ? <Skeleton className="h-8 w-16" /> : (stats?.spaceUsed ? `${stats.spaceUsed.gb} GB` : '0 GB'),
+            icon: <TrendingUp className="h-4 w-4 text-blue-600" />,
+            color: "text-blue-600"
+          },
+          {
+            label: "Utilisateurs",
+            value: isLoading ? <Skeleton className="h-8 w-16" /> : (stats?.totalUsers?.toLocaleString() || 0),
+            icon: <Users className="h-4 w-4 text-purple-600" />,
+            color: "text-purple-600"
+          }
+        ]}
+        columns={4}
+      />
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleViewAllDocuments}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Fichiers</CardTitle>
-              <div className="p-2 bg-muted rounded-lg">
-                <FileText className="h-4 w-4 icon-red-fg" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{stats?.totalDocuments?.toLocaleString() || 0}</div>
-                  <p className="text-xs text-primary">
-                    {stats?.monthlyGrowthPercentage ? (
-                      stats.monthlyGrowthPercentage > 0 ? 
-                        `+${stats.monthlyGrowthPercentage}% par rapport au mois dernier` :
-                        stats.monthlyGrowthPercentage < 0 ?
-                          `${stats.monthlyGrowthPercentage}% par rapport au mois dernier` :
-                          'Aucune évolution ce mois'
-                    ) : 'Pas de données historiques'}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => router.push('/folders')}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Dossiers</CardTitle>
-              <div className="p-2 bg-muted rounded-lg">
-                <FolderOpen className="h-4 w-4 icon-orange-fg" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{stats?.totalFolders?.toLocaleString() || 0}</div>
-                  <p className="text-xs text-primary">
-                    {stats?.documentsThisMonth ? 
-                      `+${stats.documentsThisMonth} nouveaux ce mois` : 
-                      'Aucun nouveau ce mois'}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => router.push('/documents')}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Espace utilisé</CardTitle>
-              <div className="p-2 bg-muted rounded-lg">
-                <TrendingUp className="h-4 w-4 icon-blue-fg" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">
-                    {stats?.spaceUsed ? `${stats.spaceUsed.gb} GB` : '0 GB'}
-                  </div>
-                  <p className="text-xs text-primary">
-                    {stats?.spaceUsed ? 
-                      `${stats.spaceUsed.percentage}% de votre quota` : 
-                      '0% de votre quota'}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={handleViewUsers}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Utilisateurs</CardTitle>
-              <div className="p-2 bg-muted rounded-lg">
-                <Users className="h-4 w-4 icon-purple-fg" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{stats?.totalUsers?.toLocaleString() || 0}</div>
-                  <p className="text-xs text-primary">
-                    {stats?.activeUsers ? 
-                      `${stats.activeUsers} actifs ce mois` : 
-                      'Aucun utilisateur actif'}
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+      {/* Role-specific information */}
+      {(user?.role === 'CONTROLEUR_BUDGETAIRE' || user?.role === 'ORDONNATEUR' || user?.role === 'AGENT_COMPTABLE') && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="h-5 w-5 text-blue-800" />
+            <h3 className="text-sm font-medium text-blue-800">Interface spécialisée</h3>
+          </div>
+          <p className="text-xs text-blue-700 mb-3">
+            {user?.role === 'CONTROLEUR_BUDGETAIRE' && 'Accédez à votre interface de validation des dossiers'}
+            {user?.role === 'ORDONNATEUR' && 'Accédez à votre interface d\'ordonnancement des dépenses'}
+            {user?.role === 'AGENT_COMPTABLE' && 'Accédez à votre interface de comptabilisation des paiements'}
+          </p>
+          <Button 
+            onClick={roleConfig.primaryAction.action}
+            className="bg-blue-600 hover:bg-blue-700 text-white h-8"
+          >
+            <roleConfig.primaryAction.icon className="mr-2 h-4 w-4" />
+            {roleConfig.primaryAction.label}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </div>
+      )}
 
-        {/* Role-specific information */}
-        {(user?.role === 'CONTROLEUR_BUDGETAIRE' || user?.role === 'ORDONNATEUR' || user?.role === 'AGENT_COMPTABLE') && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-800">
-                <Shield className="h-5 w-5" />
-                Interface spécialisée
-              </CardTitle>
-              <CardDescription className="text-blue-700">
-                {user?.role === 'CONTROLEUR_BUDGETAIRE' && 'Accédez à votre interface de validation des dossiers'}
-                {user?.role === 'ORDONNATEUR' && 'Accédez à votre interface d\'ordonnancement des dépenses'}
-                {user?.role === 'AGENT_COMPTABLE' && 'Accédez à votre interface de comptabilisation des paiements'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={roleConfig.primaryAction.action}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <roleConfig.primaryAction.icon className="mr-2 h-4 w-4" />
-                {roleConfig.primaryAction.label}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Recent Activity & Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          {/* Documents récents */}
-          <Card className="col-span-4">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Fichiers récents</CardTitle>
-                  <CardDescription>
-                    Vos derniers fichiers ajoutés ou modifiés
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleViewAllDocuments}>
-                  Voir tous
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
+      {/* Recent Activity & Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        {/* Documents récents */}
+        <ContentSection
+          title="Fichiers récents"
+          subtitle="Vos derniers fichiers ajoutés ou modifiés"
+          actions={
+            <Button variant="outline" size="sm" onClick={handleViewAllDocuments} className="h-8">
+              Voir tous
+            </Button>
+          }
+          className="col-span-4"
+        >
               <div className="space-y-4">
                 {isLoading ? (
                   Array.from({ length: 4 }).map((_, index) => (
@@ -471,18 +381,14 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
+        </ContentSection>
 
-          {/* Activité récente */}
-          <Card className="col-span-3">
-            <CardHeader>
-              <CardTitle>Activité récente</CardTitle>
-              <CardDescription>
-                Dernières actions sur vos fichiers
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+        {/* Activité récente */}
+        <ContentSection
+          title="Activité récente"
+          subtitle="Dernières actions sur vos fichiers"
+          className="col-span-3"
+        >
               <div className="space-y-4">
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
@@ -516,49 +422,43 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+        </ContentSection>
 
         {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Actions rapides</CardTitle>
-            <CardDescription>
-              Accédez rapidement aux fonctionnalités de votre rôle
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
-              {roleConfig.quickActions.map((action, index) => {
-                const getColorClasses = (color: string) => {
-                  switch (color) {
-                    case 'red': return 'icon-red-fg'
-                    case 'green': return 'icon-green-fg'
-                    case 'purple': return 'icon-purple-fg'
-                    case 'orange': return 'icon-orange-fg'
-                    case 'blue': return 'icon-blue-fg'
-                    case 'emerald': return 'text-emerald-600'
-                    default: return 'text-muted-foreground'
-                  }
+        <ContentSection
+          title="Actions rapides"
+          subtitle="Accédez rapidement aux fonctionnalités de votre rôle"
+          className="col-span-3"
+        >
+          <div className="grid gap-4 md:grid-cols-4">
+            {roleConfig.quickActions.map((action, index) => {
+              const getColorClasses = (color: string) => {
+                switch (color) {
+                  case 'red': return 'text-red-600'
+                  case 'green': return 'text-green-600'
+                  case 'purple': return 'text-purple-600'
+                  case 'orange': return 'text-orange-600'
+                  case 'blue': return 'text-blue-600'
+                  case 'emerald': return 'text-emerald-600'
+                  default: return 'text-muted-foreground'
                 }
-                
-                return (
-                  <Button 
-                    key={index}
-                    variant="outline" 
-                    className="h-20 flex-col hover:bg-accent/50 transition-colors" 
-                    onClick={action.action}
-                  >
-                    <action.icon className={`h-6 w-6 mb-2 ${getColorClasses(action.color)}`} />
-                    <span>{action.label}</span>
-                  </Button>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
+              }
+              
+              return (
+                <Button 
+                  key={index}
+                  variant="outline" 
+                  className="h-20 flex-col hover:bg-accent/50 transition-colors" 
+                  onClick={action.action}
+                >
+                  <action.icon className={`h-6 w-6 mb-2 ${getColorClasses(action.color)}`} />
+                  <span>{action.label}</span>
+                </Button>
+              )
+            })}
+          </div>
+        </ContentSection>
       </div>
-    </MainLayout>
+    </CompactPageLayout>
   )
 }

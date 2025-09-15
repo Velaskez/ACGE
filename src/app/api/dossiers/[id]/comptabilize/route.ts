@@ -56,7 +56,7 @@ export async function PUT(
     }
 
     // Vérifier que le dossier est ordonnançé
-    if (dossier.statut !== 'ORDONNANCÉ') {
+    if (dossier.statut !== 'VALIDÉ_ORDONNATEUR') {
       return NextResponse.json(
         { error: 'Seuls les dossiers ordonnançés peuvent être comptabilisés' },
         { status: 400 }

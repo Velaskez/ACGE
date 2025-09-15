@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
           return {
             ...folder,
             numeroDossier: folder.dossiers?.[0]?.numeroDossier || null,
-            statut: folder.statut || folder.dossiers?.[0]?.statut || 'BROUILLON', // Par défaut BROUILLON si pas de statut
+            statut: folder.dossiers?.[0]?.statut || folder.statut || 'BROUILLON', // Priorité au statut de la table dossiers
             _count: {
               documents: documentsCount
             }
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
           return {
             ...folder,
             numeroDossier: folder.dossiers?.[0]?.numeroDossier || null,
-            statut: folder.statut || folder.dossiers?.[0]?.statut || 'BROUILLON', // Par défaut BROUILLON si pas de statut
+            statut: folder.dossiers?.[0]?.statut || folder.statut || 'BROUILLON', // Priorité au statut de la table dossiers
             _count: {
               documents: 0
             }

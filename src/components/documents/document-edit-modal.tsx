@@ -61,22 +61,20 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
     folderId: document.folderId || ''
   })
 
-  // Définir les catégories disponibles
-  const categories = [
-    { value: 'ordre-recette', label: 'Ordre de recette' },
-    { value: 'ordre-paiement', label: 'Ordre de paiement' },
-    { value: 'courier', label: 'Courier' }
-  ]
+  // État pour les catégories (natures de documents)
+  const [categories, setCategories] = useState<Array<{ value: string; label: string }>>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [foldersLoading, setFoldersLoading] = useState(false)
   const [showFileInfo, setShowFileInfo] = useState(true)
 
-  // Charger les dossiers disponibles
+  // Charger les dossiers et catégories disponibles
   useEffect(() => {
     if (isOpen) {
       fetchFolders()
+      fetchCategories()
     }
   }, [isOpen])
 
@@ -118,6 +116,48 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
       setFolders([])
     } finally {
       setFoldersLoading(false)
+    }
+  }
+
+  const fetchCategories = async () => {
+    setCategoriesLoading(true)
+    try {
+      console.log('🔍 Chargement des catégories (natures de documents)...')
+      const response = await fetch('/api/natures-documents', {
+        credentials: 'include'
+      })
+      console.log('📡 Réponse API natures-documents:', response.status, response.statusText)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📋 Données reçues:', data)
+        
+        const naturesDocuments = data.naturesDocuments || []
+        const categoriesList = naturesDocuments.map((nature: any) => ({
+          value: nature.nom,
+          label: nature.nom
+        }))
+        
+        // Ajouter "Non classé" en première option
+        categoriesList.unshift({ value: 'Non classé', label: 'Non classé' })
+        
+        console.log('📁 Catégories trouvées:', categoriesList.length)
+        setCategories(categoriesList)
+      } else {
+        console.error('❌ Erreur API natures-documents:', response.status)
+        // Fallback vers les catégories par défaut
+        setCategories([
+          { value: 'Non classé', label: 'Non classé' }
+        ])
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des catégories:', error)
+      // Fallback vers les catégories par défaut
+      setCategories([
+        { value: 'Non classé', label: 'Non classé' }
+      ])
+    } finally {
+      setCategoriesLoading(false)
     }
   }
 
@@ -180,7 +220,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
   return (
     <ModalWrapper isOpen={isOpen} onOpenChange={onClose}>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto" showCloseButton={false}>
         <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -313,6 +353,8 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
             onSubmit={handleFormSubmit}
             onCancel={onClose}
             isLoading={isLoading}
+            categories={categories}
+            categoriesLoading={categoriesLoading}
           />
         </div>
       </DialogContent>
