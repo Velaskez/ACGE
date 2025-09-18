@@ -262,9 +262,9 @@ export function DiagnosticPanel() {
                   {data.dossiers.allDossiers.map((dossier, index) => (
                     <div key={dossier.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex-1">
-                        <p className="font-medium">{dossier.numeroDossier}</p>
+                        <p className="font-medium text-reference">{dossier.numeroDossier}</p>
                         <p className="text-sm text-muted-foreground">
-                          Créé: {new Date(dossier.createdAt).toLocaleDateString('fr-FR')}
+                          Créé: <span className="text-date">{new Date(dossier.createdAt).toLocaleDateString('fr-FR')}</span>
                         </p>
                       </div>
                       <Badge variant="outline" className={getStatutBadgeColor(dossier.statut)}>

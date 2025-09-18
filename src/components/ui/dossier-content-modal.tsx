@@ -317,7 +317,7 @@ export function DossierContentModal({ dossier, isOpen, onClose }: DossierContent
               <div className="flex items-center gap-3">
                 <Folder className="h-6 w-6 text-primary" />
                 <div>
-                  <DialogTitle className="text-xl font-semibold">{dossier.numeroDossier}</DialogTitle>
+                  <DialogTitle className="text-xl font-semibold text-reference">{dossier.numeroDossier}</DialogTitle>
                   <DialogDescription className="text-base">{dossier.objetOperation}</DialogDescription>
                 </div>
               </div>
@@ -356,7 +356,7 @@ export function DossierContentModal({ dossier, isOpen, onClose }: DossierContent
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm font-medium">
-                    {dossier.poste_comptable?.numero || 'N/A'} - {dossier.poste_comptable?.intitule || 'N/A'}
+                    <span className="text-code">{dossier.poste_comptable?.numero || 'N/A'}</span> - {dossier.poste_comptable?.intitule || 'N/A'}
                   </p>
                 </CardContent>
               </Card>
@@ -369,7 +369,7 @@ export function DossierContentModal({ dossier, isOpen, onClose }: DossierContent
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm font-medium">{formatDate(dossier.dateDepot)}</p>
+                  <p className="text-sm font-medium text-date">{formatDate(dossier.dateDepot)}</p>
                 </CardContent>
               </Card>
             </div>
@@ -495,14 +495,18 @@ export function DossierContentModal({ dossier, isOpen, onClose }: DossierContent
                             </span>
                           </TableCell>
                           <TableCell>
-                            {document.fileSize ? 
-                              `${(document.fileSize / 1024 / 1024).toFixed(1)} MB` : 
-                              'Taille inconnue'
-                            }
+                            <span className="text-number">
+                              {document.fileSize ? 
+                                `${(document.fileSize / 1024 / 1024).toFixed(1)} MB` : 
+                                'Taille inconnue'
+                              }
+                            </span>
                           </TableCell>
                           <TableCell>{document.fileType || 'Type inconnu'}</TableCell>
                           <TableCell>
-                            {document.createdAt ? new Date(document.createdAt).toLocaleDateString('fr-FR') : 'Date inconnue'}
+                            <span className="text-date">
+                              {document.createdAt ? new Date(document.createdAt).toLocaleDateString('fr-FR') : 'Date inconnue'}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>

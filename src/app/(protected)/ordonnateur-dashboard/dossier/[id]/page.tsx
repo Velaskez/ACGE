@@ -648,16 +648,20 @@ function DossierDetailContent() {
                       </span>
                     </TableCell>
                     <TableCell className="py-3 text-sm text-muted-foreground">
-                      {document.fileSize ? 
-                        `${(document.fileSize / 1024 / 1024).toFixed(1)} MB` : 
-                        'N/A'
-                      }
+                      <span className="text-number">
+                        {document.fileSize ? 
+                          `${(document.fileSize / 1024 / 1024).toFixed(1)} MB` : 
+                          'N/A'
+                        }
+                      </span>
                     </TableCell>
                     <TableCell className="py-3 text-sm text-muted-foreground">
                       {document.fileType || 'N/A'}
                     </TableCell>
                     <TableCell className="py-3 text-sm text-muted-foreground">
-                      {document.createdAt ? new Date(document.createdAt).toLocaleDateString('fr-FR') : 'N/A'}
+                      <span className="text-date">
+                        {document.createdAt ? new Date(document.createdAt).toLocaleDateString('fr-FR') : 'N/A'}
+                      </span>
                     </TableCell>
                     <TableCell className="py-3">
                       <DropdownMenu>

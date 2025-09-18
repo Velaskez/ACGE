@@ -757,7 +757,7 @@ function CBDashboardContent() {
                         }
                       }}
                     >
-                      <TableCell className="font-medium">{dossier.numeroDossier}</TableCell>
+                      <TableCell className="font-medium text-reference">{dossier.numeroDossier}</TableCell>
                       <TableCell className="max-w-xs truncate font-medium text-blue-600">
                         {dossier.foldername || 'N/A'}
                       </TableCell>
@@ -765,12 +765,12 @@ function CBDashboardContent() {
                       <TableCell>{dossier.beneficiaire}</TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div className="font-medium">{dossier.poste_comptable?.numero || 'N/A'}</div>
+                          <div className="font-medium text-code">{dossier.poste_comptable?.numero || 'N/A'}</div>
                           <div className="text-muted-foreground">{dossier.poste_comptable?.intitule || 'N/A'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        {new Date(dossier.dateDepot).toLocaleDateString('fr-FR')}
+                        <span className="text-date">{new Date(dossier.dateDepot).toLocaleDateString('fr-FR')}</span>
                       </TableCell>
                       <TableCell>{getStatutBadge(dossier.statut)}</TableCell>
                       <TableCell>
@@ -938,7 +938,7 @@ function CBDashboardContent() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Numéro du dossier</Label>
-                    <p className="text-sm bg-muted p-2 rounded">{selectedDossier.numeroDossier}</p>
+                    <p className="text-sm bg-muted p-2 rounded text-reference">{selectedDossier.numeroDossier}</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Nom du dossier</Label>
@@ -955,7 +955,7 @@ function CBDashboardContent() {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Date de dépôt</Label>
                     <p className="text-sm bg-muted p-2 rounded">
-                      {new Date(selectedDossier.dateDepot).toLocaleDateString('fr-FR')}
+                      <span className="text-date">{new Date(selectedDossier.dateDepot).toLocaleDateString('fr-FR')}</span>
                     </p>
                   </div>
                   <div className="space-y-2">

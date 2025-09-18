@@ -431,7 +431,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
                   <Label className="text-sm font-medium text-blue-900 block mb-1">Taille</Label>
                   <div className="flex items-center gap-2">
                     <HardDrive className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-800">
+                    <span className="text-sm text-blue-800 text-number">
                       {document.fileSize ? formatFileSize(document.fileSize) : 'N/A'}
                     </span>
                   </div>
@@ -452,7 +452,7 @@ export function DocumentPreviewModal({ document, isOpen, onClose }: DocumentPrev
                   <Label className="text-sm font-medium text-blue-900 block mb-1">Créé le</Label>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-800">
+                    <span className="text-sm text-blue-800 text-date">
                       {formatDate(document.createdAt)}
                     </span>
                   </div>

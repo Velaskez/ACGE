@@ -224,9 +224,11 @@ export function DocumentsPageOptimized() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">{formatFileSize(document.fileSize || 0)}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <span className="text-number">{formatFileSize(document.fileSize || 0)}</span>
+                  </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    {new Date(document.createdAt).toLocaleDateString('fr-FR')}
+                    <span className="text-date">{new Date(document.createdAt).toLocaleDateString('fr-FR')}</span>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">{document.author?.name || 'Inconnu'}</TableCell>
                   <TableCell>

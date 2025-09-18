@@ -323,7 +323,7 @@ export function FolderCreationForm({
                   <div className="space-y-1 text-sm">
                     <p><span className="text-muted-foreground">Objet:</span> {formData.objetOperation}</p>
                     <p><span className="text-muted-foreground">Bénéficiaire:</span> {formData.beneficiaire}</p>
-                    <p><span className="text-muted-foreground">Numéro nature:</span> {formData.numeroNature || 'Non renseigné'}</p>
+                    <p><span className="text-muted-foreground">Numéro nature:</span> <span className="text-code">{formData.numeroNature || 'Non renseigné'}</span></p>
                   </div>
                 </CardContent>
               </Card>
@@ -332,8 +332,8 @@ export function FolderCreationForm({
                 <CardContent className="p-3">
                   <h4 className="font-medium mb-2">Informations système</h4>
                   <div className="space-y-1 text-sm">
-                    <p><span className="text-muted-foreground">Numéro dossier:</span> {formData.numeroDossier || generateNumeroDossier()}</p>
-                    <p><span className="text-muted-foreground">Date dépôt:</span> {formData.dateDepot}</p>
+                    <p><span className="text-muted-foreground">Numéro dossier:</span> <span className="text-reference">{formData.numeroDossier || generateNumeroDossier()}</span></p>
+                    <p><span className="text-muted-foreground">Date dépôt:</span> <span className="text-date">{formData.dateDepot}</span></p>
                   </div>
                 </CardContent>
               </Card>

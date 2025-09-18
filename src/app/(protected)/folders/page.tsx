@@ -775,15 +775,15 @@ export default function FoldersPage() {
             {
               label: "Taille totale",
               value: documents.reduce((total, doc) => total + (doc.fileSize || 0), 0) > 0 
-                ? `${(documents.reduce((total, doc) => total + (doc.fileSize || 0), 0) / 1024 / 1024).toFixed(1)} MB`
-                : '0 MB',
+                ? <span className="text-number">{`${(documents.reduce((total, doc) => total + (doc.fileSize || 0), 0) / 1024 / 1024).toFixed(1)} MB`}</span>
+                : <span className="text-number">0 MB</span>,
               icon: <FolderOpen className="h-4 w-4 text-primary" />
             },
             {
               label: "Dernière modification",
               value: currentFolder.updatedAt 
-                ? new Date(currentFolder.updatedAt).toLocaleDateString('fr-FR')
-                : 'Date inconnue',
+                ? <span className="text-date">{new Date(currentFolder.updatedAt).toLocaleDateString('fr-FR')}</span>
+                : <span className="text-date">Date inconnue</span>,
               icon: <Clock className="h-4 w-4 text-primary" />
             }
           ]}

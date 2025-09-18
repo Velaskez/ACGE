@@ -855,7 +855,7 @@ function CBRejectedContent() {
                           className="rounded border-gray-300"
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{dossier.numeroDossier}</TableCell>
+                      <TableCell className="font-medium text-reference">{dossier.numeroDossier}</TableCell>
                       <TableCell className="max-w-xs truncate font-medium">
                         {dossier.folderName ? (
                           <span className="text-blue-600">{dossier.folderName}</span>
@@ -869,12 +869,12 @@ function CBRejectedContent() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div className="font-medium">{dossier.poste_comptable?.numero || 'N/A'}</div>
+                          <div className="font-medium text-code">{dossier.poste_comptable?.numero || 'N/A'}</div>
                           <div className="text-muted-foreground">{dossier.poste_comptable?.intitule || 'N/A'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        {new Date(dossier.dateDepot).toLocaleDateString('fr-FR')}
+                        <span className="text-date">{new Date(dossier.dateDepot).toLocaleDateString('fr-FR')}</span>
                       </TableCell>
                       <TableCell>{getStatutBadge(dossier.statut)}</TableCell>
                       <TableCell>
@@ -967,7 +967,7 @@ function CBRejectedContent() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Numéro du dossier</Label>
-                    <p className="text-sm bg-muted p-2 rounded">{selectedDossier.numeroDossier}</p>
+                    <p className="text-sm bg-muted p-2 rounded text-reference">{selectedDossier.numeroDossier}</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Nom du dossier</Label>
@@ -984,7 +984,7 @@ function CBRejectedContent() {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Date de dépôt</Label>
                     <p className="text-sm bg-muted p-2 rounded">
-                      {new Date(selectedDossier.dateDepot).toLocaleDateString('fr-FR')}
+                      <span className="text-date">{new Date(selectedDossier.dateDepot).toLocaleDateString('fr-FR')}</span>
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -999,7 +999,7 @@ function CBRejectedContent() {
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Poste Comptable</Label>
                   <div className="bg-muted p-3 rounded">
-                    <p className="font-medium">{selectedDossier.poste_comptable?.numero || 'N/A'}</p>
+                    <p className="font-medium text-code">{selectedDossier.poste_comptable?.numero || 'N/A'}</p>
                     <p className="text-sm text-muted-foreground">{selectedDossier.poste_comptable?.intitule || 'N/A'}</p>
                   </div>
                 </div>

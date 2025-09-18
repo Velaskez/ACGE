@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 
 export interface SidebarStats {
   totalDocuments: number
@@ -21,14 +22,28 @@ export interface SidebarFolder {
 }
 
 export function useSidebarData() {
+  const { user } = useSupabaseAuth()
   const [stats, setStats] = useState<SidebarStats | null>(null)
   const [folders, setFolders] = useState<SidebarFolder[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchSidebarData = async () => {
+    // Ne pas faire d'appels API si l'utilisateur n'est pas connecté
+    if (!user?.id) {
+      console.log('🔍 useSidebarData: Pas d\'utilisateur connecté, utilisation des valeurs par défaut')
+      setStats({ totalDocuments: 0, totalFolders: 0, spaceUsed: { gb: 0 } })
+      setFolders([])
+      setError(null)
+      setIsLoading(false)
+      return
+    }
+
     try {
       setIsLoading(true)
+      setError(null)
+      
+      console.log('🔍 useSidebarData: Récupération des données pour l\'utilisateur', user.id)
       
       const [statsResponse, foldersResponse] = await Promise.all([
         fetch('/api/dashboard/stats', { credentials: 'include' }),
@@ -37,6 +52,7 @@ export function useSidebarData() {
 
       if (statsResponse.status === 401) {
         // Non authentifié: valeurs par défaut, pas d'exception pour éviter le crash UI
+        console.log('🔍 useSidebarData: Utilisateur non authentifié (401)')
         setStats({ totalDocuments: 0, totalFolders: 0, spaceUsed: { gb: 0 } })
         setFolders([])
         setError(null)
@@ -45,7 +61,7 @@ export function useSidebarData() {
 
       if (!statsResponse.ok) {
         const errorData = await statsResponse.text()
-        console.error('Stats API error:', statsResponse.status, errorData)
+        console.error('❌ Stats API error:', statsResponse.status, errorData)
         throw new Error(`Erreur lors de la récupération des statistiques: ${statsResponse.status}`)
       }
 
@@ -60,12 +76,14 @@ export function useSidebarData() {
         const foldersData = await foldersResponse.json()
         setFolders(foldersData.folders || [])
       } else {
+        console.warn('⚠️ Folders API error:', foldersResponse.status)
         setFolders([])
       }
 
       setError(null)
+      console.log('✅ useSidebarData: Données chargées avec succès')
     } catch (err) {
-      console.error('Erreur sidebar:', err)
+      console.error('❌ Erreur sidebar:', err)
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
       setStats({ totalDocuments: 0, totalFolders: 0, spaceUsed: { gb: 0 } })
       setFolders([])
@@ -76,7 +94,7 @@ export function useSidebarData() {
 
   useEffect(() => {
     fetchSidebarData()
-  }, [])
+  }, [user?.id]) // Re-exécuter quand l'utilisateur change
 
   return {
     stats,

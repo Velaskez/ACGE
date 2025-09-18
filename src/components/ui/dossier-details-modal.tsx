@@ -182,7 +182,7 @@ export function DossierDetailsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-primary" />
-            Détails du dossier {dossier.numeroDossier}
+            Détails du dossier <span className="text-reference">{dossier.numeroDossier}</span>
           </DialogTitle>
           <DialogDescription>
             Informations complètes sur le dossier comptable
@@ -198,7 +198,7 @@ export function DossierDetailsModal({
                   <div className="flex items-center gap-3">
                     <StatutIcon className="h-5 w-5 text-primary" />
                     <div>
-                      <h3 className="text-lg font-semibold">{dossier.numeroDossier}</h3>
+                      <h3 className="text-lg font-semibold text-reference">{dossier.numeroDossier}</h3>
                       <p className="text-sm text-muted-foreground">{dossier.objetOperation}</p>
                     </div>
                   </div>
@@ -224,7 +224,7 @@ export function DossierDetailsModal({
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Numéro dossier:</span>
-                    <span className="text-sm">{dossier.numeroDossier}</span>
+                    <span className="text-sm text-reference">{dossier.numeroDossier}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Objet:</span>
@@ -236,7 +236,7 @@ export function DossierDetailsModal({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Date de dépôt:</span>
-                    <span className="text-sm">{formatDate(dossier.dateDepot)}</span>
+                    <span className="text-sm text-date">{formatDate(dossier.dateDepot)}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -332,11 +332,11 @@ export function DossierDetailsModal({
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="font-medium">Créé le:</span>
-                    <p className="text-muted-foreground">{formatDate(dossier.createdAt)}</p>
+                    <p className="text-muted-foreground text-date">{formatDate(dossier.createdAt)}</p>
                   </div>
                   <div>
                     <span className="font-medium">Modifié le:</span>
-                    <p className="text-muted-foreground">{formatDate(dossier.updatedAt)}</p>
+                    <p className="text-muted-foreground text-date">{formatDate(dossier.updatedAt)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -347,7 +347,7 @@ export function DossierDetailsModal({
         {/* Actions */}
         <div className="flex items-center justify-between pt-4 border-t">
           <div className="text-sm text-muted-foreground">
-            Dossier créé le {formatDate(dossier.createdAt)}
+            Dossier créé le <span className="text-date">{formatDate(dossier.createdAt)}</span>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>

@@ -276,7 +276,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                   <Label className="text-sm font-medium text-blue-900 mb-1 block">Taille</Label>
                   <div className="flex items-center gap-2">
                     <HardDrive className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-800">
+                    <span className="text-sm text-blue-800 text-number">
                       {formatFileSize(document.fileSize || 0)}
                     </span>
                   </div>
@@ -308,7 +308,7 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
                   <Label className="text-sm font-medium text-blue-900 mb-1 block">Créé le</Label>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-800">
+                    <span className="text-sm text-blue-800 text-date">
                       {formatDate(document.createdAt)}
                     </span>
                   </div>

@@ -1,11 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { ClientProviders } from "@/components/providers/client-providers";
 import { LoadingProvider } from "@/components/providers/loading-provider";
 import { ThemeProvider } from "next-themes";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "ACGE - Agence Comptable des Grandes Écoles",
@@ -32,7 +29,30 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={inter.className}>
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/outfit/OutfitVariableFont_wght1.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/outfit/OutfitRegular.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/freemono/FreeMono.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body className="font-outfit">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
