@@ -15,6 +15,11 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  icons: {
+    icon: '/logo-tresor-public.svg',
+    apple: '/logo-tresor-public.svg',
+  },
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
@@ -33,6 +38,12 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
+        {/* Favicon ACGE */}
+        <link rel="icon" type="image/svg+xml" href="/logo-tresor-public.svg" />
+        <link rel="apple-touch-icon" href="/logo-tresor-public.svg" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+        
         <link
           rel="preload"
           href="/fonts/outfit/OutfitVariableFont_wght1.ttf"

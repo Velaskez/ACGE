@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { ControleurBudgetaireGuard } from '@/components/auth/role-guard'
-import { DiagnosticPanel } from '@/components/debug/diagnostic-panel'
+// import { DiagnosticPanel } from '@/components/debug/diagnostic-panel' // Supprimé car composant debug supprimé
 import { checkDossierValidationStatus, ValidationStatus } from '@/lib/validation-utils'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -698,7 +698,7 @@ function CBDashboardContent() {
             </>
           )}
         {/* Panel de diagnostic */}
-        <DiagnosticPanel />
+        {/* <DiagnosticPanel /> Supprimé car composant debug supprimé */}
       </CompactPageLayout>
     )
   }
@@ -1385,7 +1385,7 @@ function CBDashboardContent() {
         </ModalBackdrop>
       )}
       {/* Panel de diagnostic */}
-      <DiagnosticPanel />
+      {/* <DiagnosticPanel /> Supprimé car composant debug supprimé */}
     </CompactPageLayout>
   )
 }
