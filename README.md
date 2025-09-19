@@ -1,172 +1,155 @@
-# 🏢 ACGE - Agence Comptable des Grandes Écoles
+# ACGE - Agence Comptable des Grandes Écoles
 
-Une application web moderne et responsive pour la gestion de l'agence comptable des grandes écoles, construite avec Next.js 14, TypeScript, et Tailwind CSS.
+## 🏢 Description
+Application moderne de gestion comptable pour les grandes écoles du Gabon, développée avec Next.js 15 et Supabase.
 
-## ✨ Fonctionnalités
+## 🚀 Fonctionnalités Principales
 
-### 🔐 Authentification
-- Inscription et connexion sécurisées
-- Gestion des rôles utilisateurs (Admin, Manager, User)
-- Sessions persistantes avec NextAuth.js
+### 👥 Gestion des Rôles
+- **Secrétaire** : Création et soumission des dossiers
+- **Contrôleur Budgétaire (CB)** : Validation des contrôles de fond
+- **Ordonnateur** : Vérifications spécifiques et ordonnancement
+- **Agent Comptable (AC)** : Validation définitive et génération de quitus
 
-### 📁 Gestion des Fichiers
-- Upload multi-fichiers avec drag & drop
-- Support de tous les formats courants (PDF, DOC, XLS, images, etc.)
-- Métadonnées automatiques (date, taille, type)
-- Versioning des fichiers
-- Recherche full-text
+### 📋 Workflow Complet
+1. **Création** : Secrétaire crée un dossier avec documents
+2. **Validation CB** : Contrôles de fond et types d'opérations
+3. **Ordonnancement** : Vérifications ordonnateur et ordonnancement
+4. **Validation AC** : Validation définitive et génération de quitus
 
-### 🗂️ Organisation
-- Dossiers hiérarchiques
-- Tags et catégories personnalisables
-- Système de partage et permissions
-- Commentaires et annotations
+### 🔧 Fonctionnalités Techniques
+- 🔐 Authentification sécurisée avec NextAuth
+- 📊 Dashboard personnalisé par rôle
+- 📄 Upload et gestion des documents
+- 🖨️ Génération de quitus format A4 professionnel
+- 🔔 Système de notifications intelligent
+- 📈 Analytics et Speed Insights Vercel
 
-### 🎨 Interface Utilisateur
-- Design responsive (mobile, tablette, desktop)
-- Interface moderne avec shadcn/ui
-- Thème sombre/clair
-- Navigation intuitive
+## 🛠️ Technologies Utilisées
 
-## 🚀 Technologies Utilisées
-
-- **Frontend :** Next.js 14, TypeScript, Tailwind CSS
-- **UI Components :** shadcn/ui, Radix UI
-- **Base de données :** PostgreSQL avec Prisma ORM
-- **Authentification :** NextAuth.js
-- **Styling :** Tailwind CSS
-- **Icons :** Lucide React
-
-## 📋 Prérequis
-
-- Node.js 18+ 
-- PostgreSQL
-- npm ou yarn
-
-## 🛠️ Installation
-
-1. **Cloner le repository**
-   ```bash
-   git clone <repository-url>
-   cd ged-app
-   ```
-
-2. **Installer les dépendances**
-   ```bash
-   npm install
-   ```
-
-3. **Configuration automatique de l'environnement**
-   ```bash
-   # Configuration automatique avec la clé de service role
-   npm run setup:env
-   
-   # Ou forcer le remplacement si le fichier existe déjà
-   npm run setup:env:force
-   ```
-
-4. **Récupérer votre clé anon Supabase**
-   - Allez sur https://supabase.com/dashboard
-   - Sélectionnez votre projet
-   - Allez dans Settings > API
-   - Copiez la clé "anon public" et remplacez `your-anon-key-here` dans `.env.local`
-
-   > 📝 **Note** : Consultez [SETUP_QUICK.md](./SETUP_QUICK.md) pour un guide de configuration détaillé.
-
-5. **Configuration de la base de données**
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   ```
-
-6. **Démarrer l'application**
-   ```bash
-   npm run dev
-   ```
-
-L'application sera accessible sur `http://localhost:3000`
+- **Frontend** : Next.js 15, React 18, TypeScript
+- **Backend** : Next.js API Routes, Supabase
+- **Base de données** : PostgreSQL (Supabase)
+- **Authentification** : NextAuth.js
+- **UI/UX** : Tailwind CSS, Shadcn/UI
+- **Déploiement** : Vercel
+- **Analytics** : Vercel Speed Insights & Analytics
 
 ## 📁 Structure du Projet
 
 ```
-src/
-├── app/                    # App Router Next.js
-│   ├── (auth)/            # Routes d'authentification
-│   │   ├── login/
-│   │   └── register/
-│   ├── api/               # API routes
-│   │   └── auth/
-│   ├── dashboard/         # Dashboard principal
-│   └── globals.css
-├── components/
-│   ├── ui/               # Composants shadcn/ui
-│   ├── layout/           # Header, Sidebar, Layout
-│   ├── documents/        # Composants spécifiques
-│   └── providers/        # Providers (Session, etc.)
-├── lib/                  # Utilitaires et configs
-│   ├── auth.ts          # Configuration NextAuth
-│   ├── db.ts            # Configuration Prisma
-│   └── utils.ts         # Utilitaires
-├── types/                # Types TypeScript
-└── prisma/
-    └── schema.prisma     # Schéma base de données
+ACGE/
+├── src/
+│   ├── app/
+│   │   ├── (auth)/           # Pages d'authentification
+│   │   ├── (protected)/      # Pages protégées par rôle
+│   │   └── api/              # API Routes
+│   ├── components/
+│   │   ├── auth/             # Composants d'authentification
+│   │   ├── cb/               # Composants Contrôleur Budgétaire
+│   │   ├── ordonnateur/      # Composants Ordonnateur
+│   │   ├── ac/               # Composants Agent Comptable
+│   │   ├── documents/        # Gestion des documents
+│   │   ├── upload/           # Upload de fichiers
+│   │   ├── ui/               # Composants UI réutilisables
+│   │   └── shared/           # Composants partagés
+│   ├── lib/                  # Utilitaires et configuration
+│   ├── hooks/                # Hooks React personnalisés
+│   ├── types/                # Types TypeScript
+│   └── styles/               # Styles CSS globaux
+├── scripts/
+│   ├── database/             # Scripts de base de données
+│   ├── verification/         # Scripts de test et vérification
+│   └── maintenance/          # Scripts de maintenance
+├── docs/                     # Documentation
+├── supabase/migrations/      # Migrations base de données
+└── public/                   # Assets statiques
 ```
 
-## 🔧 Configuration
+## 🚀 Installation et Démarrage
 
-### Base de Données
-L'application utilise PostgreSQL avec Prisma ORM. Le schéma inclut :
-- **Users** : Gestion des utilisateurs et rôles
-- **Documents** : Stockage des métadonnées des fichiers
-- **Folders** : Organisation hiérarchique
-- **Tags** : Catégorisation des documents
-- **DocumentShare** : Partage et permissions
-- **Comments** : Commentaires sur les fichiers
+### Prérequis
+- Node.js 18+
+- npm ou yarn
+- Compte Supabase
+- Compte Vercel (pour le déploiement)
 
-### Authentification
-- NextAuth.js avec provider credentials
-- Hashage des mots de passe avec bcryptjs
-- Sessions JWT sécurisées
+### Configuration
+1. Cloner le repository
+2. Installer les dépendances : `npm install`
+3. Configurer les variables d'environnement dans `.env`
+4. Appliquer les migrations Supabase
+5. Démarrer en développement : `npm run dev`
 
-## 🎯 Fonctionnalités à Venir
+### Variables d'Environnement
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+NEXTAUTH_SECRET=your_secret
+NEXTAUTH_URL=http://localhost:3000
+```
 
-### Phase 2
-- [ ] Upload de fichiers avec drag & drop
-- [ ] Prévisualisation des documents
-- [ ] Système de recherche avancée
-- [ ] Notifications en temps réel
+## 📊 Workflows Métier
 
-### Phase 3
-- [ ] Collaboration en temps réel
-- [ ] Workflow d'approbation
-- [ ] Audit trail complet
-- [ ] API REST complète
+### Workflow CB (Contrôleur Budgétaire)
+- Validation des contrôles de fond
+- Vérification des types d'opérations
+- Validation ou rejet des dossiers
 
-### Phase 4
-- [ ] Application mobile
-- [ ] Intégration cloud storage
-- [ ] OCR pour les images
-- [ ] Analytics avancées
+### Workflow Ordonnateur
+- Vérifications spécifiques par catégories
+- Validation des montants et bénéficiaires
+- Ordonnancement des dossiers validés
 
-## 🤝 Contribution
+### Workflow Agent Comptable
+- Révision complète des validations précédentes
+- Validation définitive des dossiers
+- Génération des quitus officiels
 
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commit les changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
+## 🖨️ Système de Quitus
 
-## 📝 Licence
+- Format A4 professionnel
+- Logo ACGE intégré
+- Marges optimisées (15mm latérales)
+- Suppression des en-têtes/pieds navigateur
+- Export PDF natif du navigateur
+- Archivage automatique en base de données
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+## 🔐 Sécurité
 
-## 🆘 Support
+- Row Level Security (RLS) activé
+- Authentification robuste NextAuth
+- Protection des routes par rôles
+- Validation des permissions API
+- Chiffrement des données sensibles
+
+## 📈 Performance
+
+- Lazy loading des composants
+- Optimisation des images
+- Cache des requêtes
+- Speed Insights intégré
+- Bundle optimisé pour la production
+
+## 🚀 Déploiement
+
+1. Push vers GitHub
+2. Connecter à Vercel
+3. Configurer les variables d'environnement
+4. Déploiement automatique
+
+## 📞 Support
 
 Pour toute question ou problème :
-- Ouvrir une issue sur GitHub
-- Consulter la documentation
+- Consulter la documentation dans `docs/`
+- Vérifier les logs d'erreur
 - Contacter l'équipe de développement
+
+## 📄 Licence
+
+Propriété de l'Agence Comptable des Grandes Écoles du Gabon.
 
 ---
 
-**Développé avec ❤️ pour une gestion moderne et efficace de l'agence comptable**
+**Développé avec ❤️ pour l'ACGE**
