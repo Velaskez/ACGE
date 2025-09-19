@@ -17,12 +17,30 @@ export async function PUT(
     
     console.log('❌ Rejet dossier CB:', id)
     
-    const body = await request.json()
-    const { reason, details } = body
-    
-    if (!reason || !reason.trim()) {
+    // Vérifier que le body est valide
+    let body
+    try {
+      body = await request.json()
+      console.log('📝 Body reçu:', body)
+    } catch (parseError) {
+      console.error('❌ Erreur parsing JSON:', parseError)
       return NextResponse.json(
-        { error: 'Le motif de rejet est requis' },
+        { error: 'Format JSON invalide dans la requête' },
+        { status: 400 }
+      )
+    }
+    
+    const { reason, details } = body || {}
+    
+    console.log('🔍 Données extraites:', { reason, details })
+    
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      console.error('❌ Motif de rejet manquant ou invalide:', { reason, type: typeof reason })
+      return NextResponse.json(
+        { 
+          error: 'Le motif de rejet est requis et doit être une chaîne de caractères non vide',
+          details: { received: reason, type: typeof reason }
+        },
         { status: 400 }
       )
     }
@@ -56,14 +74,54 @@ export async function PUT(
     }
 
     // Vérifier que le dossier est en attente
+    console.log('🔍 Statut du dossier:', {
+      id: dossier.id,
+      numeroDossier: dossier.numeroDossier,
+      statut: dossier.statut,
+      expected: 'EN_ATTENTE'
+    })
+    
     if (dossier.statut !== 'EN_ATTENTE') {
+      console.error('❌ Dossier pas en attente:', {
+        dossierId: id,
+        numeroDossier: dossier.numeroDossier,
+        currentStatus: dossier.statut,
+        expectedStatus: 'EN_ATTENTE'
+      })
+      
+      let errorMessage = 'Seuls les dossiers en attente peuvent être rejetés'
+      if (dossier.statut === 'VALIDÉ_CB') {
+        errorMessage = 'Ce dossier a déjà été validé et ne peut plus être rejeté'
+      } else if (dossier.statut === 'REJETÉ_CB') {
+        errorMessage = 'Ce dossier a déjà été rejeté'
+      } else if (dossier.statut === 'VALIDÉ_ORDONNATEUR') {
+        errorMessage = 'Ce dossier a été validé par l\'ordonnateur et ne peut plus être rejeté'
+      } else if (dossier.statut === 'PAYÉ' || dossier.statut === 'TERMINÉ') {
+        errorMessage = 'Ce dossier est terminé et ne peut plus être rejeté'
+      }
+      
       return NextResponse.json(
-        { error: 'Seuls les dossiers en attente peuvent être rejetés' },
+        { 
+          error: errorMessage,
+          details: {
+            dossierId: id,
+            numeroDossier: dossier.numeroDossier,
+            currentStatus: dossier.statut,
+            expectedStatus: 'EN_ATTENTE',
+            reason: 'Le statut du dossier ne permet pas le rejet'
+          }
+        },
         { status: 400 }
       )
     }
 
     // Mettre à jour le statut du dossier avec le motif de rejet
+    console.log('🔄 Mise à jour du dossier avec rejet:', {
+      id,
+      reason: reason.trim(),
+      details: details?.trim() || null
+    })
+    
     const { data: updatedDossier, error: updateError } = await admin
       .from('dossiers')
       .update({
@@ -85,7 +143,10 @@ export async function PUT(
     if (updateError) {
       console.error('❌ Erreur rejet dossier:', updateError)
       return NextResponse.json(
-        { error: 'Erreur lors du rejet' },
+        { 
+          error: 'Erreur lors du rejet',
+          details: updateError.message || 'Erreur inconnue de la base de données'
+        },
         { status: 500 }
       )
     }

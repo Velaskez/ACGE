@@ -84,17 +84,25 @@ export async function PUT(
       return NextResponse.json({ error: 'Corps JSON invalide' }, { status: 400 })
     }
 
-    // Vérifier que le dossier existe
+    // Vérifier que le dossier existe avec son statut
     const admin = getSupabaseAdmin()
     const { data: existingFolder } = await admin
       .from('folders')
-      .select('id, authorId, parentId')
+      .select('id, authorId, parentId, statut')
       .eq('id', folderId)
       .maybeSingle()
 
     if (!existingFolder) {
       
       return NextResponse.json({ error: 'Dossier non trouvé' }, { status: 404 })
+    }
+
+    // Vérifier si le dossier est validé par le CB - dans ce cas, interdire la modification
+    if (existingFolder.statut === 'VALIDÉ_CB' || existingFolder.statut === 'VALIDÉ_ORDONNATEUR' || existingFolder.statut === 'PAYÉ' || existingFolder.statut === 'TERMINÉ') {
+      console.log(`🚫 Tentative de modification d'un dossier validé: ${folderId} (statut: ${existingFolder.statut})`)
+      return NextResponse.json({ 
+        error: `Impossible de modifier le dossier : il a été validé par le Contrôleur Budgétaire (statut: ${existingFolder.statut})` 
+      }, { status: 403 })
     }
 
     // Préparer les données de mise à jour
@@ -177,11 +185,16 @@ export async function DELETE(
     const resolvedParams = await params
     const folderId = resolvedParams.id
 
-    // Vérifier que le dossier existe
+    // Vérifier que le dossier existe avec son statut
     const admin = getSupabaseAdmin()
     const { data: folder, error } = await admin
       .from('folders')
-      .select('id, name, authorId')
+      .select(`
+        id, 
+        name, 
+        authorId,
+        statut
+      `)
       .eq('id', folderId)
       .maybeSingle()
 
@@ -190,6 +203,15 @@ export async function DELETE(
     if (!folder) {
       
       return NextResponse.json({ error: 'Dossier non trouvé' }, { status: 404 })
+    }
+
+    // Vérifier si le dossier est validé par le CB - dans ce cas, interdire la suppression
+    if (folder.statut === 'VALIDÉ_CB' || folder.statut === 'VALIDÉ_ORDONNATEUR' || folder.statut === 'PAYÉ' || folder.statut === 'TERMINÉ') {
+      console.log(`🚫 Tentative de suppression d'un dossier validé: ${folder.name} (statut: ${folder.statut})`)
+      return NextResponse.json({ 
+        success: false,
+        error: `Impossible de supprimer le dossier : il a été validé par le Contrôleur Budgétaire (statut: ${folder.statut})` 
+      }, { status: 403 })
     }
 
     console.log(`📁 Dossier à supprimer: ${folder.name}`)
@@ -209,7 +231,6 @@ export async function DELETE(
     console.log(`📁 Sous-dossiers: ${childrenCount || 0}`)
 
     if ((documentsCount || 0) > 0) {
-      
       return NextResponse.json({ 
         success: false,
         error: `Impossible de supprimer le dossier : il contient ${documentsCount} document(s)` 
@@ -217,7 +238,6 @@ export async function DELETE(
     }
 
     if ((childrenCount || 0) > 0) {
-      
       return NextResponse.json({ 
         success: false,
         error: `Impossible de supprimer le dossier : il contient ${childrenCount} sous-dossier(s)` 

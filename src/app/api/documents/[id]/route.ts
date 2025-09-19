@@ -314,20 +314,31 @@ export async function DELETE(
     }
 
     // Supprimer le fichier du storage si il existe
-    if (document.file_name) {
+    if (document.file_path) {
       try {
+        // Nettoyer le chemin du fichier pour le storage
+        const filePath = document.file_path.startsWith('documents/') 
+          ? document.file_path 
+          : `documents/${document.file_path}`
+        
+        console.log('🗑️ Suppression fichier storage:', filePath)
+        
         const { error: storageError } = await supabase.storage
           .from('documents')
-          .remove([document.file_name])
+          .remove([filePath])
         
         if (storageError) {
           console.warn('⚠️ Erreur suppression fichier storage:', storageError)
+          // Ne pas faire échouer la suppression du document si le fichier n'existe pas
         } else {
-          console.log('✅ Fichier supprimé du storage:', document.file_name)
+          console.log('✅ Fichier supprimé du storage:', filePath)
         }
       } catch (storageError) {
         console.warn('⚠️ Erreur suppression fichier storage:', storageError)
+        // Ne pas faire échouer la suppression du document
       }
+    } else {
+      console.log('⚠️ Aucun file_path trouvé pour le document:', document.title)
     }
 
     // Supprimer le document de la base de données

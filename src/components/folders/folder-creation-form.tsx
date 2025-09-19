@@ -131,7 +131,7 @@ export function FolderCreationForm({
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 px-2">
             <div className="text-center mb-6 ">
               <FolderOpen className="w-12 h-12 text-primary mx-auto mb-2 " />
               <h3 className="text-lg font-semibold">Informations de base</h3>
@@ -174,7 +174,7 @@ export function FolderCreationForm({
 
       case 2:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 px-2">
             <div className="text-center mb-6 ">
               <Calculator className="w-12 h-12 text-primary mx-auto mb-2 " />
               <h3 className="text-lg font-semibold">Informations comptables</h3>

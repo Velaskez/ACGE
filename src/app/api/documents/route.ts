@@ -14,10 +14,11 @@ export async function GET(request: NextRequest) {
     // Récupérer les paramètres de requête
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
+    const folderId = searchParams.get('folderId')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100)
 
-    console.log('📄 Paramètres:', { search, page, limit })
+    console.log('📄 Paramètres:', { search, folderId, page, limit })
 
     // Connexion à Supabase
     const supabase = getSupabaseAdmin()
@@ -58,6 +59,11 @@ export async function GET(request: NextRequest) {
           )
         `, { count: 'exact' })
 
+      // Filtre par dossier si spécifié
+      if (folderId) {
+        query = query.eq('folder_id', folderId)
+      }
+
       // Recherche simple
       if (search) {
         query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,file_name.ilike.%${search}%`)
@@ -89,6 +95,13 @@ export async function GET(request: NextRequest) {
         const timestamp = new Date(doc.created_at).getTime()
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const documentId = `file-${timestamp}-${randomSuffix}`
+
+        // Debug: afficher les données brutes
+        console.log('📄 Document brut (debug):', {
+          id: doc.id,
+          title: doc.title,
+          file_name: doc.file_name
+        })
 
         // Générer l'URL du fichier
         let fileUrl = null
@@ -140,6 +153,15 @@ export async function GET(request: NextRequest) {
       })
 
       console.log(`✅ ${enrichedDocuments.length} documents enrichis retournés`)
+      
+      // Debug: afficher les premiers documents pour vérifier la structure
+      if (enrichedDocuments.length > 0) {
+        console.log('📄 Premier document (debug):', {
+          id: enrichedDocuments[0].id,
+          originalId: enrichedDocuments[0].originalId,
+          title: enrichedDocuments[0].title
+        })
+      }
 
       return NextResponse.json({
         documents: enrichedDocuments,

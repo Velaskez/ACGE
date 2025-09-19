@@ -185,7 +185,7 @@ export function DocumentEditForm({
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 px-2">
             <FormField
               control={form.control}
               name="title"
@@ -239,7 +239,7 @@ export function DocumentEditForm({
 
       case 2:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 px-2">
             <FormField
               control={form.control}
               name="category"

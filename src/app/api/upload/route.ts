@@ -104,6 +104,13 @@ export async function POST(request: NextRequest) {
 
     for (const file of files) {
       try {
+        // Vérifier que le fichier est valide
+        if (!file || !file.name) {
+          console.error('❌ Fichier invalide:', file)
+          errors.push({ fileName: 'fichier invalide', message: 'Fichier sans nom ou corrompu' })
+          continue
+        }
+
         console.log(`📤 Traitement: ${file.name} (${file.size} bytes, ${file.type})`)
 
         // Nettoyer le nom de fichier
@@ -127,10 +134,10 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
         
-        // Upload vers le bucket 'documents'
+        // Upload vers le bucket 'documents' dans le sous-dossier 'documents/'
         const { data: storageData, error: storageError } = await supabase.storage
           .from('documents')
-          .upload(fileName, buffer, {
+          .upload(`documents/${fileName}`, buffer, {
             contentType: file.type,
             upsert: false
           })
@@ -145,7 +152,7 @@ export async function POST(request: NextRequest) {
         // Obtenir l'URL publique
         const { data: { publicUrl } } = supabase.storage
           .from('documents')
-          .getPublicUrl(fileName)
+          .getPublicUrl(`documents/${fileName}`)
 
         console.log('🔗 URL publique Supabase:', publicUrl)
 
@@ -176,7 +183,7 @@ export async function POST(request: NextRequest) {
         if (dbError) {
           console.error('❌ Erreur base de données:', dbError)
           // Essayer de supprimer le fichier du storage si la DB échoue
-          await supabase.storage.from('documents').remove([fileName])
+          await supabase.storage.from('documents').remove([`documents/${fileName}`])
           throw new Error(`Erreur base de données: ${dbError.message}`)
         }
 

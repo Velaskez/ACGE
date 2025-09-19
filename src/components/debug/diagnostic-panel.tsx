@@ -116,7 +116,7 @@ export function DiagnosticPanel() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-primary/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 h-screen">
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-auto">
         <CardHeader>
           <div className="flex items-center justify-between">

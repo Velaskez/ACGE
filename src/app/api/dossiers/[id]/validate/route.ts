@@ -53,6 +53,41 @@ export async function PUT(
       )
     }
 
+    // Vérifier que les deux validations sont présentes
+    const { data: validationTypeOperation, error: validationTypeError } = await admin
+      .from('validations_cb')
+      .select('id')
+      .eq('dossier_id', id)
+      .single()
+    
+    const { data: validationsControlesFond, error: validationsControlesError } = await admin
+      .from('validations_controles_fond')
+      .select('id, valide')
+      .eq('dossier_id', id)
+    
+    if (validationTypeError || !validationTypeOperation) {
+      return NextResponse.json(
+        { error: 'Validation du type d\'opération requise avant de valider le dossier' },
+        { status: 400 }
+      )
+    }
+    
+    if (validationsControlesError || !validationsControlesFond || validationsControlesFond.length === 0) {
+      return NextResponse.json(
+        { error: 'Validation des contrôles de fond requise avant de valider le dossier' },
+        { status: 400 }
+      )
+    }
+    
+    // Vérifier que tous les contrôles de fond sont validés
+    const tousControlesValides = validationsControlesFond.every(v => v.valide)
+    if (!tousControlesValides) {
+      return NextResponse.json(
+        { error: 'Tous les contrôles de fond doivent être validés avant de valider le dossier' },
+        { status: 400 }
+      )
+    }
+
     // Mettre à jour le statut du dossier
     const { data: updatedDossier, error: updateError } = await admin
       .from('dossiers')

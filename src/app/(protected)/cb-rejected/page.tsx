@@ -1,5 +1,4 @@
 'use client'
-
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
@@ -33,9 +32,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
+import { DocumentPreviewModal } from '@/components/ui/document-preview-modal'
 import { 
   XCircle, 
   Clock, 
@@ -52,7 +51,6 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-
 interface DossierComptable {
   id: string
   numeroDossier: string
@@ -86,11 +84,9 @@ interface DossierComptable {
   rejectionReason?: string
   rejectionDetails?: string
 }
-
 function CBRejectedContent() {
   const { user } = useSupabaseAuth()
   const router = useRouter()
-  
   // États pour la gestion des dossiers
   const [dossiers, setDossiers] = React.useState<DossierComptable[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -98,23 +94,19 @@ function CBRejectedContent() {
   const [query, setQuery] = React.useState('')
   const [sortField, setSortField] = React.useState<'numeroDossier' | 'dateDepot' | 'createdAt'>('createdAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
-  
   // États pour les actions
   const [selectedDossier, setSelectedDossier] = React.useState<DossierComptable | null>(null)
   const [detailsOpen, setDetailsOpen] = React.useState(false)
-  
   // États pour la suppression
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false)
   const [dossierToDelete, setDossierToDelete] = React.useState<DossierComptable | null>(null)
   const [isDeleting, setIsDeleting] = React.useState(false)
   const [deleteError, setDeleteError] = React.useState('')
-  
   // États pour la suppression en masse
   const [selectedDossiers, setSelectedDossiers] = React.useState<string[]>([])
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = React.useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = React.useState(false)
   const [bulkDeleteError, setBulkDeleteError] = React.useState('')
-  
   // États pour l'affichage du contenu du dossier
   const [currentFolder, setCurrentFolder] = React.useState<any>(null)
   const [documents, setDocuments] = React.useState<any[]>([])
@@ -124,24 +116,20 @@ function CBRejectedContent() {
   const [previewOpen, setPreviewOpen] = React.useState(false)
   const [editModalOpen, setEditModalOpen] = React.useState(false)
   const [shareModalOpen, setShareModalOpen] = React.useState(false)
-
   // Vérifier si l'utilisateur est CB
   React.useEffect(() => {
     if (user?.role !== 'CONTROLEUR_BUDGETAIRE') {
       router.push('/dashboard')
     }
   }, [user, router])
-
   // Charger les dossiers rejetés
   const loadDossiers = React.useCallback(async () => {
     try {
       setIsLoading(true)
       setError('')
-      
       const response = await fetch('/api/dossiers/cb-rejected', {
         credentials: 'include'
       })
-      
       if (response.ok) {
         const data = await response.json()
         console.log('📊 Dossiers rejetés CB chargés:', data.dossiers)
@@ -160,35 +148,28 @@ function CBRejectedContent() {
       setIsLoading(false)
     }
   }, [])
-
   // Charger les dossiers au montage
   React.useEffect(() => {
     loadDossiers()
   }, [loadDossiers])
-
   // Fonction pour ouvrir un dossier et voir son contenu
   const handleOpenFolder = async (dossier: DossierComptable) => {
     console.log('🚀 FONCTION handleOpenFolder APPELÉE (CB rejetés)')
     console.log('🔍 Tentative d\'ouverture du dossier:', dossier)
     console.log('🔍 folderId:', dossier.folderId)
     console.log('🔍 foldername:', dossier.folderName)
-    
     if (!dossier.folderId) {
       console.log('❌ Pas de folderId pour ce dossier')
       setError('Ce dossier rejeté n\'a pas de contenu de fichiers consultable. Les dossiers rejetés ne sont pas liés à des dossiers de fichiers.')
       return
     }
-
     try {
       setDocumentsLoading(true)
       setDocumentsError('')
-      
       console.log('📁 Chargement des détails du dossier:', dossier.folderId)
-      
       // Charger les détails du dossier
       const folderRes = await fetch(`/api/folders/${dossier.folderId}`)
       console.log('📁 Réponse dossier:', folderRes.status, folderRes.statusText)
-      
       if (folderRes.ok) {
         const folderData = await folderRes.json()
         console.log('📁 Données dossier:', folderData)
@@ -199,13 +180,10 @@ function CBRejectedContent() {
         setDocumentsError('Erreur lors du chargement du dossier')
         return
       }
-      
       console.log('📄 Chargement des documents du dossier:', dossier.folderId)
-      
       // Charger les documents du dossier
       const documentsRes = await fetch(`/api/documents?folderId=${dossier.folderId}`)
       console.log('📄 Réponse documents:', documentsRes.status, documentsRes.statusText)
-      
       if (documentsRes.ok) {
         const documentsData = await documentsRes.json()
         console.log('📄 Données documents:', documentsData)
@@ -222,20 +200,17 @@ function CBRejectedContent() {
       setDocumentsLoading(false)
     }
   }
-
   // Fonction pour revenir à la liste des dossiers rejetés
   const handleBackToRejected = () => {
     setCurrentFolder(null)
     setDocuments([])
     setDocumentsError('')
   }
-
   // Fonction pour recharger les documents du dossier
   const loadFolderDocuments = async (folderId: string) => {
     try {
       setDocumentsLoading(true)
       setDocumentsError('')
-      
       const documentsRes = await fetch(`/api/documents?folderId=${folderId}`)
       if (documentsRes.ok) {
         const documentsData = await documentsRes.json()
@@ -250,23 +225,19 @@ function CBRejectedContent() {
       setDocumentsLoading(false)
     }
   }
-
   // Fonctions pour gérer les documents
   const handleViewDocument = (document: any) => {
     setSelectedDocument(document)
     setPreviewOpen(true)
   }
-
   const handleEditDocument = (document: any) => {
     setSelectedDocument(document)
     setEditModalOpen(true)
   }
-
   const handleShareDocument = (document: any) => {
     setSelectedDocument(document)
     setShareModalOpen(true)
   }
-
   const handleDownloadDocument = async (document: any) => {
     try {
       const response = await fetch(`/api/documents/${document.id}/download`)
@@ -286,35 +257,27 @@ function CBRejectedContent() {
       console.error('Erreur téléchargement:', error)
     }
   }
-
   // Fonctions pour la suppression des dossiers rejetés
   const handleDeleteDossier = (dossier: DossierComptable) => {
     setDossierToDelete(dossier)
     setDeleteModalOpen(true)
     setDeleteError('')
   }
-
   const confirmDeleteDossier = async () => {
     if (!dossierToDelete) return
-
     try {
       setIsDeleting(true)
       setDeleteError('')
-
       console.log('🗑️ Suppression du dossier rejeté:', dossierToDelete.numeroDossier)
-
       const response = await fetch(`/api/dossiers/cb-rejected/${dossierToDelete.id}/delete`, {
         method: 'DELETE',
         credentials: 'include'
       })
-
       if (response.ok) {
         const data = await response.json()
         console.log('✅ Dossier supprimé avec succès:', data)
-        
         // Recharger la liste des dossiers
         await loadDossiers()
-        
         // Fermer la modal
         setDeleteModalOpen(false)
         setDossierToDelete(null)
@@ -330,13 +293,11 @@ function CBRejectedContent() {
       setIsDeleting(false)
     }
   }
-
   const cancelDeleteDossier = () => {
     setDeleteModalOpen(false)
     setDossierToDelete(null)
     setDeleteError('')
   }
-
   // Fonctions pour la suppression en masse
   const handleSelectDossier = (dossierId: string) => {
     setSelectedDossiers(prev => 
@@ -345,7 +306,6 @@ function CBRejectedContent() {
         : [...prev, dossierId]
     )
   }
-
   const handleSelectAllDossiers = () => {
     if (selectedDossiers.length === filteredDossiers.length) {
       setSelectedDossiers([])
@@ -353,55 +313,41 @@ function CBRejectedContent() {
       setSelectedDossiers(filteredDossiers.map(d => d.id))
     }
   }
-
   const handleBulkDelete = () => {
     if (selectedDossiers.length === 0) return
     setBulkDeleteModalOpen(true)
     setBulkDeleteError('')
   }
-
   const confirmBulkDelete = async () => {
     if (selectedDossiers.length === 0) return
-
     try {
       setIsBulkDeleting(true)
       setBulkDeleteError('')
-
       console.log('🗑️ Suppression en masse de', selectedDossiers.length, 'dossiers rejetés')
-
       // Supprimer les dossiers un par un
       const deletePromises = selectedDossiers.map(async (dossierId) => {
         const response = await fetch(`/api/dossiers/cb-rejected/${dossierId}/delete`, {
           method: 'DELETE',
           credentials: 'include'
         })
-        
         if (!response.ok) {
           const errorData = await response.json()
           throw new Error(errorData.error || 'Erreur lors de la suppression')
         }
-        
         return response.json()
       })
-
       const results = await Promise.allSettled(deletePromises)
-      
       // Compter les succès et échecs
       const successes = results.filter(r => r.status === 'fulfilled').length
       const failures = results.filter(r => r.status === 'rejected').length
-
       console.log(`✅ Suppression en masse terminée: ${successes} succès, ${failures} échecs`)
-
       if (failures > 0) {
         setBulkDeleteError(`${successes} dossiers supprimés avec succès, ${failures} échecs`)
       }
-
       // Recharger la liste des dossiers
       await loadDossiers()
-      
       // Réinitialiser la sélection
       setSelectedDossiers([])
-      
       // Fermer la modal après un délai si il y a des erreurs
       if (failures === 0) {
         setBulkDeleteModalOpen(false)
@@ -417,16 +363,13 @@ function CBRejectedContent() {
       setIsBulkDeleting(false)
     }
   }
-
   const cancelBulkDelete = () => {
     setBulkDeleteModalOpen(false)
     setBulkDeleteError('')
   }
-
   // Filtrage et tri des dossiers
   const filteredDossiers = React.useMemo(() => {
     let items = dossiers
-
     // Filtrage par recherche textuelle
     if (query) {
       items = items.filter(d => 
@@ -436,11 +379,9 @@ function CBRejectedContent() {
         (d.folderName && d.folderName.toLowerCase().includes(query.toLowerCase()))
       )
     }
-
     // Tri
     items.sort((a, b) => {
       let aValue: any, bValue: any
-      
       switch (sortField) {
         case 'numeroDossier':
           aValue = a.numeroDossier.toLowerCase()
@@ -455,17 +396,14 @@ function CBRejectedContent() {
           aValue = new Date(a.createdAt).getTime()
           bValue = new Date(b.createdAt).getTime()
       }
-
       if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
       } else {
         return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
       }
     })
-
     return items
   }, [dossiers, query, sortField, sortOrder])
-
   const getStatutBadge = (statut: string) => {
     const configs = {
       'EN_ATTENTE': { label: 'En attente', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
@@ -475,11 +413,9 @@ function CBRejectedContent() {
       'PAYÉ': { label: 'Payé', className: 'bg-purple-100 text-purple-800 border-purple-200' },
       'TERMINÉ': { label: 'Terminé', className: 'bg-gray-100 text-gray-800 border-gray-200' }
     }
-    
     const config = configs[statut as keyof typeof configs] || configs['EN_ATTENTE']
     return <Badge variant="outline" className={config.className}>{config.label}</Badge>
   }
-
   if (user?.role !== 'CONTROLEUR_BUDGETAIRE') {
     return (
       <MainLayout>
@@ -504,7 +440,6 @@ function CBRejectedContent() {
       </MainLayout>
     )
   }
-
   // Si on est en mode consultation de dossier, afficher l'interface de consultation
   if (currentFolder) {
     return (
@@ -533,7 +468,6 @@ function CBRejectedContent() {
               </Button>
             </div>
           </div>
-
           {/* Stats du dossier */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
@@ -572,7 +506,6 @@ function CBRejectedContent() {
               </CardContent>
             </Card>
           </div>
-
           {/* Liste des documents */}
           <Card>
             <CardHeader>
@@ -662,7 +595,6 @@ function CBRejectedContent() {
               )}
             </CardContent>
           </Card>
-
           {/* Modales pour les documents */}
           {selectedDocument && (
             <>
@@ -670,6 +602,16 @@ function CBRejectedContent() {
                 document={selectedDocument}
                 isOpen={previewOpen}
                 onClose={() => setPreviewOpen(false)}
+                onDownload={(doc) => {
+                  // Logique de téléchargement
+                  console.log('Téléchargement du document:', doc.title)
+                }}
+                onEdit={(doc) => {
+                  setEditModalOpen(true)
+                }}
+                onShare={(doc) => {
+                  setShareModalOpen(true)
+                }}
               />
               <DocumentEditModal
                 document={selectedDocument}
@@ -693,7 +635,6 @@ function CBRejectedContent() {
       </MainLayout>
     )
   }
-
   return (
     <CompactPageLayout>
       <PageHeader
@@ -730,7 +671,6 @@ function CBRejectedContent() {
           </div>
         }
       />
-
       <ContentSection
         title="Recherche et filtres"
         actions={
@@ -762,11 +702,10 @@ function CBRejectedContent() {
             placeholder="Rechercher par numéro, objet, bénéficiaire ou nom de dossier..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10 h-8"
+            className="pl-10 pr-4 h-8"
           />
         </div>
       </ContentSection>
-
       <CompactStats
         stats={[
           {
@@ -794,7 +733,6 @@ function CBRejectedContent() {
         ]}
         columns={3}
       />
-
       <ContentSection
         title="Dossiers rejetés"
         subtitle={`${filteredDossiers.length} dossier${filteredDossiers.length > 1 ? 's' : ''} rejeté${filteredDossiers.length > 1 ? 's' : ''} trouvé${filteredDossiers.length > 1 ? 's' : ''}`}
@@ -892,7 +830,8 @@ function CBRejectedContent() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
                               setSelectedDossier(dossier)
                               setDetailsOpen(true)
                             }}>
@@ -951,7 +890,6 @@ function CBRejectedContent() {
               </div>
             )}
       </ContentSection>
-
         {/* Modal de détails du dossier */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
           <DialogContent className="max-w-4xl" showCloseButton={false}>
@@ -994,7 +932,6 @@ function CBRejectedContent() {
                     </div>
                   </div>
                 </div>
-
                 {/* Poste comptable */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Poste Comptable</Label>
@@ -1003,7 +940,6 @@ function CBRejectedContent() {
                     <p className="text-sm text-muted-foreground">{selectedDossier.poste_comptable?.intitule || 'N/A'}</p>
                   </div>
                 </div>
-
                 {/* Nature du document */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Nature du Document</Label>
@@ -1012,7 +948,6 @@ function CBRejectedContent() {
                     <p className="text-sm text-muted-foreground">{selectedDossier.nature_document?.nom || 'N/A'}</p>
                   </div>
                 </div>
-
                 {/* Secrétaire */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Secrétaire</Label>
@@ -1021,7 +956,6 @@ function CBRejectedContent() {
                     <p className="text-sm text-muted-foreground">{selectedDossier.secretaire?.email || 'N/A'}</p>
                   </div>
                 </div>
-
                 {/* Dates */}
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
@@ -1046,7 +980,6 @@ function CBRejectedContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Modal de confirmation de suppression */}
         <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
           <DialogContent className="max-w-md" showCloseButton={false}>
@@ -1059,7 +992,6 @@ function CBRejectedContent() {
                 Cette action est irréversible. Le dossier sera définitivement supprimé de la base de données.
               </DialogDescription>
             </DialogHeader>
-            
             {dossierToDelete && (
               <div className="space-y-4">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -1072,7 +1004,6 @@ function CBRejectedContent() {
                     <p><strong>Secrétaire :</strong> {dossierToDelete.secretaire?.name}</p>
                   </div>
                 </div>
-                
                 {deleteError && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                     <div className="flex items-center gap-2">
@@ -1083,7 +1014,6 @@ function CBRejectedContent() {
                 )}
               </div>
             )}
-            
             <DialogFooter className="gap-2">
               <Button 
                 variant="outline" 
@@ -1113,7 +1043,6 @@ function CBRejectedContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Modal de confirmation de suppression en masse */}
         <Dialog open={bulkDeleteModalOpen} onOpenChange={setBulkDeleteModalOpen}>
           <DialogContent className="max-w-md" showCloseButton={false}>
@@ -1126,7 +1055,6 @@ function CBRejectedContent() {
                 Cette action est irréversible. Les dossiers seront définitivement supprimés de la base de données.
               </DialogDescription>
             </DialogHeader>
-            
             <div className="space-y-4">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h4 className="font-medium text-red-800 mb-2">
@@ -1143,7 +1071,6 @@ function CBRejectedContent() {
                   })}
                 </div>
               </div>
-              
               {bulkDeleteError && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex items-center gap-2">
@@ -1153,7 +1080,6 @@ function CBRejectedContent() {
                 </div>
               )}
             </div>
-            
             <DialogFooter className="gap-2">
               <Button 
                 variant="outline" 
@@ -1186,7 +1112,6 @@ function CBRejectedContent() {
     </CompactPageLayout>
   )
 }
-
 export default function CBRejectedPage() {
   return (
     <ControleurBudgetaireGuard>

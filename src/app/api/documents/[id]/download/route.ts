@@ -9,12 +9,13 @@ import { getSupabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('📄 API Documents Download - Téléchargement:', params.id)
+    const { id } = await params
+    console.log('📄 API Documents Download - Téléchargement:', id)
     
-    const documentId = params.id
+    const documentId = id
     
     if (!documentId) {
       return NextResponse.json(
@@ -35,14 +36,34 @@ export async function GET(
 
     try {
       // Récupérer le document depuis la base de données
-      const { data: document, error: docError } = await supabase
+      // Note: documentId est l'ID artificiel généré côté client
+      // On doit chercher par l'ID artificiel dans une table de mapping ou utiliser une autre logique
+      
+      // Pour l'instant, on va chercher tous les documents et trouver celui qui correspond
+      // C'est une solution temporaire - idéalement il faudrait une table de mapping
+      const { data: documents, error: docError } = await supabase
         .from('documents')
-        .select('file_name, file_path, file_type, title')
-        .eq('id', documentId)
-        .single()
-
-      if (docError || !document) {
-        console.error('❌ Document non trouvé:', docError)
+        .select('id, file_name, file_path, file_type, title, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1000) // Limite pour éviter de charger trop de données
+      
+      if (docError) {
+        console.error('❌ Erreur récupération documents:', docError)
+        return NextResponse.json(
+          { error: 'Erreur lors de la récupération des documents' },
+          { status: 500 }
+        )
+      }
+      
+      // Trouver le document qui correspond à l'ID artificiel
+      const document = documents?.find(doc => {
+        const timestamp = new Date(doc.created_at).getTime()
+        const expectedId = `file-${timestamp}-${documentId.split('-')[2] || ''}`
+        return expectedId === documentId
+      })
+      
+      if (!document) {
+        console.error('❌ Document non trouvé pour ID artificiel:', documentId)
         return NextResponse.json(
           { error: 'Document non trouvé' },
           { status: 404 }
@@ -51,10 +72,10 @@ export async function GET(
 
       console.log('📄 Document trouvé:', document.title, document.file_name)
 
-      // Télécharger le fichier depuis Supabase Storage
+      // Télécharger le fichier depuis Supabase Storage (dans le sous-dossier documents/)
       const { data: fileData, error: storageError } = await supabase.storage
         .from('documents')
-        .download(document.file_name)
+        .download(`documents/${document.file_name}`)
 
       if (storageError || !fileData) {
         console.error('❌ Erreur Supabase Storage:', storageError)

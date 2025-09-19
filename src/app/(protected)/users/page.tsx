@@ -51,6 +51,7 @@ import {
 } from 'lucide-react'
 import { Role } from '@/types'
 import { UserForm } from '@/components/users/user-form'
+import { MainLayout } from '@/components/layout/main-layout'
 
 interface User {
   id: string

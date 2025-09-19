@@ -33,17 +33,20 @@ export async function createNotification(params: CreateNotificationParams): Prom
       return false
     }
 
-    // Vérifier si la table notifications existe
-    const { data: tableExists, error: tableCheckError } = await admin
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'notifications')
-      .maybeSingle()
+    // Vérifier si la table notifications existe en tentant une requête simple
+    const { data: testData, error: tableCheckError } = await admin
+      .from('notifications')
+      .select('id')
+      .limit(1)
 
-    if (tableCheckError || !tableExists) {
-      console.warn('⚠️ Table notifications non trouvée, notification ignorée')
-      return false
+    if (tableCheckError) {
+      if (tableCheckError.code === 'PGRST116') {
+        console.warn('⚠️ Table notifications non trouvée, notification ignorée')
+        return false
+      } else {
+        console.warn('⚠️ Erreur lors de la vérification de la table notifications:', tableCheckError.message)
+        return false
+      }
     }
 
     // Créer la notification
@@ -184,6 +187,28 @@ export async function notifyDossierResubmission(dossier: any, cbUserId: string):
       dossierId: dossier.id,
       numeroDossier: dossier.numeroDossier,
       resubmittedAt: new Date().toISOString()
+    }
+  })
+}
+
+/**
+ * 📝 Notification de mise à jour de dossier
+ */
+export async function notifyDossierUpdate(dossier: any, cbUserId: string, secretaire: any): Promise<boolean> {
+  if (!dossier || !cbUserId || !secretaire) return false
+
+  return await createNotification({
+    userId: cbUserId,
+    title: 'Dossier mis à jour',
+    message: `Le dossier ${dossier.numeroDossier} a été modifié par ${secretaire.name || 'la secrétaire'}.\n\nObjet: ${dossier.objetOperation}\nBénéficiaire: ${dossier.beneficiaire}`,
+    type: 'WARNING',
+    priority: 'MEDIUM',
+    actionUrl: '/cb-dashboard',
+    actionLabel: 'Voir les modifications',
+    metadata: {
+      dossierId: dossier.id,
+      numeroDossier: dossier.numeroDossier,
+      updatedAt: new Date().toISOString()
     }
   })
 }

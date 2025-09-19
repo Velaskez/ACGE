@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Save, AlertCircle, FolderOpen, Folder, FileText, Calendar, User, HardDrive, Info, X } from 'lucide-react'
+import { Save, AlertCircle, FolderOpen, Folder, FileText, Calendar, User, HardDrive, X } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
@@ -68,7 +68,6 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
   const [error, setError] = useState('')
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [foldersLoading, setFoldersLoading] = useState(false)
-  const [showFileInfo, setShowFileInfo] = useState(true)
 
   // Charger les dossiers et catégories disponibles
   useEffect(() => {
@@ -220,129 +219,38 @@ export function DocumentEditModal({ document, isOpen, onClose, onSave }: Documen
   return (
     <ModalWrapper isOpen={isOpen} onOpenChange={onClose}>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-full max-w-4xl mx-auto max-h-[85vh] overflow-y-auto" showCloseButton={false}>
-        <DialogHeader className="pb-4">
+        <DialogContent className="w-full max-w-5xl mx-auto max-h-[98vh] overflow-y-auto" showCloseButton={false}>
+        <DialogHeader className="p-1 pb-1">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <FileText className="h-5 w-5 flex-shrink-0 icon-red-fg" />
               <span className="truncate">Modifier le document</span>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowFileInfo(!showFileInfo)}
-                className="hidden sm:flex"
-              >
-                <Info className="mr-1 h-4 w-4" />
-                <span>Infos</span>
-              </Button>
-            </div>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Informations du fichier (lecture seule) - Version compacte avec toggle */}
-          <div className={`transition-all duration-300 overflow-hidden ${
-            showFileInfo ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-          }`}>
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Nom du fichier */}
-                <div className="sm:col-span-2 lg:col-span-2">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <FileText className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <Label className="text-sm font-medium text-blue-900 mb-1 block">Nom du fichier</Label>
-                      <p className="text-sm text-blue-800 break-all leading-relaxed">
-                        {document.fileName || 'Sans nom'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Type de fichier */}
-                <div>
-                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Type</Label>
-                  <Badge variant="secondary" className="w-full justify-center text-xs">
-                    {document.fileType?.split('/')[1]?.toUpperCase() || 'INCONNU'}
-                  </Badge>
-                </div>
-
-                {/* Taille */}
-                <div>
-                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Taille</Label>
-                  <div className="flex items-center gap-2">
-                    <HardDrive className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-800 text-number">
-                      {formatFileSize(document.fileSize || 0)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Version */}
-                <div>
-                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Version</Label>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      v{document.versionNumber || 0}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Dossier actuel */}
-                <div className="sm:col-span-2">
-                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Emplacement actuel</Label>
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-800 break-all">
-                      {document.folder ? document.folder.name : 'Racine (aucun dossier)'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Date de création */}
-                <div>
-                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Créé le</Label>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-800 text-date">
-                      {formatDate(document.createdAt)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Auteur */}
-                <div className="sm:col-span-2">
-                  <Label className="text-sm font-medium text-blue-900 mb-1 block">Auteur</Label>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-800 break-all">
-                      {document.author?.name || 'Inconnu'}
-                    </span>
-                  </div>
-                </div>
+        <div className="space-y-3 px-1">
+          {/* Informations du fichier - Version simplifiée */}
+          <div className="bg-gray-50 p-3 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <FileText className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                <span className="text-sm text-gray-700 truncate">
+                  {document.fileName || 'Sans nom'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
+                <Badge variant="secondary" className="text-xs">
+                  {document.fileType?.split('/')[1]?.toUpperCase() || 'INCONNU'}
+                </Badge>
+                <span>{formatFileSize(document.fileSize || 0)}</span>
               </div>
             </div>
           </div>
 
-          {/* Bouton d'infos pour mobile */}
-          <div className="sm:hidden">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowFileInfo(!showFileInfo)}
-              className="w-full"
-            >
-              <Info className="h-4 w-4 mr-2" />
-              {showFileInfo ? 'Masquer les infos' : 'Afficher les infos'}
-            </Button>
-          </div>
 
           {error && (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="destructive" className="mb-2">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>

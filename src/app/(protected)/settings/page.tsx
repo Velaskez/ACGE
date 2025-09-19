@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { MainLayout } from '@/components/layout/main-layout'
 import { CompactPageLayout, PageHeader, ContentSection } from '@/components/shared/compact-page-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'

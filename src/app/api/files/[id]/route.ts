@@ -36,6 +36,7 @@ export async function GET(
 
     try {
       // Récupérer le document depuis la base de données
+      // Note: fileId est maintenant l'UUID de la base de données
       const { data: document, error: docError } = await supabase
         .from('documents')
         .select('file_name, file_path, file_type, title')
@@ -52,10 +53,10 @@ export async function GET(
 
       console.log('📄 Document trouvé:', document.title, document.file_name)
 
-      // Télécharger le fichier depuis Supabase Storage
+      // Télécharger le fichier depuis Supabase Storage (dans le sous-dossier documents/)
       const { data: fileData, error: storageError } = await supabase.storage
         .from('documents')
-        .download(document.file_name)
+        .download(`documents/${document.file_name}`)
 
       if (storageError || !fileData) {
         console.error('❌ Erreur Supabase Storage:', storageError)

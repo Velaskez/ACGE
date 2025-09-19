@@ -13,6 +13,8 @@ import {
   useLoadingStates 
 } from '@/components/ui/loading-states'
 import { DossierContentModal } from '@/components/ui/dossier-content-modal'
+import { VerificationsOrdonnateurForm } from '@/components/ordonnateur/verifications-ordonnateur-form'
+import { OrdonnateurStatusNavigation } from '@/components/ordonnateur/ordonnateur-status-navigation'
 import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { OrdonnateurGuard } from '@/components/auth/role-guard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -64,7 +66,9 @@ import {
   Info,
   Loader2,
   List,
-  Grid3X3
+  Grid3X3,
+  ClipboardCheck,
+  Settings
 } from 'lucide-react'
 
 interface DossierComptable {
@@ -111,6 +115,7 @@ function OrdonnateurDashboardContent() {
   const [query, setQuery] = React.useState('')
   const [sortField, setSortField] = React.useState<'numeroDossier' | 'dateDepot' | 'statut' | 'createdAt'>('createdAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'en_attente' | 'verifications_en_cours' | 'ordonnes' | 'rejetes'>('all')
   
   // États pour les actions d'ordonnancement
   const [selectedDossier, setSelectedDossier] = React.useState<DossierComptable | null>(null)
@@ -122,6 +127,12 @@ function OrdonnateurDashboardContent() {
   // États pour la modal de contenu du dossier
   const [dossierContentOpen, setDossierContentOpen] = React.useState(false)
   
+  // États pour les vérifications ordonnateur
+  const [verificationsOpen, setVerificationsOpen] = React.useState(false)
+  const [verificationsMode, setVerificationsMode] = React.useState<'validation' | 'consultation'>('validation')
+  const [verificationsStatus, setVerificationsStatus] = React.useState<Record<string, { completed: boolean, status: 'VALIDÉ' | 'EN_COURS' | 'REJETÉ' | null }>>({})
+  const [verificationsSummary, setVerificationsSummary] = React.useState<any>(null)
+  
   
 
   // Vérifier si l'utilisateur est Ordonnateur
@@ -131,6 +142,46 @@ function OrdonnateurDashboardContent() {
     }
   }, [user, router])
 
+  // Charger le statut des vérifications pour un dossier
+  const loadVerificationsStatus = React.useCallback(async (dossierId: string) => {
+    try {
+      const response = await fetch(`/api/dossiers/${dossierId}/verifications-ordonnateur`, {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const status = data.synthese?.statut || null
+        const completed = status !== null
+        
+        setVerificationsStatus(prev => ({
+          ...prev,
+          [dossierId]: {
+            completed,
+            status: status as 'VALIDÉ' | 'EN_COURS' | 'REJETÉ' | null
+          }
+        }))
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du statut des vérifications:', error)
+    }
+  }, [])
+
+  const loadVerificationsSummary = React.useCallback(async (dossierId: string) => {
+    try {
+      const response = await fetch(`/api/dossiers/${dossierId}/verifications-ordonnateur`, {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setVerificationsSummary(data)
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du résumé des vérifications:', error)
+    }
+  }, [])
+
   // Charger les dossiers validés par CB
   const loadDossiers = React.useCallback(async () => {
     try {
@@ -138,13 +189,20 @@ function OrdonnateurDashboardContent() {
       setLoading('dossiers', true)
       clearError()
       
-      const response = await fetch('/api/dossiers/ordonnateur-pending', {
+      const response = await fetch('/api/dossiers/ordonnateur-all', {
         credentials: 'include'
       })
       
       if (response.ok) {
         const data = await response.json()
         setDossiers(data.dossiers || [])
+        
+        // Charger le statut des vérifications pour chaque dossier
+        if (data.dossiers) {
+          for (const dossier of data.dossiers) {
+            await loadVerificationsStatus(dossier.id)
+          }
+        }
       } else {
         const errorData = await response.json()
         const errorMessage = errorData.error || 'Erreur lors du chargement des dossiers'
@@ -171,7 +229,7 @@ function OrdonnateurDashboardContent() {
       setIsLoadingDossiers(false)
       setLoading('dossiers', false)
     }
-  }, [clearError, handleError, setLoading])
+  }, [clearError, handleError, setLoading, loadVerificationsStatus])
 
   // Charger les dossiers au montage
   React.useEffect(() => {
@@ -204,6 +262,26 @@ function OrdonnateurDashboardContent() {
   // Filtrage et tri des dossiers
   const filteredDossiers = React.useMemo(() => {
     let items = dossiers
+
+    // Filtrage par statut
+    if (statusFilter !== 'all') {
+      switch (statusFilter) {
+        case 'en_attente':
+          items = items.filter(d => d.statut === 'VALIDÉ_CB')
+          break
+        case 'verifications_en_cours':
+          // Pour l'instant, on considère que tous les dossiers VALIDÉ_CB sont en cours de vérifications
+          // Plus tard, on pourra ajouter un statut spécifique pour les vérifications en cours
+          items = items.filter(d => d.statut === 'VALIDÉ_CB')
+          break
+        case 'ordonnes':
+          items = items.filter(d => ['VALIDÉ_ORDONNATEUR', 'PAYÉ', 'TERMINÉ'].includes(d.statut))
+          break
+        case 'rejetes':
+          items = items.filter(d => d.statut === 'REJETÉ_CB')
+          break
+      }
+    }
 
     // Filtrage par recherche textuelle
     if (query) {
@@ -245,7 +323,47 @@ function OrdonnateurDashboardContent() {
     })
 
     return items
-  }, [dossiers, query, sortField, sortOrder])
+  }, [dossiers, query, sortField, sortOrder, statusFilter])
+
+  // Actions pour les vérifications ordonnateur
+  const handleVerifications = (dossier: DossierComptable, mode: 'validation' | 'consultation' = 'validation') => {
+    setSelectedDossier(dossier)
+    setVerificationsMode(mode)
+    setVerificationsOpen(true)
+  }
+
+  const handleVerificationsComplete = async (success: boolean) => {
+    if (success) {
+      // Recharger le statut des vérifications pour le dossier sélectionné
+      if (selectedDossier) {
+        await loadVerificationsStatus(selectedDossier.id)
+      }
+      await loadDossiers() // Recharger la liste
+      setVerificationsOpen(false)
+      setSelectedDossier(null)
+      
+      // Créer une notification de succès
+      if (user?.id && selectedDossier) {
+        await createNotification({
+          userId: user.id,
+          title: 'Vérifications ordonnateur terminées',
+          message: `Les vérifications ordonnateur pour le dossier ${selectedDossier.numeroDossier} ont été enregistrées avec succès.`,
+          type: 'SUCCESS',
+          priority: 'MEDIUM',
+          actionUrl: '/ordonnateur-dashboard',
+          actionLabel: 'Voir le dashboard',
+          metadata: {
+            dossierId: selectedDossier.id,
+            numeroDossier: selectedDossier.numeroDossier,
+            verificationsCompletedAt: new Date().toISOString()
+          }
+        })
+      }
+    } else {
+      setVerificationsOpen(false)
+      setSelectedDossier(null)
+    }
+  }
 
   // Actions d'ordonnancement
   const handleOrdonnance = async (dossier: DossierComptable) => {
@@ -262,27 +380,71 @@ function OrdonnateurDashboardContent() {
       })
       
       if (response.ok) {
-        setActionResult({
-          type: 'success',
-          message: `Dossier ${dossier.numeroDossier} ordonné avec succès`
-        })
+        // Soumettre automatiquement à l'AC après ordonnancement
+        try {
+          const acResponse = await fetch(`/api/dossiers/${dossier.id}/comptabilize`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ 
+              comment: `Soumission automatique à l'AC après ordonnancement par ${user?.name || 'l\'ordonnateur'}` 
+            })
+          })
 
-        // Créer une notification de succès
-        await createNotification({
-          userId: user?.id || '',
-          title: 'Dossier ordonné avec succès',
-          message: `Le dossier ${dossier.numeroDossier} a été ordonné avec succès.\n\nObjet: ${dossier.objetOperation}\nBénéficiaire: ${dossier.beneficiaire}${ordonnancementComment ? `\n\nCommentaire: ${ordonnancementComment}` : ''}`,
-          type: 'SUCCESS',
-          priority: 'MEDIUM',
-          actionUrl: '/ordonnateur-dashboard',
-          actionLabel: 'Voir le dashboard',
-          metadata: {
-            dossierId: dossier.id,
-            numeroDossier: dossier.numeroDossier,
-            ordonnedAt: new Date().toISOString(),
-            comment: ordonnancementComment
+          if (acResponse.ok) {
+            setActionResult({
+              type: 'success',
+              message: `Dossier ${dossier.numeroDossier} ordonné et soumis à l'AC avec succès`
+            })
+
+            // Créer une notification de succès
+            await createNotification({
+              userId: user?.id || '',
+              title: 'Dossier ordonné et soumis à l\'AC',
+              message: `Le dossier ${dossier.numeroDossier} a été ordonné et automatiquement soumis à l'Agent Comptable.\n\nObjet: ${dossier.objetOperation}\nBénéficiaire: ${dossier.beneficiaire}${ordonnancementComment ? `\n\nCommentaire: ${ordonnancementComment}` : ''}`,
+              type: 'SUCCESS',
+              priority: 'MEDIUM',
+              actionUrl: '/ordonnateur-dashboard',
+              actionLabel: 'Voir le dashboard',
+              metadata: {
+                dossierId: dossier.id,
+                numeroDossier: dossier.numeroDossier,
+                ordonnedAt: new Date().toISOString(),
+                submittedToAC: true,
+                comment: ordonnancementComment
+              }
+            })
+          } else {
+            // Ordonnancement réussi mais soumission AC échouée
+            setActionResult({
+              type: 'success',
+              message: `Dossier ${dossier.numeroDossier} ordonné avec succès (soumission AC en attente)`
+            })
+
+            await createNotification({
+              userId: user?.id || '',
+              title: 'Dossier ordonné - Soumission AC en attente',
+              message: `Le dossier ${dossier.numeroDossier} a été ordonné avec succès, mais la soumission automatique à l'AC a échoué. Veuillez contacter l'administrateur.`,
+              type: 'WARNING',
+              priority: 'MEDIUM',
+              actionUrl: '/ordonnateur-dashboard',
+              actionLabel: 'Voir le dashboard',
+              metadata: {
+                dossierId: dossier.id,
+                numeroDossier: dossier.numeroDossier,
+                ordonnedAt: new Date().toISOString(),
+                submittedToAC: false,
+                comment: ordonnancementComment
+              }
+            })
           }
-        })
+        } catch (acError) {
+          console.error('Erreur lors de la soumission à l\'AC:', acError)
+          setActionResult({
+            type: 'success',
+            message: `Dossier ${dossier.numeroDossier} ordonné avec succès (soumission AC en attente)`
+          })
+        }
 
         await loadDossiers() // Recharger la liste
         setOrdonnancementOpen(false)
@@ -290,7 +452,30 @@ function OrdonnateurDashboardContent() {
         setOrdonnancementComment('')
       } else {
         const errorData = await response.json()
-        const errorMessage = errorData.error || 'Erreur lors de l\'ordonnancement'
+        let errorMessage = errorData.error || 'Erreur lors de l\'ordonnancement'
+        
+        // Gérer les erreurs spécifiques aux vérifications ordonnateur
+        if (errorData.code === 'VERIFICATIONS_ORDONNATEUR_MANQUANTES') {
+          errorMessage = 'Les vérifications ordonnateur doivent être effectuées avant l\'ordonnancement'
+          
+          setActionResult({
+            type: 'error',
+            message: errorMessage + '. Cliquez sur "Effectuer les vérifications" pour commencer.'
+          })
+          
+          setOrdonnancementOpen(false)
+          return
+        } else if (errorData.code === 'VERIFICATIONS_ORDONNATEUR_NON_VALIDEES') {
+          errorMessage = 'Toutes les vérifications ordonnateur doivent être validées avant l\'ordonnancement'
+          
+          setActionResult({
+            type: 'error',
+            message: errorMessage + '. Vérifiez et complétez vos vérifications.'
+          })
+          
+          setOrdonnancementOpen(false)
+          return
+        }
         
         setActionResult({
           type: 'error',
@@ -497,49 +682,91 @@ function OrdonnateurDashboardContent() {
           </CardHeader>
         </Card>
 
-        {/* Stats rapides */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">En attente</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.statut === 'VALIDÉ_CB').length}
+        {/* Stats globales du dashboard - Layout en colonnes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">En attente</p>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {dossiers.filter(d => d.statut === 'VALIDÉ_CB').length}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Dossiers validés par le CB</p>
               </div>
-            </CardContent>
+              <Clock className="h-8 w-8 text-yellow-600" />
+            </div>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ordonnés</CardTitle>
-              <FileCheck className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dossiers.filter(d => d.statut === 'VALIDÉ_ORDONNATEUR').length}
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Vérifications en cours</p>
+                <div className="text-2xl font-bold text-orange-600">
+                  {dossiers.filter(d => d.statut === 'VALIDÉ_CB').length}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">En cours de vérifications ordonnateur</p>
               </div>
-            </CardContent>
+              <ClipboardCheck className="h-8 w-8 text-orange-600" />
+            </div>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total</CardTitle>
-              <FileText className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{dossiers.length}</div>
-            </CardContent>
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Ordonnés</p>
+                <div className="text-2xl font-bold text-blue-600">
+                  {dossiers.filter(d => d.statut === 'VALIDÉ_ORDONNATEUR').length}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Dépenses ordonnées</p>
+              </div>
+              <FileCheck className="h-8 w-8 text-blue-600" />
+            </div>
           </Card>
 
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Rejetés</p>
+                <div className="text-2xl font-bold text-red-600">
+                  {dossiers.filter(d => d.statut === 'REJETÉ_CB').length}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Dossiers rejetés</p>
+              </div>
+              <XCircle className="h-8 w-8 text-red-600" />
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total</p>
+                <div className="text-2xl font-bold text-primary">
+                  {dossiers.length}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Tous les dossiers</p>
+              </div>
+              <FileText className="h-8 w-8 text-primary" />
+            </div>
+          </Card>
         </div>
 
+        {/* Navigation horizontale par statut */}
+        <OrdonnateurStatusNavigation
+          dossiers={dossiers}
+          currentFilter={statusFilter}
+          onFilterChange={setStatusFilter}
+        />
 
         {/* Liste des dossiers */}
         <Card>
           <CardHeader>
-            <CardTitle>Dossiers à ordonner</CardTitle>
+            <CardTitle>
+              {statusFilter === 'all' ? 'Tous les dossiers' :
+               statusFilter === 'en_attente' ? 'Dossiers en attente' :
+               statusFilter === 'verifications_en_cours' ? 'Vérifications en cours' :
+               statusFilter === 'ordonnes' ? 'Dossiers ordonnés' :
+               statusFilter === 'rejetes' ? 'Dossiers rejetés' : 'Dossiers'}
+            </CardTitle>
             <CardDescription>
               {filteredDossiers.length} dossier{filteredDossiers.length > 1 ? 's' : ''} trouvé{filteredDossiers.length > 1 ? 's' : ''}
             </CardDescription>
@@ -558,6 +785,7 @@ function OrdonnateurDashboardContent() {
                     <TableHead>Poste Comptable</TableHead>
                     <TableHead>Date Dépôt</TableHead>
                     <TableHead>Statut</TableHead>
+                    <TableHead>Vérifications</TableHead>
                     <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -582,6 +810,50 @@ function OrdonnateurDashboardContent() {
                       </TableCell>
                       <TableCell>{getStatutBadge(dossier.statut)}</TableCell>
                       <TableCell>
+                        {(() => {
+                          const verifStatus = verificationsStatus[dossier.id]
+                          if (!verifStatus || !verifStatus.completed) {
+                            return (
+                              <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                                <Clock className="mr-1 h-3 w-3" />
+                                En attente
+                              </Badge>
+                            )
+                          }
+                          
+                          switch (verifStatus.status) {
+                            case 'VALIDÉ':
+                              return (
+                                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                                  <CheckCircle className="mr-1 h-3 w-3" />
+                                  Validé
+                                </Badge>
+                              )
+                            case 'EN_COURS':
+                              return (
+                                <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
+                                  <ClipboardCheck className="mr-1 h-3 w-3" />
+                                  En cours
+                                </Badge>
+                              )
+                            case 'REJETÉ':
+                              return (
+                                <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
+                                  <XCircle className="mr-1 h-3 w-3" />
+                                  Rejeté
+                                </Badge>
+                              )
+                            default:
+                              return (
+                                <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+                                  <Clock className="mr-1 h-3 w-3" />
+                                  En attente
+                                </Badge>
+                              )
+                          }
+                        })()}
+                      </TableCell>
+                      <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button 
@@ -601,17 +873,52 @@ function OrdonnateurDashboardContent() {
                               Voir détails
                             </DropdownMenuItem>
                             {dossier.statut === 'VALIDÉ_CB' && (
-                              <DropdownMenuItem 
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedDossier(dossier)
-                                  setOrdonnancementOpen(true)
-                                }}
-                                className="text-blue-600"
-                              >
-                                <FileCheck className="mr-2 h-4 w-4" />
-                                Ordonner
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuSeparator />
+                                {(() => {
+                                  const verifStatus = verificationsStatus[dossier.id]
+                                  const verificationsDejaEffectuees = verifStatus?.completed
+                                  
+                                  return (
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (verificationsDejaEffectuees) {
+                                          handleVerifications(dossier, 'consultation')
+                                        } else {
+                                          handleVerifications(dossier, 'validation')
+                                        }
+                                      }}
+                                      className={verificationsDejaEffectuees ? "text-gray-400" : "text-orange-600"}
+                                    >
+                                      <ClipboardCheck className="mr-2 h-4 w-4" />
+                                      {verificationsDejaEffectuees ? 'Consulter les vérifications' : 'Effectuer les vérifications'}
+                                    </DropdownMenuItem>
+                                  )
+                                })()}
+                                {(() => {
+                                  const verifStatus = verificationsStatus[dossier.id]
+                                  const canOrdonnance = verifStatus?.completed && verifStatus?.status === 'VALIDÉ'
+                                  
+                                  return (
+                                    <DropdownMenuItem 
+                                      onClick={async (e) => {
+                                        e.stopPropagation()
+                                        if (canOrdonnance) {
+                                          setSelectedDossier(dossier)
+                                          await loadVerificationsSummary(dossier.id)
+                                          setOrdonnancementOpen(true)
+                                        }
+                                      }}
+                                      className={canOrdonnance ? "text-blue-600" : "text-gray-400 cursor-not-allowed"}
+                                      disabled={!canOrdonnance}
+                                    >
+                                      <FileCheck className="mr-2 h-4 w-4" />
+                                      {canOrdonnance ? 'Ordonner la dépense' : 'Ordonner (vérifications requises)'}
+                                    </DropdownMenuItem>
+                                  )
+                                })()}
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -635,29 +942,107 @@ function OrdonnateurDashboardContent() {
 
         {/* Modal d'ordonnancement */}
         <Dialog open={ordonnancementOpen} onOpenChange={setOrdonnancementOpen}>
-          <DialogContent showCloseButton={false}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>Ordonner la dépense</DialogTitle>
               <DialogDescription>
                 Ordonnez la dépense pour le dossier {selectedDossier?.numeroDossier}.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="ordonnancement-comment">Commentaire (optionnel)</Label>
-                <Textarea
-                  id="ordonnancement-comment"
-                  placeholder="Ajoutez un commentaire sur l'ordonnancement..."
-                  value={ordonnancementComment}
-                  onChange={(e) => setOrdonnancementComment(e.target.value)}
-                  className="mt-1"
-                />
+            
+            <div className="flex-1 overflow-auto space-y-6">
+              {/* Résumé des vérifications */}
+              {verificationsSummary && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <ClipboardCheck className="h-5 w-5 text-green-600" />
+                    <h3 className="text-lg font-semibold">Résumé des vérifications</h3>
+                  </div>
+                  
+                  {/* Statistiques globales */}
+                  <div className="grid grid-cols-3 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {verificationsSummary.statistiques?.validees || 0}
+                      </div>
+                      <div className="text-sm text-green-700">Validées</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-red-600">
+                        {verificationsSummary.statistiques?.rejetees || 0}
+                      </div>
+                      <div className="text-sm text-red-700">Rejetées</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {verificationsSummary.statistiques?.total || 0}
+                      </div>
+                      <div className="text-sm text-blue-700">Total</div>
+                    </div>
+                  </div>
+
+                  {/* Détail par catégorie */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900">Détail par catégorie</h4>
+                    {verificationsSummary.validationsParCategorie && Object.values(verificationsSummary.validationsParCategorie).map((categorie: any) => (
+                      <div key={categorie.categorie.id} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full bg-${categorie.categorie.couleur}-500`}></div>
+                            <span className="font-medium">{categorie.categorie.nom}</span>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {categorie.validations.filter((v: any) => v.valide).length} / {categorie.validations.length} validées
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {categorie.validations.map((validation: any) => (
+                            <div key={validation.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                              <div className="flex items-center gap-2">
+                                {validation.valide ? (
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <XCircle className="h-4 w-4 text-red-600" />
+                                )}
+                                <span className="text-sm">{validation.verification.nom}</span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(validation.valide_le).toLocaleDateString('fr-FR')}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Commentaire d'ordonnancement */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileCheck className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold">Commentaire d'ordonnancement</h3>
+                </div>
+                <div>
+                  <Label htmlFor="ordonnancement-comment">Commentaire (optionnel)</Label>
+                  <Textarea
+                    id="ordonnancement-comment"
+                    placeholder="Ajoutez un commentaire sur l'ordonnancement..."
+                    value={ordonnancementComment}
+                    onChange={(e) => setOrdonnancementComment(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
               </div>
             </div>
-            <DialogFooter>
+            
+            <DialogFooter className="flex-shrink-0">
               <Button variant="outline" onClick={() => {
                 setOrdonnancementOpen(false)
                 setOrdonnancementComment('')
+                setVerificationsSummary(null)
               }}>
                 Annuler
               </Button>
@@ -688,6 +1073,35 @@ function OrdonnateurDashboardContent() {
             setSelectedDossier(null)
           }}
         />
+
+        {/* Modal des vérifications ordonnateur */}
+        <Dialog open={verificationsOpen} onOpenChange={setVerificationsOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle>
+                {verificationsMode === 'consultation' ? 'Consultation des vérifications' : 'Vérifications ordonnateur'}
+              </DialogTitle>
+              <DialogDescription>
+                {verificationsMode === 'consultation' 
+                  ? `Consultation des vérifications effectuées pour le dossier ${selectedDossier?.numeroDossier}`
+                  : `Effectuez les vérifications nécessaires avant d'ordonnancer le dossier ${selectedDossier?.numeroDossier}`
+                }
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-auto">
+              {selectedDossier && (
+                <VerificationsOrdonnateurForm
+                  dossierId={selectedDossier.id}
+                  dossierNumero={selectedDossier.numeroDossier}
+                  onValidationComplete={handleVerificationsComplete}
+                  onCancel={() => handleVerificationsComplete(false)}
+                  mode={verificationsMode}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
      </CompactPageLayout>
   )
 }

@@ -20,10 +20,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 1. Lister tous les fichiers dans le bucket 'documents'
+    // 1. Lister tous les fichiers dans le bucket 'documents' (dans le sous-dossier documents/)
     const { data: files, error: listError } = await supabase.storage
       .from('documents')
-      .list('', {
+      .list('documents', {
         limit: 1000,
         sortBy: { column: 'created_at', order: 'asc' }
       })
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
           
           const { data: folderFiles, error: folderError } = await supabase.storage
             .from('documents')
-            .list(item.name, { limit: 100 })
+            .list(`documents/${item.name}`, { limit: 100 })
           
           if (folderError) {
             console.error(`❌ Erreur listage dossier ${item.name}:`, folderError)

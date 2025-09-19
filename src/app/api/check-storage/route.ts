@@ -67,10 +67,10 @@ export async function GET(request: NextRequest) {
       console.log('✅ Bucket "documents" créé avec succès')
     }
 
-    // 2. Lister les fichiers existants dans le bucket
+    // 2. Lister les fichiers existants dans le bucket (dans le sous-dossier documents/)
     const { data: files, error: listError } = await supabase.storage
       .from('documents')
-      .list('', {
+      .list('documents', {
         limit: 10,
         sortBy: { column: 'created_at', order: 'desc' }
       })

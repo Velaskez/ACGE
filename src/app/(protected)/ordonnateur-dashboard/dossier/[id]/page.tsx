@@ -1,5 +1,4 @@
 'use client'
-
 import React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
@@ -52,11 +51,10 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
+import { DocumentPreviewModal } from '@/components/ui/document-preview-modal'
 import { DocumentItem } from '@/types/document'
-
 interface DossierComptable {
   id: string
   numeroDossier: string
@@ -88,30 +86,25 @@ interface DossierComptable {
   rejectionDetails?: string
   rejectedAt?: string
 }
-
 function DossierDetailContent() {
   const { user } = useSupabaseAuth()
   const router = useRouter()
   const params = useParams()
   const dossierId = params.id as string
-
   // États pour la gestion du dossier
   const [dossier, setDossier] = React.useState<DossierComptable | null>(null)
   const [isLoadingDossier, setIsLoadingDossier] = React.useState(true)
   const [dossierError, setDossierError] = React.useState('')
-  
   // États pour la gestion des documents
   const [currentFolder, setCurrentFolder] = React.useState<any>(null)
   const [documents, setDocuments] = React.useState<DocumentItem[]>([])
   const [filteredDocuments, setFilteredDocuments] = React.useState<DocumentItem[]>([])
   const [documentsLoading, setDocumentsLoading] = React.useState(false)
   const [documentsError, setDocumentsError] = React.useState('')
-  
   // États pour la recherche et le tri des documents
   const [documentSearchQuery, setDocumentSearchQuery] = React.useState('')
   const [documentSortField, setDocumentSortField] = React.useState<'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'>('updatedAt')
   const [documentSortOrder, setDocumentSortOrder] = React.useState<'asc' | 'desc'>('desc')
-  
   // États pour les modales de documents
   const [selectedDocument, setSelectedDocument] = React.useState<DocumentItem | null>(null)
   const [previewOpen, setPreviewOpen] = React.useState(false)
@@ -120,24 +113,19 @@ function DossierDetailContent() {
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false)
   const [documentToDelete, setDocumentToDelete] = React.useState<DocumentItem | null>(null)
   const [isDeleting, setIsDeleting] = React.useState(false)
-  
   // États pour l'ordonnancement
   const [ordonnancementOpen, setOrdonnancementOpen] = React.useState(false)
   const [ordonnancementComment, setOrdonnancementComment] = React.useState('')
   const [actionLoading, setActionLoading] = React.useState(false)
-
   // Charger les détails du dossier
   const loadDossierDetails = React.useCallback(async () => {
     if (!dossierId) return
-
     try {
       setIsLoadingDossier(true)
       setDossierError('')
-      
       const response = await fetch(`/api/dossiers/${dossierId}`, {
         credentials: 'include'
       })
-      
       if (response.ok) {
         const data = await response.json()
         setDossier(data.dossier || data)
@@ -152,19 +140,16 @@ function DossierDetailContent() {
       setIsLoadingDossier(false)
     }
   }, [dossierId])
-
   // Charger les documents du dossier
   const loadDossierDocuments = React.useCallback(async (folderId: string) => {
     try {
       console.log('📁 Chargement des documents du dossier:', folderId)
       setDocumentsLoading(true)
       setDocumentsError('')
-      
       // Charger les détails du dossier
       console.log('📁 Appel API dossier:', `/api/folders/${folderId}`)
       const folderRes = await fetch(`/api/folders/${folderId}`)
       console.log('📁 Réponse API dossier:', folderRes.status, folderRes.ok)
-      
       if (folderRes.ok) {
         const folderData = await folderRes.json()
         console.log('📁 Données dossier reçues:', folderData)
@@ -174,20 +159,16 @@ function DossierDetailContent() {
         console.error('❌ Erreur API dossier:', folderRes.status, errorData)
         setDocumentsError(`Erreur lors du chargement du dossier (${folderRes.status})`)
       }
-      
       // Charger les documents du dossier
       console.log('📄 Appel API documents:', `/api/documents?folderId=${folderId}`)
       const documentsRes = await fetch(`/api/documents?folderId=${folderId}`)
       console.log('📄 Réponse API documents:', documentsRes.status, documentsRes.ok)
-      
       if (documentsRes.ok) {
         const response = await documentsRes.json()
         console.log('📄 Données documents reçues:', response)
-        
         // L'API retourne { documents: [...], pagination: {...} }
         const documentsArray = response.documents || []
         console.log('📄 Nombre de documents trouvés:', documentsArray.length)
-        
         // Adapter les données pour correspondre à notre interface
         const adaptedDocuments = documentsArray.map((doc: any): DocumentItem => ({
           ...doc,
@@ -215,12 +196,10 @@ function DossierDetailContent() {
       setDocumentsLoading(false)
     }
   }, [])
-
   // Charger les données au montage
   React.useEffect(() => {
     loadDossierDetails()
   }, [loadDossierDetails])
-
   // Charger les documents quand le dossier est chargé
   React.useEffect(() => {
     if (dossier) {
@@ -230,7 +209,6 @@ function DossierDetailContent() {
       }
     }
   }, [dossier, loadDossierDocuments])
-
   // Filtrage et tri des documents
   React.useEffect(() => {
     let filtered = documents.filter(doc => {
@@ -243,11 +221,9 @@ function DossierDetailContent() {
       }
       return true
     })
-
     // Tri des documents
     filtered.sort((a, b) => {
       let aValue: any, bValue: any
-      
       switch (documentSortField) {
         case 'title':
           aValue = a.title.toLowerCase()
@@ -273,33 +249,27 @@ function DossierDetailContent() {
           aValue = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
           bValue = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
       }
-
       if (documentSortOrder === 'asc') {
         return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
       } else {
         return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
       }
     })
-
     setFilteredDocuments(filtered)
   }, [documents, documentSearchQuery, documentSortField, documentSortOrder])
-
   // Fonctions pour gérer les documents
   const handleViewDocument = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setPreviewOpen(true)
   }, [])
-
   const handleEditDocument = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setEditModalOpen(true)
   }, [])
-
   const handleShareDocument = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setShareModalOpen(true)
   }, [])
-
   const handleDownloadDocument = async (document: DocumentItem) => {
     try {
       const response = await fetch(`/api/documents/${document.id}/download`)
@@ -316,22 +286,18 @@ function DossierDetailContent() {
       console.error('Erreur lors du téléchargement:', error)
     }
   }
-
   const handleDeleteDocument = (document: DocumentItem) => {
     setDocumentToDelete(document)
     setDeleteModalOpen(true)
   }
-
   const confirmDeleteDocument = async () => {
     if (!documentToDelete) return
-
     try {
       setIsDeleting(true)
       const documentId = documentToDelete.originalId || documentToDelete.id
       const response = await fetch(`/api/documents/${documentId}`, {
         method: 'DELETE',
       })
-      
       if (response.ok) {
         // Recharger les documents après suppression
         if (dossier) {
@@ -351,21 +317,17 @@ function DossierDetailContent() {
       setIsDeleting(false)
     }
   }
-
   // Fonction pour ordonner le dossier
   const handleOrdonnance = async () => {
     if (!dossier) return
-
     try {
       setActionLoading(true)
-      
       const response = await fetch(`/api/dossiers/${dossier.id}/ordonnance`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ comment: ordonnancementComment })
       })
-      
       if (response.ok) {
         // Recharger les détails du dossier
         await loadDossierDetails()
@@ -383,7 +345,6 @@ function DossierDetailContent() {
       setActionLoading(false)
     }
   }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       year: 'numeric',
@@ -393,7 +354,6 @@ function DossierDetailContent() {
       minute: '2-digit'
     })
   }
-
   const getStatutInfo = (statut: string) => {
     const statuts = {
       'EN_ATTENTE': { label: 'En attente', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
@@ -405,7 +365,6 @@ function DossierDetailContent() {
     }
     return statuts[statut as keyof typeof statuts] || { label: statut, className: 'bg-gray-100 text-gray-800 border-gray-200' }
   }
-
   if (isLoadingDossier) {
     return (
       <CompactPageLayout>
@@ -424,7 +383,6 @@ function DossierDetailContent() {
       </CompactPageLayout>
     )
   }
-
   if (dossierError) {
     return (
       <CompactPageLayout>
@@ -440,7 +398,6 @@ function DossierDetailContent() {
       </CompactPageLayout>
     )
   }
-
   if (!dossier) {
     return (
       <CompactPageLayout>
@@ -456,9 +413,7 @@ function DossierDetailContent() {
       </CompactPageLayout>
     )
   }
-
   const statutInfo = getStatutInfo(dossier.statut)
-
   return (
     <CompactPageLayout>
       {/* Header avec breadcrumb */}
@@ -504,7 +459,6 @@ function DossierDetailContent() {
           </div>
         }
       />
-
         {/* Informations du dossier */}
         <ContentSection title="Informations du dossier">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -533,7 +487,6 @@ function DossierDetailContent() {
             </div>
           </div>
         </ContentSection>
-
         {/* Stats du dossier */}
         <ContentSection title="Statistiques">
           <div className="grid grid-cols-3 gap-3">
@@ -567,7 +520,6 @@ function DossierDetailContent() {
             </div>
           </div>
         </ContentSection>
-
         {/* Barre de recherche pour les documents */}
         <ContentSection 
           title="Documents du dossier"
@@ -602,11 +554,10 @@ function DossierDetailContent() {
               placeholder="Rechercher dans les documents..."
               value={documentSearchQuery}
               onChange={(e) => setDocumentSearchQuery(e.target.value)}
-              className="pl-10 h-8"
+              className="pl-10 pr-4 h-8"
             />
           </div>
         </ContentSection>
-
         {/* Contenu des documents */}
         {documentsLoading ? (
           <div className="space-y-3">
@@ -732,7 +683,6 @@ function DossierDetailContent() {
             description="Ce dossier ne contient aucun document."
           />
         )}
-
         {/* Modal d'ordonnancement */}
         <Dialog open={ordonnancementOpen} onOpenChange={setOrdonnancementOpen}>
           <DialogContent showCloseButton={false}>
@@ -778,7 +728,6 @@ function DossierDetailContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Modales pour les documents */}
         {selectedDocument && (
           <>
@@ -786,6 +735,16 @@ function DossierDetailContent() {
               document={selectedDocument}
               isOpen={previewOpen}
               onClose={() => setPreviewOpen(false)}
+              onDownload={(doc) => {
+                // Logique de téléchargement
+                console.log('Téléchargement du document:', doc.title)
+              }}
+              onEdit={(doc) => {
+                setEditModalOpen(true)
+              }}
+              onShare={(doc) => {
+                setShareModalOpen(true)
+              }}
             />
             <DocumentEditModal
               document={selectedDocument}
@@ -807,7 +766,6 @@ function DossierDetailContent() {
             />
           </>
         )}
-
         {/* Modal de confirmation de suppression de document */}
         <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
           <DialogContent>
@@ -841,7 +799,6 @@ function DossierDetailContent() {
     </CompactPageLayout>
   )
 }
-
 export default function DossierDetailPage() {
   return (
     <OrdonnateurGuard>

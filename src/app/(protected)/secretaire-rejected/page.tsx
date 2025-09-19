@@ -1,5 +1,4 @@
 'use client'
-
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
@@ -33,10 +32,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
-import { UploadModal } from '@/components/upload/upload-modal'
+import { DocumentPreviewModal } from '@/components/ui/document-preview-modal'
+import { ModernUploadModal } from '@/components/upload/modern-upload-modal'
 import { 
   XCircle, 
   Clock, 
@@ -56,7 +55,6 @@ import {
   FolderOpen,
   Upload
 } from 'lucide-react'
-
 interface DossierSecrétaire {
   id: string
   numeroDossier: string
@@ -94,11 +92,9 @@ interface DossierSecrétaire {
   rejectionReason?: string
   rejectionDetails?: string
 }
-
 function SecretaireRejectedContent() {
   const { user } = useSupabaseAuth()
   const router = useRouter()
-  
   // États pour la gestion des dossiers
   const [dossiers, setDossiers] = React.useState<DossierSecrétaire[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -106,7 +102,6 @@ function SecretaireRejectedContent() {
   const [query, setQuery] = React.useState('')
   const [sortField, setSortField] = React.useState<'numeroDossier' | 'dateDepot' | 'createdAt'>('createdAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
-  
   // États pour les actions
   const [selectedDossier, setSelectedDossier] = React.useState<DossierSecrétaire | null>(null)
   const [detailsOpen, setDetailsOpen] = React.useState(false)
@@ -114,7 +109,6 @@ function SecretaireRejectedContent() {
   const [resubmitOpen, setResubmitOpen] = React.useState(false)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
   const [actionLoading, setActionLoading] = React.useState(false)
-  
   // États pour l'édition
   const [editForm, setEditForm] = React.useState({
     numeroDossier: '',
@@ -123,7 +117,6 @@ function SecretaireRejectedContent() {
     beneficiaire: '',
     dateDepot: ''
   })
-
   // États pour l'affichage du contenu du dossier
   const [currentFolder, setCurrentFolder] = React.useState<any>(null)
   const [documents, setDocuments] = React.useState<any[]>([])
@@ -134,24 +127,20 @@ function SecretaireRejectedContent() {
   const [editModalOpen, setEditModalOpen] = React.useState(false)
   const [shareModalOpen, setShareModalOpen] = React.useState(false)
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false)
-
   // Vérifier si l'utilisateur est secrétaire
   React.useEffect(() => {
     if (user?.role !== 'SECRETAIRE') {
       router.push('/dashboard')
     }
   }, [user, router])
-
   // Charger les dossiers rejetés
   const loadDossiers = React.useCallback(async () => {
     try {
       setIsLoading(true)
       setError('')
-      
       const response = await fetch('/api/dossiers/secretaire-rejected', {
         credentials: 'include'
       })
-      
       if (response.ok) {
         const data = await response.json()
         console.log('📊 Dossiers rejetés chargés:', data.dossiers)
@@ -170,16 +159,13 @@ function SecretaireRejectedContent() {
       setIsLoading(false)
     }
   }, [])
-
   // Charger les dossiers au montage
   React.useEffect(() => {
     loadDossiers()
   }, [loadDossiers])
-
   // Filtrage et tri des dossiers
   const filteredDossiers = React.useMemo(() => {
     let items = dossiers
-
     // Filtrage par recherche textuelle
     if (query) {
       items = items.filter(d => 
@@ -189,11 +175,9 @@ function SecretaireRejectedContent() {
         (d.folderName && d.folderName.toLowerCase().includes(query.toLowerCase()))
       )
     }
-
     // Tri
     items.sort((a, b) => {
       let aValue: any, bValue: any
-      
       switch (sortField) {
         case 'numeroDossier':
           aValue = a.numeroDossier.toLowerCase()
@@ -208,17 +192,14 @@ function SecretaireRejectedContent() {
           aValue = new Date(a.createdAt).getTime()
           bValue = new Date(b.createdAt).getTime()
       }
-
       if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
       } else {
         return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
       }
     })
-
     return items
   }, [dossiers, query, sortField, sortOrder])
-
   const getStatutBadge = (statut: string) => {
     const configs = {
       'EN_ATTENTE': { label: 'En attente', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
@@ -228,11 +209,9 @@ function SecretaireRejectedContent() {
       'PAYÉ': { label: 'Payé', className: 'bg-purple-100 text-purple-800 border-purple-200' },
       'TERMINÉ': { label: 'Terminé', className: 'bg-gray-100 text-gray-800 border-gray-200' }
     }
-    
     const config = configs[statut as keyof typeof configs] || configs['EN_ATTENTE']
     return <Badge variant="outline" className={config.className}>{config.label}</Badge>
   }
-
   // Fonction pour ouvrir le modal d'édition
   const handleEdit = (dossier: DossierSecrétaire) => {
     setSelectedDossier(dossier)
@@ -245,14 +224,11 @@ function SecretaireRejectedContent() {
     })
     setEditOpen(true)
   }
-
   // Fonction pour sauvegarder les modifications
   const handleSaveEdit = async () => {
     if (!selectedDossier) return
-
     try {
       setActionLoading(true)
-      
       const response = await fetch(`/api/dossiers/${selectedDossier.id}`, {
         method: 'PUT',
         headers: {
@@ -261,7 +237,6 @@ function SecretaireRejectedContent() {
         credentials: 'include',
         body: JSON.stringify(editForm)
       })
-
       if (response.ok) {
         setEditOpen(false)
         setSelectedDossier(null)
@@ -278,17 +253,14 @@ function SecretaireRejectedContent() {
       setActionLoading(false)
     }
   }
-
   // Fonction pour resoumettre un dossier
   const handleResubmit = async (dossier: DossierSecrétaire) => {
     try {
       setActionLoading(true)
-      
       const response = await fetch(`/api/dossiers/${dossier.id}/resubmit`, {
         method: 'POST',
         credentials: 'include'
       })
-
       if (response.ok) {
         setResubmitOpen(false)
         await loadDossiers() // Recharger la liste
@@ -304,17 +276,14 @@ function SecretaireRejectedContent() {
       setActionLoading(false)
     }
   }
-
   // Fonction pour supprimer un dossier
   const handleDelete = async (dossier: DossierSecrétaire) => {
     try {
       setActionLoading(true)
-      
       const response = await fetch(`/api/dossiers/${dossier.id}`, {
         method: 'DELETE',
         credentials: 'include'
       })
-
       if (response.ok) {
         setDeleteOpen(false)
         setSelectedDossier(null)
@@ -331,30 +300,24 @@ function SecretaireRejectedContent() {
       setActionLoading(false)
     }
   }
-
   // Fonction pour ouvrir un dossier et voir son contenu
   const handleOpenFolder = async (dossier: DossierSecrétaire) => {
     console.log('🚀 FONCTION handleOpenFolder APPELÉE (dossiers rejetés)')
     console.log('🔍 Tentative d\'ouverture du dossier:', dossier)
     console.log('🔍 folderId:', dossier.folderId)
     console.log('🔍 foldername:', dossier.folderName)
-    
     if (!dossier.folderId) {
       console.log('❌ Pas de folderId pour ce dossier')
       setError('Ce dossier n\'est pas lié à un dossier de fichiers')
       return
     }
-
     try {
       setDocumentsLoading(true)
       setDocumentsError('')
-      
       console.log('📁 Chargement des détails du dossier:', dossier.folderId)
-      
       // Charger les détails du dossier
       const folderRes = await fetch(`/api/folders/${dossier.folderId}`)
       console.log('📁 Réponse dossier:', folderRes.status, folderRes.statusText)
-      
       if (folderRes.ok) {
         const folderData = await folderRes.json()
         console.log('📁 Données dossier:', folderData)
@@ -365,13 +328,10 @@ function SecretaireRejectedContent() {
         setDocumentsError('Erreur lors du chargement du dossier')
         return
       }
-      
       console.log('📄 Chargement des documents du dossier:', dossier.folderId)
-      
       // Charger les documents du dossier
       const documentsRes = await fetch(`/api/documents?folderId=${dossier.folderId}`)
       console.log('📄 Réponse documents:', documentsRes.status, documentsRes.statusText)
-      
       if (documentsRes.ok) {
         const documentsData = await documentsRes.json()
         console.log('📄 Données documents:', documentsData)
@@ -388,20 +348,17 @@ function SecretaireRejectedContent() {
       setDocumentsLoading(false)
     }
   }
-
   // Fonction pour revenir à la liste des dossiers rejetés
   const handleBackToRejected = () => {
     setCurrentFolder(null)
     setDocuments([])
     setDocumentsError('')
   }
-
   // Fonction pour recharger les documents du dossier
   const loadFolderDocuments = async (folderId: string) => {
     try {
       setDocumentsLoading(true)
       setDocumentsError('')
-      
       const documentsRes = await fetch(`/api/documents?folderId=${folderId}`)
       if (documentsRes.ok) {
         const documentsData = await documentsRes.json()
@@ -416,23 +373,19 @@ function SecretaireRejectedContent() {
       setDocumentsLoading(false)
     }
   }
-
   // Fonctions pour gérer les documents
   const handleViewDocument = (document: any) => {
     setSelectedDocument(document)
     setPreviewOpen(true)
   }
-
   const handleEditDocument = (document: any) => {
     setSelectedDocument(document)
     setEditModalOpen(true)
   }
-
   const handleShareDocument = (document: any) => {
     setSelectedDocument(document)
     setShareModalOpen(true)
   }
-
   const handleDownloadDocument = async (document: any) => {
     try {
       const response = await fetch(`/api/documents/${document.id}/download`)
@@ -451,7 +404,6 @@ function SecretaireRejectedContent() {
       console.error('Erreur téléchargement:', error)
     }
   }
-
   const handleDeleteDocument = async (document: any) => {
     try {
       // Utiliser l'originalId (UUID de la base de données) au lieu de l'id généré côté client
@@ -466,19 +418,16 @@ function SecretaireRejectedContent() {
       console.error('Erreur suppression document:', error)
     }
   }
-
   // Fonction pour ouvrir l'upload modal
   const handleOpenUploadModal = () => {
     setUploadModalOpen(true)
   }
-
   // Fonction pour recharger les documents après upload
   const handleUploadSuccess = () => {
     if (currentFolder) {
       loadFolderDocuments(currentFolder.id)
     }
   }
-
   if (user?.role !== 'SECRETAIRE') {
     return (
       <MainLayout>
@@ -503,7 +452,6 @@ function SecretaireRejectedContent() {
       </MainLayout>
     )
   }
-
   // Vue du contenu du dossier
   if (currentFolder) {
     return (
@@ -537,7 +485,6 @@ function SecretaireRejectedContent() {
               </Button>
             </div>
           </div>
-
           {/* Stats du dossier */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
@@ -578,7 +525,6 @@ function SecretaireRejectedContent() {
               </CardContent>
             </Card>
           </div>
-
           {/* Liste des documents */}
           <Card>
             <CardHeader>
@@ -677,7 +623,6 @@ function SecretaireRejectedContent() {
               )}
             </CardContent>
           </Card>
-
           {/* Modales pour les documents */}
           {selectedDocument && (
             <>
@@ -685,6 +630,16 @@ function SecretaireRejectedContent() {
                 document={selectedDocument}
                 isOpen={previewOpen}
                 onClose={() => setPreviewOpen(false)}
+                onDownload={(doc) => {
+                  // Logique de téléchargement
+                  console.log('Téléchargement du document:', doc.title)
+                }}
+                onEdit={(doc) => {
+                  setEditModalOpen(true)
+                }}
+                onShare={(doc) => {
+                  setShareModalOpen(true)
+                }}
               />
               <DocumentEditModal
                 document={selectedDocument}
@@ -699,9 +654,8 @@ function SecretaireRejectedContent() {
               />
             </>
           )}
-
           {/* Modal d'upload */}
-          <UploadModal
+          <ModernUploadModal
             isOpen={uploadModalOpen}
             onClose={() => setUploadModalOpen(false)}
             folderId={currentFolder?.id}
@@ -711,7 +665,6 @@ function SecretaireRejectedContent() {
       </MainLayout>
     )
   }
-
   return (
     <CompactPageLayout>
       <PageHeader
@@ -738,7 +691,6 @@ function SecretaireRejectedContent() {
           </div>
         }
       />
-
       <ContentSection
         title="Recherche et filtres"
         actions={
@@ -770,11 +722,10 @@ function SecretaireRejectedContent() {
             placeholder="Rechercher par numéro, objet, bénéficiaire ou nom de dossier..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10 h-8"
+            className="pl-10 pr-4 h-8"
           />
         </div>
       </ContentSection>
-
       <CompactStats
         stats={[
           {
@@ -802,7 +753,6 @@ function SecretaireRejectedContent() {
         ]}
         columns={3}
       />
-
       <ContentSection
         title="Mes dossiers rejetés"
         subtitle={`${filteredDossiers.length} dossier${filteredDossiers.length > 1 ? 's' : ''} rejeté${filteredDossiers.length > 1 ? 's' : ''} trouvé${filteredDossiers.length > 1 ? 's' : ''} - 💡 Cliquez sur une ligne pour ouvrir le dossier ou voir les détails`}
@@ -875,7 +825,8 @@ function SecretaireRejectedContent() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
                               setSelectedDossier(dossier)
                               setDetailsOpen(true)
                             }}>
@@ -900,11 +851,15 @@ function SecretaireRejectedContent() {
                                 Pas de dossier de fichiers
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => handleEdit(dossier)}>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
+                              handleEdit(dossier)
+                            }}>
                               <Edit className="mr-2 h-4 w-4" />
                               Modifier
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
                               setSelectedDossier(dossier)
                               setResubmitOpen(true)
                             }}>
@@ -946,7 +901,6 @@ function SecretaireRejectedContent() {
               </div>
             )}
       </ContentSection>
-
         {/* Modal de détails du dossier */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
           <DialogContent className="max-w-4xl" showCloseButton={false}>
@@ -989,7 +943,6 @@ function SecretaireRejectedContent() {
                     </div>
                   </div>
                 </div>
-
                 {/* Poste comptable */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Poste Comptable</Label>
@@ -998,7 +951,6 @@ function SecretaireRejectedContent() {
                     <p className="text-sm text-muted-foreground">{selectedDossier.poste_comptable?.intitule || 'Aucun intitulé'}</p>
                   </div>
                 </div>
-
                 {/* Nature du document */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Nature du Document</Label>
@@ -1007,7 +959,6 @@ function SecretaireRejectedContent() {
                     <p className="text-sm text-muted-foreground">{selectedDossier.nature_document?.nom || 'Aucun nom'}</p>
                   </div>
                 </div>
-
                 {/* Dates */}
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
@@ -1042,7 +993,6 @@ function SecretaireRejectedContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Modal d'édition du dossier */}
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent className="max-w-2xl" showCloseButton={false}>
@@ -1112,7 +1062,6 @@ function SecretaireRejectedContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Modal de confirmation de resoumission */}
         <Dialog open={resubmitOpen} onOpenChange={setResubmitOpen}>
           <DialogContent showCloseButton={false}>
@@ -1138,7 +1087,6 @@ function SecretaireRejectedContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Modal de confirmation de suppression */}
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <DialogContent showCloseButton={false}>
@@ -1167,7 +1115,6 @@ function SecretaireRejectedContent() {
     </CompactPageLayout>
   )
 }
-
 export default function SecretaireRejectedPage() {
   return (
     <SecretaireGuard>

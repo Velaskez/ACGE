@@ -18,7 +18,7 @@ export function ContentSection({
   className = '' 
 }: ContentSectionProps) {
   return (
-    <div className={`space-y-0 ${className}`}>
+    <div className={`space-y-0 p-4 bg-card rounded-lg border ${className}`}>
       {(title || subtitle || actions) && (
         <div className="flex items-center justify-between mb-3">
           <div>

@@ -125,7 +125,7 @@ export function GlobalErrorHandler({ children }: GlobalErrorHandlerProps) {
       
       {/* Overlay d'erreur global */}
       {errorState && (
-        <div className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] bg-primary/50 backdrop-blur-sm flex items-center justify-center p-4 h-screen">
           <div className="w-full max-w-md">
             <ErrorDisplay
               error={errorState.error}

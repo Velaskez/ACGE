@@ -5,6 +5,9 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { AgentComptableGuard } from '@/components/auth/role-guard'
+import { RapportVerification } from '@/components/ac/rapport-verification'
+import { QuitusDisplay } from '@/components/ac/quitus-display'
+import { ACStatusNavigation } from '@/components/ac/ac-status-navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -49,8 +52,9 @@ import {
   Search,
   RefreshCw,
   Calculator,
-  CreditCard,
-  Receipt
+  ClipboardCheck,
+  FileCheck,
+  Award
 } from 'lucide-react'
 
 interface DossierComptable {
@@ -59,7 +63,7 @@ interface DossierComptable {
   numeroNature: string
   objetOperation: string
   beneficiaire: string
-  statut: 'EN_ATTENTE' | 'VALIDÉ_CB' | 'REJETÉ_CB' | 'VALIDÉ_ORDONNATEUR' | 'PAYÉ' | 'TERMINÉ'
+  statut: 'EN_ATTENTE' | 'VALIDÉ_CB' | 'REJETÉ_CB' | 'VALIDÉ_ORDONNATEUR' | 'VALIDÉ_DÉFINITIVEMENT' | 'TERMINÉ'
   dateDepot: string
   poste_comptable: {
     id: string
@@ -99,13 +103,20 @@ function ACDashboardContent() {
   
   // États pour les actions de comptabilisation
   const [selectedDossier, setSelectedDossier] = React.useState<DossierComptable | null>(null)
-  const [paiementOpen, setPaiementOpen] = React.useState(false)
-  const [recetteOpen, setRecetteOpen] = React.useState(false)
   const [clotureOpen, setClotureOpen] = React.useState(false)
-  const [montant, setMontant] = React.useState('')
-  const [reference, setReference] = React.useState('')
   const [commentaire, setCommentaire] = React.useState('')
   const [actionLoading, setActionLoading] = React.useState(false)
+  
+  // États pour le rapport de vérification
+  const [rapportOpen, setRapportOpen] = React.useState(false)
+  const [validationDefinitiveOpen, setValidationDefinitiveOpen] = React.useState(false)
+  
+  // États pour le quitus
+  const [quitusOpen, setQuitusOpen] = React.useState(false)
+  const [quitusData, setQuitusData] = React.useState<any>(null)
+  
+  // État pour le filtre de statut
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'en_attente' | 'valides_definitivement' | 'payes' | 'recettes' | 'termines'>('all')
 
   // Vérifier si l'utilisateur est AC
   React.useEffect(() => {
@@ -120,7 +131,7 @@ function ACDashboardContent() {
       setIsLoading(true)
       setError('')
       
-      const response = await fetch('/api/dossiers/ac-pending', {
+      const response = await fetch('/api/dossiers/ac-all', {
         credentials: 'include'
       })
       
@@ -147,6 +158,23 @@ function ACDashboardContent() {
   // Filtrage et tri des dossiers
   const filteredDossiers = React.useMemo(() => {
     let items = dossiers
+
+    // Filtrage par statut
+    switch (statusFilter) {
+      case 'en_attente':
+        items = items.filter(d => d.statut === 'VALIDÉ_ORDONNATEUR')
+        break
+      case 'valides_definitivement':
+        items = items.filter(d => d.statut === 'VALIDÉ_DÉFINITIVEMENT')
+        break
+      case 'termines':
+        items = items.filter(d => d.statut === 'TERMINÉ')
+        break
+      case 'all':
+      default:
+        // Afficher tous les dossiers
+        break
+    }
 
     // Filtrage par recherche textuelle
     if (query) {
@@ -188,72 +216,8 @@ function ACDashboardContent() {
     })
 
     return items
-  }, [dossiers, query, sortField, sortOrder])
+  }, [dossiers, query, sortField, sortOrder, statusFilter])
 
-  // Actions de comptabilisation
-  const handlePaiement = async (dossier: DossierComptable) => {
-    try {
-      setActionLoading(true)
-      
-      const response = await fetch(`/api/dossiers/${dossier.id}/paiement`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          montant: parseFloat(montant),
-          reference,
-          commentaire 
-        })
-      })
-      
-      if (response.ok) {
-        await loadDossiers()
-        setPaiementOpen(false)
-        setSelectedDossier(null)
-        resetForm()
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Erreur lors du paiement')
-      }
-    } catch (error) {
-      console.error('Erreur paiement:', error)
-      setError('Erreur lors du paiement')
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const handleRecette = async (dossier: DossierComptable) => {
-    try {
-      setActionLoading(true)
-      
-      const response = await fetch(`/api/dossiers/${dossier.id}/recette`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          montant: parseFloat(montant),
-          reference,
-          commentaire 
-        })
-      })
-      
-      if (response.ok) {
-        await loadDossiers()
-        setRecetteOpen(false)
-        setSelectedDossier(null)
-        resetForm()
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Erreur lors de l\'enregistrement de la recette')
-      }
-    } catch (error) {
-      console.error('Erreur recette:', error)
-      setError('Erreur lors de l\'enregistrement de la recette')
-    } finally {
-      setActionLoading(false)
-    }
-  }
 
   const handleCloture = async (dossier: DossierComptable) => {
     try {
@@ -283,9 +247,67 @@ function ACDashboardContent() {
     }
   }
 
+  const handleValidationDefinitive = async (dossier: DossierComptable) => {
+    try {
+      setActionLoading(true)
+      
+      const response = await fetch(`/api/dossiers/${dossier.id}/validation-definitive`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ commentaire })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Validation définitive réussie:', data.message)
+        await loadDossiers()
+        setValidationDefinitiveOpen(false)
+        setSelectedDossier(null)
+        resetForm()
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Erreur lors de la validation définitive')
+        console.error('❌ Erreur validation définitive:', errorData)
+      }
+    } catch (error) {
+      console.error('Erreur validation définitive:', error)
+      setError('Erreur lors de la validation définitive')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleGenerateQuitus = async (dossier: DossierComptable) => {
+    try {
+      setActionLoading(true)
+      
+      const response = await fetch(`/api/dossiers/${dossier.id}/generate-quitus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Quitus généré:', data.message)
+        setQuitusData(data.quitus)
+        setSelectedDossier(dossier)
+        setQuitusOpen(true)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Erreur lors de la génération du quitus')
+        console.error('❌ Erreur génération quitus:', errorData)
+      }
+    } catch (error) {
+      console.error('Erreur génération quitus:', error)
+      setError('Erreur lors de la génération du quitus')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const resetForm = () => {
-    setMontant('')
-    setReference('')
     setCommentaire('')
   }
 
@@ -295,7 +317,7 @@ function ACDashboardContent() {
       'VALIDÉ_CB': { label: 'Validé CB', className: 'bg-green-100 text-green-800 border-green-200' },
       'REJETÉ_CB': { label: 'Rejeté CB', className: 'bg-red-100 text-red-800 border-red-200' },
       'VALIDÉ_ORDONNATEUR': { label: 'Validé Ordonnateur', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-      'PAYÉ': { label: 'Payé', className: 'bg-purple-100 text-purple-800 border-purple-200' },
+      'VALIDÉ_DÉFINITIVEMENT': { label: 'Validé Définitivement', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
       'TERMINÉ': { label: 'Terminé', className: 'bg-gray-100 text-gray-800 border-gray-200' }
     }
     
@@ -377,43 +399,93 @@ function ACDashboardContent() {
             placeholder="Rechercher par numéro, objet ou bénéficiaire..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10 h-8"
+            className="pl-10 pr-4 h-8"
           />
         </div>
       </ContentSection>
 
-      <CompactStats
-        stats={[
-          {
-            label: "À comptabiliser",
-            value: dossiers.filter(d => d.statut === 'VALIDÉ_ORDONNATEUR').length,
-            icon: <Clock className="h-4 w-4 text-yellow-600" />,
-            color: "text-yellow-600"
-          },
-          {
-            label: "Payés",
-            value: dossiers.filter(d => d.statut === 'PAYÉ').length,
-            icon: <CreditCard className="h-4 w-4 text-purple-600" />,
-            color: "text-purple-600"
-          },
-          {
-            label: "Terminés",
-            value: dossiers.filter(d => d.statut === 'TERMINÉ').length,
-            icon: <CheckCircle className="h-4 w-4 text-green-600" />,
-            color: "text-green-600"
-          },
-          {
-            label: "Total",
-            value: dossiers.length,
-            icon: <FileText className="h-4 w-4 text-primary" />,
-            color: "text-primary"
-          }
-        ]}
-        columns={4}
+      {/* Statistiques améliorées */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <Clock className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {dossiers.filter(d => d.statut === 'VALIDÉ_ORDONNATEUR').length}
+              </div>
+              <div className="text-sm text-yellow-700">En attente</div>
+              <div className="text-xs text-muted-foreground">À valider définitivement</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-100 rounded-lg">
+              <Award className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-emerald-600">
+                {dossiers.filter(d => d.statut === 'VALIDÉ_DÉFINITIVEMENT').length}
+              </div>
+              <div className="text-sm text-emerald-700">Validés définitivement</div>
+              <div className="text-xs text-muted-foreground">Prêts pour traitement</div>
+            </div>
+          </div>
+        </Card>
+
+
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {dossiers.filter(d => d.statut === 'TERMINÉ').length}
+              </div>
+              <div className="text-sm text-green-700">Terminés</div>
+              <div className="text-xs text-muted-foreground">Dossiers clôturés</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FileText className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-600">
+                {dossiers.length}
+              </div>
+              <div className="text-sm text-blue-700">Total</div>
+              <div className="text-xs text-muted-foreground">Tous les dossiers</div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Navigation par statut */}
+      <ACStatusNavigation
+        dossiers={dossiers}
+        currentFilter={statusFilter}
+        onFilterChange={setStatusFilter}
       />
 
       <ContentSection
-        title="Dossiers à comptabiliser"
+        title={(() => {
+          switch (statusFilter) {
+            case 'en_attente': return 'Dossiers en attente de validation définitive'
+            case 'valides_definitivement': return 'Dossiers validés définitivement'
+            case 'payes': return 'Dossiers payés'
+            case 'recettes': return 'Recettes enregistrées'
+            case 'termines': return 'Dossiers terminés'
+            default: return 'Tous les dossiers'
+          }
+        })()}
         subtitle={`${filteredDossiers.length} dossier${filteredDossiers.length > 1 ? 's' : ''} trouvé${filteredDossiers.length > 1 ? 's' : ''}`}
       >
             {isLoading ? (
@@ -459,48 +531,51 @@ function ACDashboardContent() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
                               setSelectedDossier(dossier)
                               // Ici on pourrait ouvrir une modal de détails
                             }}>
                               <Eye className="mr-2 h-4 w-4" />
                               Voir détails
                             </DropdownMenuItem>
+                            
                             {dossier.statut === 'VALIDÉ_ORDONNATEUR' && (
                               <>
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setSelectedDossier(dossier)
-                                    setPaiementOpen(true)
-                                  }}
-                                  className="text-purple-600"
-                                >
-                                  <CreditCard className="mr-2 h-4 w-4" />
-                                  Effectuer paiement
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedDossier(dossier)
+                                  setRapportOpen(true)
+                                }}>
+                                  <ClipboardCheck className="mr-2 h-4 w-4" />
+                                  Rapport de vérification
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setSelectedDossier(dossier)
-                                    setRecetteOpen(true)
-                                  }}
-                                  className="text-green-600"
-                                >
-                                  <Receipt className="mr-2 h-4 w-4" />
-                                  Enregistrer recette
+                                
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedDossier(dossier)
+                                  setValidationDefinitiveOpen(true)
+                                }}>
+                                  <FileCheck className="mr-2 h-4 w-4" />
+                                  Validation définitive
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                               </>
                             )}
-                            {(dossier.statut === 'PAYÉ' || dossier.statut === 'RECETTE_ENREGISTRÉE') && (
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setSelectedDossier(dossier)
-                                  setClotureOpen(true)
-                                }}
-                                className="text-blue-600"
-                              >
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Clôturer
+                            
+                            {dossier.statut === 'VALIDÉ_DÉFINITIVEMENT' && (
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation()
+                                handleGenerateQuitus(dossier)
+                              }}>
+                                <Award className="mr-2 h-4 w-4" />
+                                Générer Quitus
                               </DropdownMenuItem>
+                            )}
+                            
+                            {dossier.statut === 'VALIDÉ_ORDONNATEUR' && (
+                              <>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -521,127 +596,6 @@ function ACDashboardContent() {
             )}
       </ContentSection>
 
-        {/* Modal de paiement */}
-        <Dialog open={paiementOpen} onOpenChange={setPaiementOpen}>
-          <DialogContent showCloseButton={false}>
-            <DialogHeader>
-              <DialogTitle>Effectuer le paiement</DialogTitle>
-              <DialogDescription>
-                Enregistrez le paiement pour le dossier {selectedDossier?.numeroDossier}.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="montant-paiement">Montant</Label>
-                <Input
-                  id="montant-paiement"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={montant}
-                  onChange={(e) => setMontant(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="reference-paiement">Référence</Label>
-                <Input
-                  id="reference-paiement"
-                  placeholder="Référence du paiement"
-                  value={reference}
-                  onChange={(e) => setReference(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="commentaire-paiement">Commentaire</Label>
-                <Textarea
-                  id="commentaire-paiement"
-                  placeholder="Commentaire sur le paiement..."
-                  value={commentaire}
-                  onChange={(e) => setCommentaire(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setPaiementOpen(false)
-                resetForm()
-              }}>
-                Annuler
-              </Button>
-              <Button 
-                onClick={() => selectedDossier && handlePaiement(selectedDossier)}
-                disabled={actionLoading || !montant}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                {actionLoading ? 'Paiement...' : 'Enregistrer paiement'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de recette */}
-        <Dialog open={recetteOpen} onOpenChange={setRecetteOpen}>
-          <DialogContent showCloseButton={false}>
-            <DialogHeader>
-              <DialogTitle>Enregistrer la recette</DialogTitle>
-              <DialogDescription>
-                Enregistrez la recette pour le dossier {selectedDossier?.numeroDossier}.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="montant-recette">Montant</Label>
-                <Input
-                  id="montant-recette"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={montant}
-                  onChange={(e) => setMontant(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="reference-recette">Référence</Label>
-                <Input
-                  id="reference-recette"
-                  placeholder="Référence de la recette"
-                  value={reference}
-                  onChange={(e) => setReference(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="commentaire-recette">Commentaire</Label>
-                <Textarea
-                  id="commentaire-recette"
-                  placeholder="Commentaire sur la recette..."
-                  value={commentaire}
-                  onChange={(e) => setCommentaire(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setRecetteOpen(false)
-                resetForm()
-              }}>
-                Annuler
-              </Button>
-              <Button 
-                onClick={() => selectedDossier && handleRecette(selectedDossier)}
-                disabled={actionLoading || !montant}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {actionLoading ? 'Enregistrement...' : 'Enregistrer recette'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* Modal de clôture */}
         <Dialog open={clotureOpen} onOpenChange={setClotureOpen}>
@@ -679,6 +633,112 @@ function ACDashboardContent() {
                 {actionLoading ? 'Clôture...' : 'Clôturer'}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal du rapport de vérification */}
+        <Dialog open={rapportOpen} onOpenChange={setRapportOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Rapport de Vérification</DialogTitle>
+              <DialogDescription>
+                Rapport complet des vérifications CB et Ordonnateur pour le dossier {selectedDossier?.numeroDossier}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-auto">
+              {selectedDossier && (
+                <RapportVerification 
+                  dossierId={selectedDossier.id}
+                  onValidationComplete={(validated) => {
+                    setRapportOpen(false)
+                    if (validated) {
+                      setValidationDefinitiveOpen(true)
+                    }
+                  }}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de validation définitive */}
+        <Dialog open={validationDefinitiveOpen} onOpenChange={setValidationDefinitiveOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Validation Définitive</DialogTitle>
+              <DialogDescription>
+                Confirmer la validation définitive du dossier {selectedDossier?.numeroDossier}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center gap-2 text-green-800">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="font-medium">Dossier prêt pour validation définitive</span>
+                </div>
+                <p className="text-sm text-green-700 mt-1">
+                  Toutes les vérifications ont été effectuées et aucune incohérence n'a été détectée.
+                </p>
+              </div>
+              
+              <div>
+                <label htmlFor="validation-comment" className="block text-sm font-medium mb-1">
+                  Commentaire de validation (optionnel)
+                </label>
+                <Textarea
+                  id="validation-comment"
+                  placeholder="Commentaire sur la validation définitive..."
+                  value={commentaire}
+                  onChange={(e) => setCommentaire(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setValidationDefinitiveOpen(false)
+                setCommentaire('')
+              }}>
+                Annuler
+              </Button>
+              <Button 
+                onClick={() => selectedDossier && handleValidationDefinitive(selectedDossier)}
+                disabled={actionLoading}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {actionLoading ? 'Validation...' : 'Valider définitivement'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal du quitus */}
+        <Dialog open={quitusOpen} onOpenChange={setQuitusOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Quitus Généré</DialogTitle>
+              <DialogDescription>
+                Quitus officiel pour le dossier {selectedDossier?.numeroDossier}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-auto">
+              {quitusData && (
+                <QuitusDisplay 
+                  quitus={quitusData}
+                  dossierId={selectedDossier?.id}
+                  onDownload={() => {
+                    // Ici on implémenterait le téléchargement PDF
+                    console.log('Téléchargement du quitus:', quitusData.numeroQuitus)
+                  }}
+                  onPrint={() => {
+                    window.print()
+                  }}
+                />
+              )}
+            </div>
           </DialogContent>
         </Dialog>
     </CompactPageLayout>

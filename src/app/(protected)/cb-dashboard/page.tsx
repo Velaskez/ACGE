@@ -1,11 +1,11 @@
 'use client'
-
 import React from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useSupabaseAuth } from '@/contexts/supabase-auth-context'
 import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
 import { ControleurBudgetaireGuard } from '@/components/auth/role-guard'
 import { DiagnosticPanel } from '@/components/debug/diagnostic-panel'
+import { checkDossierValidationStatus, ValidationStatus } from '@/lib/validation-utils'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -47,10 +47,16 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 import { CBStatusNavigation } from '@/components/cb/cb-status-navigation'
-import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
+import { DocumentPreviewModal } from '@/components/ui/document-preview-modal'
+import { OperationTypeValidationForm } from '@/components/cb/operation-type-validation-form'
+import { ControlesFondForm } from '@/components/cb/controles-fond-form'
+import { OperationTypeConsultation } from '@/components/cb/operation-type-consultation'
+import { ControlesFondConsultation } from '@/components/cb/controles-fond-consultation'
+import { ModalBackdrop } from '@/components/ui/modal-backdrop'
 import { 
   CheckCircle, 
   XCircle, 
@@ -69,7 +75,6 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-
 interface DossierComptable {
   id: string
   numeroDossier: string
@@ -101,13 +106,13 @@ interface DossierComptable {
   rejectedAt?: string
   rejectionReason?: string
   rejectionDetails?: string
+  // État des validations
+  validationStatus?: ValidationStatus
 }
-
 function CBDashboardContent() {
   const { user } = useSupabaseAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  
   // États pour la gestion des dossiers
   const [dossiers, setDossiers] = React.useState<DossierComptable[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -116,15 +121,17 @@ function CBDashboardContent() {
   const [sortField, setSortField] = React.useState<'numeroDossier' | 'dateDepot' | 'statut' | 'createdAt'>('createdAt')
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'en_attente' | 'valide' | 'rejete'>('all')
-  
   // États pour les actions de validation
   const [selectedDossier, setSelectedDossier] = React.useState<DossierComptable | null>(null)
   const [validationOpen, setValidationOpen] = React.useState(false)
+  const [operationTypeValidationOpen, setOperationTypeValidationOpen] = React.useState(false)
+  const [controlesFondOpen, setControlesFondOpen] = React.useState(false)
+  const [operationTypeConsultationOpen, setOperationTypeConsultationOpen] = React.useState(false)
+  const [controlesFondConsultationOpen, setControlesFondConsultationOpen] = React.useState(false)
   const [rejectionOpen, setRejectionOpen] = React.useState(false)
   const [rejectionReason, setRejectionReason] = React.useState('')
   const [actionLoading, setActionLoading] = React.useState(false)
   const [detailsOpen, setDetailsOpen] = React.useState(false)
-  
   // États pour l'affichage du contenu du dossier
   const [currentFolder, setCurrentFolder] = React.useState<any>(null)
   const [documents, setDocuments] = React.useState<any[]>([])
@@ -134,32 +141,42 @@ function CBDashboardContent() {
   const [previewOpen, setPreviewOpen] = React.useState(false)
   const [editModalOpen, setEditModalOpen] = React.useState(false)
   const [shareModalOpen, setShareModalOpen] = React.useState(false)
-  
-
   // Vérifier si l'utilisateur est CB
   React.useEffect(() => {
     if (user?.role !== 'CONTROLEUR_BUDGETAIRE') {
       router.push('/dashboard')
     }
   }, [user, router])
-
   // Charger tous les dossiers (pas seulement ceux en attente)
   const loadDossiers = React.useCallback(async () => {
     try {
       setIsLoading(true)
       setError('')
-      
       const response = await fetch('/api/dossiers/cb-all', {
         credentials: 'include'
       })
-      
       if (response.ok) {
         const data = await response.json()
         console.log('📊 Dossiers chargés:', data.dossiers)
         data.dossiers?.forEach((dossier: any, index: number) => {
           console.log(`  ${index + 1}. ${dossier.numeroDossier} - folderId: ${dossier.folderId} - foldername: ${dossier.foldername}`)
         })
-        setDossiers(data.dossiers || [])
+        // Charger les statuts de validation pour chaque dossier
+        const dossiersWithValidation = await Promise.all(
+          (data.dossiers || []).map(async (dossier: DossierComptable) => {
+            if (dossier.statut === 'EN_ATTENTE' || dossier.statut === 'VALIDÉ_CB') {
+              try {
+                const validationStatus = await checkDossierValidationStatus(dossier.id)
+                return { ...dossier, validationStatus }
+              } catch (error) {
+                console.error(`Erreur lors de la vérification des validations pour le dossier ${dossier.id}:`, error)
+                return dossier
+              }
+            }
+            return dossier
+          })
+        )
+        setDossiers(dossiersWithValidation)
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Erreur lors du chargement des dossiers')
@@ -171,16 +188,13 @@ function CBDashboardContent() {
       setIsLoading(false)
     }
   }, [])
-
   // Charger les dossiers au montage
   React.useEffect(() => {
     loadDossiers()
   }, [loadDossiers])
-
   // Filtrage et tri des dossiers
   const filteredDossiers = React.useMemo(() => {
     let items = dossiers
-
     // Filtrage par statut
     if (statusFilter !== 'all') {
       switch (statusFilter) {
@@ -195,7 +209,6 @@ function CBDashboardContent() {
           break
       }
     }
-
     // Filtrage par recherche textuelle
     if (query) {
       items = items.filter(d => 
@@ -204,11 +217,9 @@ function CBDashboardContent() {
         d.beneficiaire.toLowerCase().includes(query.toLowerCase())
       )
     }
-
     // Tri
     items.sort((a, b) => {
       let aValue: any, bValue: any
-      
       switch (sortField) {
         case 'numeroDossier':
           aValue = a.numeroDossier.toLowerCase()
@@ -227,28 +238,23 @@ function CBDashboardContent() {
           aValue = new Date(a.createdAt).getTime()
           bValue = new Date(b.createdAt).getTime()
       }
-
       if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
       } else {
         return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
       }
     })
-
     return items
   }, [dossiers, query, sortField, sortOrder, statusFilter])
-
   // Actions de validation
   const handleValidate = async (dossier: DossierComptable) => {
     try {
       setActionLoading(true)
-      
       const response = await fetch(`/api/dossiers/${dossier.id}/validate`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
       })
-      
       if (response.ok) {
         await loadDossiers() // Recharger la liste
         setValidationOpen(false)
@@ -264,60 +270,112 @@ function CBDashboardContent() {
       setActionLoading(false)
     }
   }
-
+  // Gestion de la validation du type d'opération
+  const handleOperationTypeValidation = (dossier: DossierComptable) => {
+    setSelectedDossier(dossier)
+    setOperationTypeValidationOpen(true)
+  }
+  const handleOperationTypeValidationComplete = async (success: boolean) => {
+    if (success) {
+      await loadDossiers() // Recharger la liste
+      // Fermer la modale de validation du type d'opération
+      setOperationTypeValidationOpen(false)
+      // Ouvrir automatiquement la modale de contrôles de fond
+      setControlesFondOpen(true)
+      // Ne pas fermer selectedDossier car on en a besoin pour les contrôles de fond
+    } else {
+      setOperationTypeValidationOpen(false)
+      setSelectedDossier(null)
+    }
+  }
   const handleReject = async () => {
-    if (!selectedDossier || !rejectionReason.trim()) return
-
+    if (!selectedDossier || !rejectionReason.trim()) {
+      console.error('❌ Données manquantes pour le rejet:', { 
+        selectedDossier: !!selectedDossier, 
+        rejectionReason: rejectionReason 
+      })
+      return
+    }
     try {
       setActionLoading(true)
-      
+      const requestBody = { 
+        reason: rejectionReason.trim(),
+        details: null // Optionnel pour l'instant
+      }
+      console.log('🔄 Tentative de rejet du dossier:', {
+        dossierId: selectedDossier.id,
+        numeroDossier: selectedDossier.numeroDossier,
+        reason: requestBody.reason,
+        body: requestBody
+      })
       const response = await fetch(`/api/dossiers/${selectedDossier.id}/reject`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         credentials: 'include',
-        body: JSON.stringify({ reason: rejectionReason })
+        body: JSON.stringify(requestBody)
       })
-      
+      console.log('📡 Réponse du serveur:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      })
       if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Rejet réussi:', result)
         await loadDossiers() // Recharger la liste
         setRejectionOpen(false)
         setSelectedDossier(null)
         setRejectionReason('')
+        toast.success('Dossier rejeté avec succès')
       } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Erreur lors du rejet')
+        let errorData
+        try {
+          errorData = await response.json()
+        } catch (parseError) {
+          console.error('❌ Impossible de parser la réponse d\'erreur:', parseError)
+          errorData = { error: `Erreur ${response.status}: ${response.statusText}` }
+        }
+        console.error('❌ Erreur de rejet détaillée:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          dossierId: selectedDossier.id,
+          numeroDossier: selectedDossier.numeroDossier
+        })
+        const errorMessage = errorData.error || `Erreur ${response.status} lors du rejet`
+        const errorDetails = errorData.details ? `\nDétails: ${JSON.stringify(errorData.details, null, 2)}` : ''
+        setError(errorMessage + errorDetails)
+        toast.error(errorMessage)
       }
     } catch (error) {
-      console.error('Erreur rejet:', error)
-      setError('Erreur lors du rejet')
+      console.error('❌ Erreur réseau lors du rejet:', error)
+      setError('Erreur de connexion lors du rejet')
+      toast.error('Erreur de connexion lors du rejet')
     } finally {
       setActionLoading(false)
     }
   }
-
   // Fonction pour ouvrir un dossier et voir son contenu
   const handleOpenFolder = async (dossier: DossierComptable) => {
     console.log('🚀 FONCTION handleOpenFolder APPELÉE')
     console.log('🔍 Tentative d\'ouverture du dossier:', dossier)
     console.log('🔍 folderId:', dossier.folderId)
     console.log('🔍 foldername:', dossier.foldername)
-    
     if (!dossier.folderId) {
       console.log('❌ Pas de folderId pour ce dossier')
       setError('Ce dossier n\'est pas lié à un dossier de fichiers')
       return
     }
-
     try {
       setDocumentsLoading(true)
       setDocumentsError('')
-      
       console.log('📁 Chargement des détails du dossier:', dossier.folderId)
-      
       // Charger les détails du dossier
       const folderRes = await fetch(`/api/folders/${dossier.folderId}`)
       console.log('📁 Réponse dossier:', folderRes.status, folderRes.statusText)
-      
       if (folderRes.ok) {
         const folderData = await folderRes.json()
         console.log('📁 Données dossier:', folderData)
@@ -328,13 +386,10 @@ function CBDashboardContent() {
         setDocumentsError('Erreur lors du chargement du dossier')
         return
       }
-      
       console.log('📄 Chargement des documents du dossier:', dossier.folderId)
-      
       // Charger les documents du dossier
       const documentsRes = await fetch(`/api/documents?folderId=${dossier.folderId}`)
       console.log('📄 Réponse documents:', documentsRes.status, documentsRes.statusText)
-      
       if (documentsRes.ok) {
         const documentsData = await documentsRes.json()
         console.log('📄 Données documents:', documentsData)
@@ -351,20 +406,17 @@ function CBDashboardContent() {
       setDocumentsLoading(false)
     }
   }
-
   // Fonction pour revenir à la liste des dossiers
   const handleBackToList = () => {
     setCurrentFolder(null)
     setDocuments([])
     setDocumentsError('')
   }
-
   // Fonction pour recharger les documents du dossier
   const loadFolderDocuments = async (folderId: string) => {
     try {
       setDocumentsLoading(true)
       setDocumentsError('')
-      
       const documentsRes = await fetch(`/api/documents?folderId=${folderId}`)
       if (documentsRes.ok) {
         const documentsData = await documentsRes.json()
@@ -379,23 +431,19 @@ function CBDashboardContent() {
       setDocumentsLoading(false)
     }
   }
-
   // Fonctions pour gérer les documents
   const handleViewDocument = (document: any) => {
     setSelectedDocument(document)
     setPreviewOpen(true)
   }
-
   const handleEditDocument = (document: any) => {
     setSelectedDocument(document)
     setEditModalOpen(true)
   }
-
   const handleShareDocument = (document: any) => {
     setSelectedDocument(document)
     setShareModalOpen(true)
   }
-
   const handleDownloadDocument = async (document: any) => {
     try {
       const response = await fetch(`/api/documents/${document.id}/download`)
@@ -415,7 +463,6 @@ function CBDashboardContent() {
       console.error('Erreur téléchargement:', error)
     }
   }
-
   const getStatutBadge = (statut: string) => {
     const configs = {
       'EN_ATTENTE': { label: 'En attente', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
@@ -425,11 +472,9 @@ function CBDashboardContent() {
       'PAYÉ': { label: 'Payé', className: 'bg-purple-100 text-purple-800 border-purple-200' },
       'TERMINÉ': { label: 'Terminé', className: 'bg-gray-100 text-gray-800 border-gray-200' }
     }
-    
     const config = configs[statut as keyof typeof configs] || configs['EN_ATTENTE']
     return <Badge variant="outline" className={config.className}>{config.label}</Badge>
   }
-
   if (user?.role !== 'CONTROLEUR_BUDGETAIRE') {
     return (
       <CompactPageLayout>
@@ -454,7 +499,6 @@ function CBDashboardContent() {
       </CompactPageLayout>
     )
   }
-
   // Si on est en mode consultation de dossier, afficher l'interface de consultation
   if (currentFolder) {
     return (
@@ -473,10 +517,43 @@ function CBDashboardContent() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Rafraîchir
               </Button>
+              <Button variant="default" onClick={handleBackToList} className="w-full sm:w-auto h-8">
+                <FileText className="mr-2 h-4 w-4" />
+                Voir le résumé complet
+              </Button>
             </div>
           }
         />
-
+        {/* Stats globales du dashboard */}
+        <CompactStats
+          stats={[
+            {
+              label: "En attente",
+              value: dossiers.filter(d => d.statut === 'EN_ATTENTE').length,
+              icon: <Clock className="h-4 w-4 text-yellow-600" />,
+              color: "text-yellow-600"
+            },
+            {
+              label: "Validés",
+              value: dossiers.filter(d => d.statut === 'VALIDÉ_CB').length,
+              icon: <CheckCircle className="h-4 w-4 text-green-600" />,
+              color: "text-green-600"
+            },
+            {
+              label: "Rejetés",
+              value: dossiers.filter(d => d.statut === 'REJETÉ_CB').length,
+              icon: <XCircle className="h-4 w-4 text-red-600" />,
+              color: "text-red-600"
+            },
+            {
+              label: "Total",
+              value: dossiers.length,
+              icon: <FileText className="h-4 w-4 text-primary" />,
+              color: "text-primary"
+            }
+          ]}
+          columns={4}
+        />
         {/* Stats du dossier */}
         <CompactStats
           stats={[
@@ -503,7 +580,6 @@ function CBDashboardContent() {
           ]}
           columns={3}
         />
-
         {/* Liste des documents */}
         <ContentSection
           title="Documents du dossier"
@@ -586,7 +662,6 @@ function CBDashboardContent() {
             />
           )}
         </ContentSection>
-
           {/* Modales pour les documents */}
           {selectedDocument && (
             <>
@@ -594,6 +669,15 @@ function CBDashboardContent() {
                 document={selectedDocument}
                 isOpen={previewOpen}
                 onClose={() => setPreviewOpen(false)}
+                onDownload={(doc) => {
+                  handleDownloadDocument(doc)
+                }}
+                onEdit={(doc) => {
+                  setEditModalOpen(true)
+                }}
+                onShare={(doc) => {
+                  setShareModalOpen(true)
+                }}
               />
               <DocumentEditModal
                 document={selectedDocument}
@@ -613,13 +697,11 @@ function CBDashboardContent() {
               />
             </>
           )}
-        
         {/* Panel de diagnostic */}
         <DiagnosticPanel />
       </CompactPageLayout>
     )
   }
-
   return (
     <CompactPageLayout>
       <PageHeader
@@ -636,7 +718,6 @@ function CBDashboardContent() {
           </Button>
         }
       />
-
       <ContentSection
         title="Recherche et filtres"
         actions={
@@ -669,11 +750,10 @@ function CBDashboardContent() {
             placeholder="Rechercher par numéro, objet ou bénéficiaire..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10 h-8"
+            className="pl-10 pr-4 h-8"
           />
         </div>
       </ContentSection>
-
       <CompactStats
         stats={[
           {
@@ -703,14 +783,12 @@ function CBDashboardContent() {
         ]}
         columns={4}
       />
-
       {/* Navigation horizontale par statut */}
       <CBStatusNavigation
         dossiers={dossiers}
         currentFilter={statusFilter}
         onFilterChange={setStatusFilter}
       />
-
       <ContentSection
         title={
           statusFilter === 'all' ? 'Tous les dossiers' :
@@ -737,6 +815,7 @@ function CBDashboardContent() {
                     <TableHead>Poste Comptable</TableHead>
                     <TableHead>Date Dépôt</TableHead>
                     <TableHead>Statut</TableHead>
+                    <TableHead>Validations</TableHead>
                     <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -774,6 +853,26 @@ function CBDashboardContent() {
                       </TableCell>
                       <TableCell>{getStatutBadge(dossier.statut)}</TableCell>
                       <TableCell>
+                        {(dossier.statut === 'EN_ATTENTE' || dossier.statut === 'VALIDÉ_CB') && dossier.validationStatus ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1 text-xs">
+                              <div className={`w-2 h-2 rounded-full ${dossier.validationStatus.hasOperationTypeValidation ? 'bg-green-500' : 'bg-gray-300'}`} />
+                              <span className={dossier.validationStatus.hasOperationTypeValidation ? 'text-green-600' : 'text-gray-500'}>
+                                Type d'opération
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs">
+                              <div className={`w-2 h-2 rounded-full ${dossier.validationStatus.hasControlesFondValidation ? 'bg-green-500' : 'bg-gray-300'}`} />
+                              <span className={dossier.validationStatus.hasControlesFondValidation ? 'text-green-600' : 'text-gray-500'}>
+                                Contrôles de fond
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button 
@@ -788,13 +887,66 @@ function CBDashboardContent() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
                               setSelectedDossier(dossier)
                               setDetailsOpen(true)
                             }}>
                               <Eye className="mr-2 h-4 w-4" />
                               Voir détails
                             </DropdownMenuItem>
+                            {dossier.statut === 'EN_ATTENTE' && (
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedDossier(dossier)
+                                  setOperationTypeValidationOpen(true)
+                                }}
+                                className="text-blue-600"
+                              >
+                                <FileText className="mr-2 h-4 w-4" />
+                                Valider Type d'Opération
+                              </DropdownMenuItem>
+                            )}
+                            {dossier.statut === 'EN_ATTENTE' && (
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedDossier(dossier)
+                                  setControlesFondOpen(true)
+                                }}
+                                className="text-purple-600"
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Contrôles de Fond
+                              </DropdownMenuItem>
+                            )}
+                            {(dossier.statut === 'VALIDÉ_CB' || dossier.statut === 'VALIDÉ_ORDONNATEUR' || dossier.statut === 'PAYÉ' || dossier.statut === 'TERMINÉ') && (
+                              <>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedDossier(dossier)
+                                    setOperationTypeConsultationOpen(true)
+                                  }}
+                                  className="text-blue-600"
+                                >
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Consulter Type d'Opération
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedDossier(dossier)
+                                    setControlesFondConsultationOpen(true)
+                                  }}
+                                  className="text-purple-600"
+                                >
+                                  <CheckCircle className="mr-2 h-4 w-4" />
+                                  Consulter Contrôles de Fond
+                                </DropdownMenuItem>
+                              </>
+                            )}
                             <DropdownMenuItem 
                               onClick={(e) => {
                                 e.preventDefault()
@@ -803,7 +955,6 @@ function CBDashboardContent() {
                                 console.log('🖱️ Dossier:', dossier)
                                 console.log('🖱️ folderId:', dossier.folderId)
                                 console.log('🖱️ foldername:', dossier.foldername)
-                                
                                 if (dossier.folderId) {
                                   console.log('🖱️ Appel handleOpenFolder')
                                   handleOpenFolder(dossier)
@@ -820,17 +971,28 @@ function CBDashboardContent() {
                             {dossier.statut === 'EN_ATTENTE' && (
                               <>
                                 <DropdownMenuItem 
-                                  onClick={() => {
-                                    setSelectedDossier(dossier)
-                                    setValidationOpen(true)
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    // Vérifier si les deux validations sont complètes
+                                    if (dossier.validationStatus?.canValidate) {
+                                      setSelectedDossier(dossier)
+                                      setValidationOpen(true)
+                                    } else {
+                                      // Afficher un message d'information
+                                      setError(dossier.validationStatus ? 
+                                        `Validation impossible: ${dossier.validationStatus.missingValidations.join(', ')}` : 
+                                        'Veuillez d\'abord effectuer les validations requises')
+                                    }
                                   }}
-                                  className="text-green-600"
+                                  className={dossier.validationStatus?.canValidate ? "text-green-600" : "text-gray-400 cursor-not-allowed"}
+                                  disabled={!dossier.validationStatus?.canValidate}
                                 >
                                   <CheckCircle className="mr-2 h-4 w-4" />
-                                  Valider
+                                  {dossier.validationStatus?.canValidate ? 'Valider' : 'Valider (validations requises)'}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation()
                                     setSelectedDossier(dossier)
                                     setRejectionOpen(true)
                                   }}
@@ -840,6 +1002,20 @@ function CBDashboardContent() {
                                   Rejeter
                                 </DropdownMenuItem>
                               </>
+                            )}
+                            {dossier.statut === 'VALIDÉ_CB' && (
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setError('Ce dossier a déjà été validé et ne peut plus être rejeté')
+                                  toast.info('Ce dossier a déjà été validé')
+                                }}
+                                className="text-gray-400 cursor-not-allowed"
+                                disabled
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Déjà validé
+                              </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -859,7 +1035,6 @@ function CBDashboardContent() {
               <p className="text-sm text-destructive mt-4">{error}</p>
             )}
       </ContentSection>
-
         {/* Modal de validation */}
         <Dialog open={validationOpen} onOpenChange={setValidationOpen}>
           <DialogContent showCloseButton={false}>
@@ -875,15 +1050,17 @@ function CBDashboardContent() {
               </Button>
               <Button 
                 onClick={() => selectedDossier && handleValidate(selectedDossier)}
-                disabled={actionLoading}
-                className="bg-green-600 hover:bg-green-700"
+                disabled={actionLoading || selectedDossier?.statut !== 'EN_ATTENTE'}
+                className={selectedDossier?.statut === 'EN_ATTENTE' ? 
+                  "bg-green-600 hover:bg-green-700" : 
+                  "bg-gray-400 cursor-not-allowed"}
               >
-                {actionLoading ? 'Validation...' : 'Valider'}
+                {actionLoading ? 'Validation...' : 
+                 selectedDossier?.statut !== 'EN_ATTENTE' ? 'Dossier déjà validé' : 'Valider'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Modal de rejet */}
         <Dialog open={rejectionOpen} onOpenChange={setRejectionOpen}>
           <DialogContent showCloseButton={false}>
@@ -922,7 +1099,6 @@ function CBDashboardContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Modal de détails du dossier */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
           <DialogContent className="max-w-4xl" showCloseButton={false}>
@@ -965,7 +1141,6 @@ function CBDashboardContent() {
                     </div>
                   </div>
                 </div>
-
                 {/* Poste comptable */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Poste Comptable</Label>
@@ -974,7 +1149,6 @@ function CBDashboardContent() {
                     <p className="text-sm text-muted-foreground">{selectedDossier.poste_comptable?.intitule || 'N/A'}</p>
                   </div>
                 </div>
-
                 {/* Nature du document */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Nature du Document</Label>
@@ -983,7 +1157,6 @@ function CBDashboardContent() {
                     <p className="text-sm text-muted-foreground">{selectedDossier.nature_document?.nom || 'N/A'}</p>
                   </div>
                 </div>
-
                 {/* Secrétaire */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Secrétaire</Label>
@@ -992,7 +1165,6 @@ function CBDashboardContent() {
                     <p className="text-sm text-muted-foreground">{selectedDossier.secretaire?.email || 'N/A'}</p>
                   </div>
                 </div>
-
                 {/* Dates */}
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
@@ -1014,8 +1186,8 @@ function CBDashboardContent() {
               <Button variant="outline" onClick={() => setDetailsOpen(false)}>
                 Fermer
               </Button>
-              {selectedDossier?.statut === 'EN_ATTENTE' && (
-                <div className="flex gap-2">
+              <div className="flex gap-2">
+                {selectedDossier?.statut === 'EN_ATTENTE' ? (
                   <Button 
                     variant="outline"
                     onClick={() => {
@@ -1027,28 +1199,196 @@ function CBDashboardContent() {
                     <XCircle className="mr-2 h-4 w-4" />
                     Rejeter
                   </Button>
+                ) : selectedDossier?.statut === 'VALIDÉ_CB' ? (
+                  <Button 
+                    variant="outline"
+                    disabled
+                    className="text-gray-400 border-gray-200 cursor-not-allowed"
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Déjà validé
+                  </Button>
+                ) : null}
+                  {selectedDossier?.statut === 'EN_ATTENTE' ? (
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        setDetailsOpen(false)
+                        handleOperationTypeValidation(selectedDossier)
+                      }}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Valider Type d'Opération
+                    </Button>
+                  ) : selectedDossier?.statut === 'VALIDÉ_CB' ? (
+                    <Button 
+                      variant="outline"
+                      disabled
+                      className="text-gray-400 border-gray-200 cursor-not-allowed"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Type d'Opération validé
+                    </Button>
+                  ) : null}
+                  {selectedDossier?.statut === 'EN_ATTENTE' ? (
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        setDetailsOpen(false)
+                        setControlesFondOpen(true)
+                      }}
+                      className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Contrôles de Fond
+                    </Button>
+                  ) : selectedDossier?.statut === 'VALIDÉ_CB' ? (
+                    <Button 
+                      variant="outline"
+                      disabled
+                      className="text-gray-400 border-gray-200 cursor-not-allowed"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Contrôles validés
+                    </Button>
+                  ) : null}
                   <Button 
                     onClick={() => {
                       setDetailsOpen(false)
-                      setValidationOpen(true)
+                      // Vérifier si le dossier est en attente
+                      if (selectedDossier?.statut !== 'EN_ATTENTE') {
+                        setError('Ce dossier a déjà été validé et ne peut plus être modifié')
+                        return
+                      }
+                      // Vérifier si les deux validations sont complètes
+                      if (selectedDossier?.validationStatus?.canValidate) {
+                        setValidationOpen(true)
+                      } else {
+                        setError(selectedDossier?.validationStatus ? 
+                          `Validation impossible: ${selectedDossier.validationStatus.missingValidations.join(', ')}` : 
+                          'Veuillez d\'abord effectuer les validations requises')
+                      }
                     }}
-                    className="bg-green-600 hover:bg-green-700"
+                    disabled={!selectedDossier?.validationStatus?.canValidate || selectedDossier?.statut !== 'EN_ATTENTE'}
+                    className={selectedDossier?.validationStatus?.canValidate && selectedDossier?.statut === 'EN_ATTENTE' ? 
+                      "bg-green-600 hover:bg-green-700" : 
+                      "bg-gray-400 cursor-not-allowed"}
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Valider
+                    {selectedDossier?.statut !== 'EN_ATTENTE' ? 'Dossier déjà validé' :
+                     selectedDossier?.validationStatus?.canValidate ? 'Valider' : 'Valider (validations requises)'}
                   </Button>
                 </div>
-              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      
+      {/* Formulaire de validation du type d'opération */}
+      {operationTypeValidationOpen && selectedDossier && (
+        <ModalBackdrop 
+          className="p-4"
+          onClick={() => {
+            setOperationTypeValidationOpen(false)
+            setSelectedDossier(null)
+          }}
+        >
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-auto">
+            <OperationTypeValidationForm
+              dossierId={selectedDossier.id}
+              dossierNumero={selectedDossier.numeroDossier}
+              onValidationComplete={handleOperationTypeValidationComplete}
+              onCancel={() => {
+                setOperationTypeValidationOpen(false)
+                setSelectedDossier(null)
+              }}
+              mode={selectedDossier.statut === 'EN_ATTENTE' ? 'validation' : 'consultation'}
+            />
+          </div>
+        </ModalBackdrop>
+      )}
+      {/* Formulaire de contrôle de fond */}
+      {controlesFondOpen && selectedDossier && (
+        <ModalBackdrop 
+          className="p-2"
+          onClick={() => {
+            setControlesFondOpen(false)
+            setSelectedDossier(null)
+          }}
+        >
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-auto bg-background rounded-lg shadow-xl">
+            <div className="p-4">
+              <ControlesFondForm
+                dossierId={selectedDossier.id}
+                dossierNumero={selectedDossier.numeroDossier}
+                onValidationComplete={(success) => {
+                  if (success) {
+                    loadDossiers()
+                    toast.success('Contrôles de fond validés avec succès')
+                  }
+                  setControlesFondOpen(false)
+                  setSelectedDossier(null)
+                }}
+                onCancel={() => {
+                  setControlesFondOpen(false)
+                  setSelectedDossier(null)
+                }}
+                mode={selectedDossier.statut === 'EN_ATTENTE' ? 'validation' : 'consultation'}
+              />
+            </div>
+          </div>
+        </ModalBackdrop>
+      )}
+      {/* Consultation Type d'Opération */}
+      {operationTypeConsultationOpen && selectedDossier && (
+        <ModalBackdrop 
+          className="p-2"
+          onClick={() => {
+            setOperationTypeConsultationOpen(false)
+            setSelectedDossier(null)
+          }}
+        >
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-auto bg-background rounded-lg shadow-xl">
+            <div className="p-4">
+              <OperationTypeConsultation
+                dossierId={selectedDossier.id}
+                dossierNumero={selectedDossier.numeroDossier}
+                onClose={() => {
+                  setOperationTypeConsultationOpen(false)
+                  setSelectedDossier(null)
+                }}
+              />
+            </div>
+          </div>
+        </ModalBackdrop>
+      )}
+      {/* Consultation Contrôles de Fond */}
+      {controlesFondConsultationOpen && selectedDossier && (
+        <ModalBackdrop 
+          className="p-2"
+          onClick={() => {
+            setControlesFondConsultationOpen(false)
+            setSelectedDossier(null)
+          }}
+        >
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-auto bg-background rounded-lg shadow-xl">
+            <div className="p-4">
+              <ControlesFondConsultation
+                dossierId={selectedDossier.id}
+                dossierNumero={selectedDossier.numeroDossier}
+                onClose={() => {
+                  setControlesFondConsultationOpen(false)
+                  setSelectedDossier(null)
+                }}
+              />
+            </div>
+          </div>
+        </ModalBackdrop>
+      )}
       {/* Panel de diagnostic */}
       <DiagnosticPanel />
     </CompactPageLayout>
   )
 }
-
 export default function CBDashboardPage() {
   return (
     <ControleurBudgetaireGuard>

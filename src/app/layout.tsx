@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "../styles/print-a4.css";
 import { ClientProviders } from "@/components/providers/client-providers";
 import { LoadingProvider } from "@/components/providers/loading-provider";
 import { ThemeProvider } from "next-themes";

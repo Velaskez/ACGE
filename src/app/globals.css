@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Box-sizing border-box pour tous les éléments */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 /* Import des polices personnalisées - Version ultra-simplifiée */
 @font-face {
   font-family: 'Outfit';

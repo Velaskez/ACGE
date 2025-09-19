@@ -1,5 +1,4 @@
 'use client'
-
 import React from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { CompactPageLayout, PageHeader, CompactStats, ContentSection, EmptyState } from '@/components/shared/compact-page-layout'
@@ -33,15 +32,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+  AlertDialogCustom as AlertDialog,
+  AlertDialogCustomAction as AlertDialogAction,
+  AlertDialogCustomCancel as AlertDialogCancel,
+  AlertDialogCustomContent as AlertDialogContent,
+  AlertDialogCustomDescription as AlertDialogDescription,
+  AlertDialogCustomFooter as AlertDialogFooter,
+  AlertDialogCustomHeader as AlertDialogHeader,
+  AlertDialogCustomTitle as AlertDialogTitle,
+} from '@/components/ui/alert-dialog-custom'
 import { useFolders } from '@/hooks/use-folders'
 import { FoldersToolbar } from '@/components/folders/folders-toolbar'
 import { FoldersFilters, FolderFilters } from '@/components/folders/folders-filters'
@@ -49,33 +48,29 @@ import { FolderCreationForm } from '@/components/folders/folder-creation-form'
 import { ModalWrapper } from '@/components/ui/modal-wrapper'
 import { DocumentsToolbar } from '@/components/documents/documents-toolbar'
 import { DocumentsFilters, DocumentFilters } from '@/components/documents/documents-filters'
-import { DocumentPreviewModal } from '@/components/documents/document-preview-modal'
 import { DocumentEditModal } from '@/components/documents/document-edit-modal'
 import { DocumentShareModal } from '@/components/documents/document-share-modal'
-import { UploadModal } from '@/components/upload/upload-modal'
+import { DocumentPreviewModal } from '@/components/ui/document-preview-modal'
+import { ModernUploadModal } from '@/components/upload/modern-upload-modal'
 import { DeleteConfirmationModal } from '@/components/ui/delete-confirmation-modal'
 import { SuccessModal } from '@/components/ui/success-modal'
-import { FolderOpen, Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, ArrowLeft, Download, Share2, Upload, Send, Clock, RefreshCw } from 'lucide-react'
+import { FolderOpen, Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, ArrowLeft, Download, Share2, Upload, Send, Clock, RefreshCw, CheckCircle } from 'lucide-react'
 import { SearchSuggestion } from '@/components/ui/search-suggestions'
 import { DocumentItem } from '@/types/document'
 import { Folder } from '@/types/folder'
 import { getFolderStatusInfo } from '@/lib/folder-status'
 import { FolderStatusNavigation } from '@/components/folders/folder-status-navigation'
-
 // Type étendu pour inclure numeroDossier et statut
 interface FolderWithNumero extends Folder {
   numeroDossier?: string
   statut?: 'BROUILLON' | 'EN_ATTENTE' | 'VALIDÉ_CB' | 'REJETÉ_CB' | 'VALIDÉ_ORDONNATEUR' | 'PAYÉ' | 'TERMINÉ'
 }
-
 export default function FoldersPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { folders, stats, isLoading, error, refresh } = useFolders()
-  
   // Convertir les dossiers en FolderWithNumero pour avoir accès au statut
   const foldersWithStatus = folders as FolderWithNumero[]
-  
   // États pour la gestion des dossiers
   const [query, setQuery] = React.useState('')
   const [open, setOpen] = React.useState(false)
@@ -86,10 +81,8 @@ export default function FoldersPage() {
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
   const [editingFolder, setEditingFolder] = React.useState<any>(null)
   const [deleteConfirm, setDeleteConfirm] = React.useState<string | null>(null)
-  
   // États pour la navigation par statut
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'en_attente' | 'valide' | 'rejete'>('all')
-
   // États pour les nouveaux champs du formulaire de dossier
   const [numeroDossier, setNumeroDossier] = React.useState('')
   const [dateDepot, setDateDepot] = React.useState('')
@@ -98,24 +91,37 @@ export default function FoldersPage() {
   const [natureDocumentId, setNatureDocumentId] = React.useState('')
   const [objetOperation, setObjetOperation] = React.useState('')
   const [beneficiaire, setBeneficiaire] = React.useState('')
-  
   // États pour la soumission de dossiers
   const [submittingFolder, setSubmittingFolder] = React.useState<string | null>(null)
   const [submitConfirm, setSubmitConfirm] = React.useState<string | null>(null)
-  
+  const [submittedFolders, setSubmittedFolders] = React.useState<Set<string>>(new Set())
+  // États pour la mise à jour de dossiers
+  const [updatingFolder, setUpdatingFolder] = React.useState<string | null>(null)
+  const [updateModalOpen, setUpdateModalOpen] = React.useState(false)
+  const [folderToUpdate, setFolderToUpdate] = React.useState<any>(null)
+  const [updateForm, setUpdateForm] = React.useState({
+    numeroDossier: '',
+    numeroNature: '',
+    objetOperation: '',
+    beneficiaire: '',
+    posteComptableId: '',
+    natureDocumentId: ''
+  })
+  // États pour la gestion des documents
+  const [dossierDocuments, setDossierDocuments] = React.useState<any[]>([])
+  const [availableDocuments, setAvailableDocuments] = React.useState<any[]>([])
+  const [documentsLoading, setDocumentsLoading] = React.useState(false)
+  const [documentsError, setDocumentsError] = React.useState('')
+  const [showDocumentManager, setShowDocumentManager] = React.useState(false)
   // États pour les données des dropdowns
   const [postesComptables, setPostesComptables] = React.useState<any[]>([])
   const [naturesDocuments, setNaturesDocuments] = React.useState<any[]>([])
   const [loadingData, setLoadingData] = React.useState(false)
-
   // États pour la vue du contenu d'un dossier
   const folderId = searchParams.get('folder')
   const [currentFolder, setCurrentFolder] = React.useState<any>(null)
   const [documents, setDocuments] = React.useState<DocumentItem[]>([])
   const [filteredDocuments, setFilteredDocuments] = React.useState<DocumentItem[]>([])
-  const [documentsLoading, setDocumentsLoading] = React.useState(false)
-  const [documentsError, setDocumentsError] = React.useState('')
-
   // Gestion des suggestions de recherche
   const handleSearchSelect = (suggestion: SearchSuggestion) => {
     switch (suggestion.type) {
@@ -142,12 +148,10 @@ export default function FoldersPage() {
         break
     }
   }
-  
   // États pour les documents (comme dans documents/page.tsx)
   const [documentSearchQuery, setDocumentSearchQuery] = React.useState('')
   const [documentSortField, setDocumentSortField] = React.useState<'title' | 'createdAt' | 'updatedAt' | 'fileSize' | 'fileType'>('updatedAt')
   const [documentSortOrder, setDocumentSortOrder] = React.useState<'asc' | 'desc'>('desc')
-  
   // États pour les modales de documents
   const [selectedDocument, setSelectedDocument] = React.useState<DocumentItem | null>(null)
   const [previewOpen, setPreviewOpen] = React.useState(false)
@@ -156,35 +160,29 @@ export default function FoldersPage() {
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false)
   const [documentToDelete, setDocumentToDelete] = React.useState<DocumentItem | null>(null)
   const [isDeleting, setIsDeleting] = React.useState(false)
-
   // États pour les filtres des dossiers
   const [isFiltersOpen, setIsFiltersOpen] = React.useState(false)
   const [folderFilters, setFolderFilters] = React.useState<FolderFilters>({
     sortBy: 'updatedAt',
     sortOrder: 'desc'
   })
-
   // États pour les filtres des documents dans un dossier
   const [isDocumentFiltersOpen, setIsDocumentFiltersOpen] = React.useState(false)
   const [documentFilters, setDocumentFilters] = React.useState<DocumentFilters>({
     sortBy: 'updatedAt',
     sortOrder: 'desc'
   })
-
   // États pour la soumission des dossiers
   const [successModalOpen, setSuccessModalOpen] = React.useState(false)
   const [submittedFolder, setSubmittedFolder] = React.useState<Folder | null>(null)
-
   // États pour l'upload modal
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false)
-
   // Fonction pour générer le numéro de dossier
   const generateNumeroDossier = () => {
     const year = new Date().getFullYear()
     const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
     return `DOSS-ACGE-${year}${randomNum}`
   }
-
   // Fonction pour charger les postes comptables
   const loadPostesComptables = async () => {
     try {
@@ -197,7 +195,6 @@ export default function FoldersPage() {
       console.error('Erreur chargement postes comptables:', error)
     }
   }
-
   // Fonction pour charger les natures de documents
   const loadNaturesDocuments = async () => {
     try {
@@ -210,25 +207,21 @@ export default function FoldersPage() {
       console.error('Erreur chargement natures documents:', error)
     }
   }
-
   // Charger les données au montage du composant
   React.useEffect(() => {
     loadPostesComptables()
     loadNaturesDocuments()
   }, [])
-
   // Fonction pour charger les documents d'un dossier
   const loadFolderDocuments = React.useCallback(async (folderId: string) => {
     try {
       console.log('📁 Chargement des documents du dossier:', folderId)
       setDocumentsLoading(true)
       setDocumentsError('')
-      
       // Charger les détails du dossier
       console.log('📁 Appel API dossier:', `/api/folders/${folderId}`)
       const folderRes = await fetch(`/api/folders/${folderId}`)
       console.log('📁 Réponse API dossier:', folderRes.status, folderRes.ok)
-      
       if (folderRes.ok) {
         const folderData = await folderRes.json()
         console.log('📁 Données dossier reçues:', folderData)
@@ -238,20 +231,16 @@ export default function FoldersPage() {
         console.error('❌ Erreur API dossier:', folderRes.status, errorData)
         setDocumentsError(`Erreur lors du chargement du dossier (${folderRes.status})`)
       }
-      
       // Charger les documents du dossier
       console.log('📄 Appel API documents:', `/api/documents?folderId=${folderId}`)
       const documentsRes = await fetch(`/api/documents?folderId=${folderId}`)
       console.log('📄 Réponse API documents:', documentsRes.status, documentsRes.ok)
-      
       if (documentsRes.ok) {
         const response = await documentsRes.json()
         console.log('📄 Données documents reçues:', response)
-        
         // L'API retourne { documents: [...], pagination: {...} }
         const documentsArray = response.documents || []
         console.log('📄 Nombre de documents trouvés:', documentsArray.length)
-        
         // Adapter les données pour correspondre à notre interface
         const adaptedDocuments = documentsArray.map((doc: any): DocumentItem => ({
           ...doc,
@@ -279,7 +268,6 @@ export default function FoldersPage() {
       setDocumentsLoading(false)
     }
   }, [])
-
   // Effet pour charger les documents quand un dossier est sélectionné
   React.useEffect(() => {
     console.log('🔄 Effet de chargement - folderId:', folderId)
@@ -294,7 +282,6 @@ export default function FoldersPage() {
       setDocumentsError('')
     }
   }, [folderId, loadFolderDocuments])
-
   // Filtrage et tri des documents
   React.useEffect(() => {
     let filtered = documents.filter(doc => {
@@ -305,7 +292,6 @@ export default function FoldersPage() {
           !doc.fileName?.toLowerCase().includes(documentSearchQuery.toLowerCase())) {
         return false
       }
-
       // Filtrage par recherche dans les filtres
       if (documentFilters.search && 
           !doc.title.toLowerCase().includes(documentFilters.search.toLowerCase()) &&
@@ -313,12 +299,10 @@ export default function FoldersPage() {
           !doc.fileName?.toLowerCase().includes(documentFilters.search.toLowerCase())) {
         return false
       }
-
       // Filtrage par type de fichier
       if (documentFilters.fileType && doc.fileType !== documentFilters.fileType) {
         return false
       }
-
       // Filtrage par taille
       if (documentFilters.minSize && (!doc.fileSize || doc.fileSize < documentFilters.minSize)) {
         return false
@@ -326,7 +310,6 @@ export default function FoldersPage() {
       if (documentFilters.maxSize && (!doc.fileSize || doc.fileSize > documentFilters.maxSize)) {
         return false
       }
-
       // Filtrage par période
       if (documentFilters.startDate && doc.createdAt && new Date(doc.createdAt) < new Date(documentFilters.startDate)) {
         return false
@@ -334,7 +317,6 @@ export default function FoldersPage() {
       if (documentFilters.endDate && doc.createdAt && new Date(doc.createdAt) > new Date(documentFilters.endDate)) {
         return false
       }
-
       // Filtrage par tags
       if (documentFilters.tags && documentFilters.tags.length > 0) {
         const docTags = doc.tags || []
@@ -342,17 +324,13 @@ export default function FoldersPage() {
           return false
         }
       }
-
       return true
     })
-
     // Tri des documents
     const sortBy = documentFilters.sortBy || documentSortField
     const sortOrderValue = documentFilters.sortOrder || documentSortOrder
-
     filtered.sort((a, b) => {
       let aValue: any, bValue: any
-      
       switch (sortBy) {
         case 'title':
           aValue = a.title.toLowerCase()
@@ -378,20 +356,16 @@ export default function FoldersPage() {
           aValue = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
           bValue = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
       }
-
       if (sortOrderValue === 'asc') {
         return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
       } else {
         return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
       }
     })
-
     setFilteredDocuments(filtered)
   }, [documents, documentSearchQuery, documentSortField, documentSortOrder, documentFilters])
-
   const filteredFolders = React.useMemo(() => {
     let items = (foldersWithStatus || [])
-
     // Filtrage par statut
     if (statusFilter !== 'all') {
       items = items.filter(f => {
@@ -408,12 +382,10 @@ export default function FoldersPage() {
         }
       })
     }
-
     // Filtrage par recherche textuelle
     if (query) {
       items = items.filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
     }
-
     // Filtrage par recherche dans les filtres
     if (folderFilters.search) {
       items = items.filter(f => 
@@ -421,7 +393,6 @@ export default function FoldersPage() {
         (f.description && f.description.toLowerCase().includes(folderFilters.search!.toLowerCase()))
       )
     }
-
     // Filtrage par nombre de documents
     if (folderFilters.minDocuments !== undefined) {
       items = items.filter(f => (f._count?.documents || 0) >= folderFilters.minDocuments!)
@@ -429,7 +400,6 @@ export default function FoldersPage() {
     if (folderFilters.maxDocuments !== undefined) {
       items = items.filter(f => (f._count?.documents || 0) <= folderFilters.maxDocuments!)
     }
-
     // Filtrage par période
     if (folderFilters.startDate) {
       items = items.filter(f => f.createdAt && new Date(f.createdAt) >= new Date(folderFilters.startDate!))
@@ -437,43 +407,175 @@ export default function FoldersPage() {
     if (folderFilters.endDate) {
       items = items.filter(f => f.createdAt && new Date(f.createdAt) <= new Date(folderFilters.endDate!))
     }
-
     // Filtrage par poste comptable
     if (folderFilters.posteComptableId) {
       items = items.filter(f => (f as any).posteComptableId === folderFilters.posteComptableId)
     }
-
     // Filtrage par nature de document
     if (folderFilters.natureDocumentId) {
       items = items.filter(f => (f as any).natureDocumentId === folderFilters.natureDocumentId)
     }
-
     // Tri
     const sortBy = folderFilters.sortBy || sortField
     const sortOrderValue = folderFilters.sortOrder || sortOrder
-
     const getValue = (f: any) => {
       if (sortBy === 'updatedAt') return f.updatedAt ? new Date(f.updatedAt).getTime() : 0
       if (sortBy === 'createdAt') return f.createdAt ? new Date(f.createdAt).getTime() : 0
       if (sortBy === 'documentCount') return f._count?.documents || 0
       return (f.name || '').toLowerCase()
     }
-
     items.sort((a, b) => {
       const av = getValue(a)
       const bv = getValue(b)
       if (sortOrderValue === 'asc') return av > bv ? 1 : av < bv ? -1 : 0
       return av < bv ? 1 : av > bv ? -1 : 0
     })
-
     return items
   }, [foldersWithStatus, query, sortField, sortOrder, folderFilters, statusFilter])
-
+  // Fonction pour vérifier quels dossiers ont déjà été soumis
+  const checkSubmittedFolders = async () => {
+    try {
+      const response = await fetch('/api/dossiers/secretaire')
+      if (response.ok) {
+        const data = await response.json()
+        const submittedIds = new Set<string>(data.dossiers?.map((d: any) => d.folderId).filter(Boolean) || [])
+        setSubmittedFolders(submittedIds)
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification des dossiers soumis:', error)
+    }
+  }
+  // Vérifier les dossiers soumis au chargement
+  React.useEffect(() => {
+    checkSubmittedFolders()
+  }, [])
+  // Fonction pour ouvrir le modal de mise à jour
+  const handleOpenUpdateModal = async (folder: any) => {
+    setFolderToUpdate(folder)
+    setUpdateForm({
+      numeroDossier: folder.numeroDossier || '',
+      numeroNature: folder.numeroNature || '',
+      objetOperation: folder.objetOperation || '',
+      beneficiaire: folder.beneficiaire || '',
+      posteComptableId: folder.posteComptableId || '',
+      natureDocumentId: folder.natureDocumentId || ''
+    })
+    setUpdateModalOpen(true)
+    // Charger les documents du dossier si c'est un dossier soumis
+    if (submittedFolders.has(folder.id)) {
+      await loadDossierDocuments(folder.id)
+    }
+  }
+  // Fonction pour charger les documents d'un dossier
+  const loadDossierDocuments = async (dossierId: string) => {
+    try {
+      setDocumentsLoading(true)
+      setDocumentsError('')
+      const response = await fetch(`/api/dossiers/${dossierId}/documents`)
+      if (response.ok) {
+        const data = await response.json()
+        setDossierDocuments(data.documents || [])
+      } else {
+        setDocumentsError('Erreur lors du chargement des documents')
+      }
+    } catch (error) {
+      console.error('Erreur chargement documents:', error)
+      setDocumentsError('Erreur lors du chargement des documents')
+    } finally {
+      setDocumentsLoading(false)
+    }
+  }
+  // Fonction pour charger les documents disponibles (non associés)
+  const loadAvailableDocuments = async () => {
+    try {
+      const response = await fetch('/api/documents?folderId=null&limit=50')
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableDocuments(data.documents || [])
+      }
+    } catch (error) {
+      console.error('Erreur chargement documents disponibles:', error)
+    }
+  }
+  // Fonction pour ajouter un document au dossier
+  const handleAddDocument = async (documentId: string) => {
+    if (!folderToUpdate) return
+    try {
+      const response = await fetch(`/api/dossiers/${folderToUpdate.id}/documents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId })
+      })
+      if (response.ok) {
+        // Recharger les documents du dossier
+        await loadDossierDocuments(folderToUpdate.id)
+        // Recharger les documents disponibles
+        await loadAvailableDocuments()
+      } else {
+        const errorData = await response.json()
+        alert('Erreur lors de l\'ajout du document: ' + errorData.error)
+      }
+    } catch (error) {
+      console.error('Erreur ajout document:', error)
+      alert('Erreur lors de l\'ajout du document')
+    }
+  }
+  // Fonction pour retirer un document du dossier
+  const handleRemoveDocument = async (documentId: string) => {
+    if (!folderToUpdate) return
+    try {
+      const response = await fetch(`/api/dossiers/${folderToUpdate.id}/documents?documentId=${documentId}`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        // Recharger les documents du dossier
+        await loadDossierDocuments(folderToUpdate.id)
+        // Recharger les documents disponibles
+        await loadAvailableDocuments()
+      } else {
+        const errorData = await response.json()
+        alert('Erreur lors du retrait du document: ' + errorData.error)
+      }
+    } catch (error) {
+      console.error('Erreur retrait document:', error)
+      alert('Erreur lors du retrait du document')
+    }
+  }
+  // Fonction pour mettre à jour un dossier
+  const handleUpdateFolder = async () => {
+    if (!folderToUpdate) return
+    try {
+      setUpdatingFolder(folderToUpdate.id)
+      const response = await fetch(`/api/dossiers/${folderToUpdate.id}/update`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateForm)
+      })
+      if (response.ok) {
+        console.log('✅ Dossier mis à jour avec succès')
+        setUpdateModalOpen(false)
+        setFolderToUpdate(null)
+        if (refresh) {
+          await refresh()
+        }
+        // Recharger la liste des dossiers soumis
+        await checkSubmittedFolders()
+      } else {
+        const errorData = await response.json()
+        console.error('❌ Erreur mise à jour:', errorData)
+        alert('Erreur lors de la mise à jour: ' + (errorData.error || 'Erreur inconnue'))
+      }
+    } catch (error) {
+      console.error('❌ Erreur mise à jour:', error)
+      alert('Erreur de connexion lors de la mise à jour')
+    } finally {
+      setUpdatingFolder(null)
+    }
+  }
   // Fonction pour soumettre un dossier au Contrôleur Budgétaire
   const handleSubmitFolder = async (folderId: string) => {
     try {
       setSubmittingFolder(folderId)
-      
       const response = await fetch(`/api/folders/${folderId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -487,10 +589,11 @@ export default function FoldersPage() {
           secretaireId: null
         })
       })
-      
       if (response.ok) {
         console.log('✅ Dossier soumis avec succès')
         setSubmitConfirm(null)
+        // Ajouter le dossier à la liste des dossiers soumis
+        setSubmittedFolders(prev => new Set([...prev, folderId]))
         if (refresh) {
           await refresh()
         }
@@ -506,13 +609,11 @@ export default function FoldersPage() {
       setSubmittingFolder(null)
     }
   }
-
   const handleCreateFolder = async (formData?: any, e?: React.FormEvent) => {
     // Prévenir le comportement par défaut si un événement est fourni
     if (e) {
       e.preventDefault()
     }
-    
     // Si formData est fourni, utiliser les données du formulaire stepper
     const data = formData || {
       name,
@@ -525,16 +626,12 @@ export default function FoldersPage() {
       natureDocumentId,
       dateDepot
     }
-
     if (!data.name?.trim()) return
-
     try {
       setCreating(true)
       console.log('🔄 Création dossier en cours...', data)
-      
       const url = editingFolder ? `/api/folders/${editingFolder.id}` : '/api/folders'
       const method = editingFolder ? 'PUT' : 'POST'
-      
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -550,16 +647,12 @@ export default function FoldersPage() {
           beneficiaire: data.beneficiaire || undefined
         })
       })
-      
       console.log('📡 Réponse API:', res.status, res.statusText)
-      
       if (res.ok) {
         const responseData = await res.json()
         console.log('✅ Dossier créé:', responseData)
-        
         // Le dossier est créé en statut brouillon, la soumission sera manuelle
         console.log('✅ Dossier créé en statut brouillon - soumission manuelle requise')
-        
         setOpen(false)
         setName('')
         setDescription('')
@@ -571,7 +664,6 @@ export default function FoldersPage() {
         setObjetOperation('')
         setBeneficiaire('')
         setEditingFolder(null)
-        
         // Rafraîchir la liste des dossiers
         if (refresh) {
           await refresh()
@@ -590,14 +682,17 @@ export default function FoldersPage() {
       setCreating(false)
     }
   }
-
   const handleEditFolder = React.useCallback((folder: any) => {
+    // Vérifier si le dossier est validé - dans ce cas, empêcher l'édition
+    if (folder.statut === 'VALIDÉ_CB' || folder.statut === 'VALIDÉ_ORDONNATEUR' || folder.statut === 'PAYÉ' || folder.statut === 'TERMINÉ') {
+      alert(`🚫 Impossible de modifier ce dossier : il a été validé par le Contrôleur Budgétaire (statut: ${folder.statut})`)
+      return
+    }
     setEditingFolder(folder)
     setName(folder.name)
     setDescription(folder.description || '')
     setOpen(true)
   }, [])
-
   const handleDeleteFolder = async (folderId: string) => {
     try {
       const res = await fetch(`/api/folders/${folderId}`, {
@@ -608,13 +703,16 @@ export default function FoldersPage() {
         setDeleteConfirm(null)
       } else {
         const error = await res.json()
-        alert(error.error || 'Erreur lors de la suppression')
+        if (res.status === 403) {
+          alert(`🚫 ${error.error}`)
+        } else {
+          alert(error.error || 'Erreur lors de la suppression')
+        }
       }
     } catch (error) {
       alert('Erreur lors de la suppression')
     }
   }
-
   const handleCloseDialog = (open: boolean) => {
     if (!open) {
       console.log('🔒 Fermeture dialogue')
@@ -644,25 +742,19 @@ export default function FoldersPage() {
       setBeneficiaire('')
     }
   }
-
-
   // Fonctions pour la gestion des documents
   const handleViewDocument = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setPreviewOpen(true)
   }, [])
-
   const handleEditDocument = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setEditModalOpen(true)
   }, [])
-
   const handleShareDocument = React.useCallback((document: DocumentItem) => {
     setSelectedDocument(document)
     setShareModalOpen(true)
   }, [])
-
-
   const handleDownloadDocument = async (document: DocumentItem) => {
     try {
       const response = await fetch(`/api/documents/${document.id}/download`)
@@ -679,15 +771,12 @@ export default function FoldersPage() {
       console.error('Erreur lors du téléchargement:', error)
     }
   }
-
   const handleDeleteDocument = (document: DocumentItem) => {
     setDocumentToDelete(document)
     setDeleteModalOpen(true)
   }
-
   const confirmDeleteDocument = async () => {
     if (!documentToDelete) return
-
     try {
       setIsDeleting(true)
       // Utiliser l'originalId (UUID de la base de données) au lieu de l'id généré côté client
@@ -695,7 +784,6 @@ export default function FoldersPage() {
       const response = await fetch(`/api/documents/${documentId}`, {
         method: 'DELETE',
       })
-      
       if (response.ok) {
         // Recharger les documents après suppression
         if (folderId) {
@@ -712,7 +800,6 @@ export default function FoldersPage() {
       setIsDeleting(false)
     }
   }
-
   // Fonction pour ouvrir un dossier
   const handleOpenFolder = React.useCallback((folder: any) => {
     console.log('🔍 Tentative d\'ouverture du dossier:', folder)
@@ -720,25 +807,20 @@ export default function FoldersPage() {
     console.log('🔍 URL de navigation:', `/folders?folder=${folder.id}`)
     router.push(`/folders?folder=${folder.id}`)
   }, [router])
-
   // Fonction pour revenir à la liste des dossiers
   const handleBackToFolders = React.useCallback(() => {
     router.push('/folders')
   }, [router])
-
-
   // Fonction pour ouvrir l'upload modal
   const handleOpenUploadModal = () => {
     setUploadModalOpen(true)
   }
-
   // Fonction pour recharger les documents après upload
   const handleUploadSuccess = () => {
     if (folderId) {
       loadFolderDocuments(folderId)
     }
   }
-
   // Rendu conditionnel : soit la liste des dossiers, soit le contenu d'un dossier
   if (folderId && currentFolder) {
     return (
@@ -763,7 +845,6 @@ export default function FoldersPage() {
             </>
           }
         />
-
         {/* Stats compactes du dossier */}
         <CompactStats
           stats={[
@@ -789,7 +870,6 @@ export default function FoldersPage() {
           ]}
           columns={3}
         />
-
           {/* Barre d'outils pour les documents */}
           <DocumentsToolbar
             searchQuery={documentSearchQuery}
@@ -800,7 +880,6 @@ export default function FoldersPage() {
             onSortOrderChange={setDocumentSortOrder}
             onOpenFilters={() => setIsDocumentFiltersOpen(true)}
           />
-
           {/* Contenu des documents */}
           <ContentSection
             title="Documents du dossier"
@@ -925,7 +1004,6 @@ export default function FoldersPage() {
               />
             )}
           </ContentSection>
-
           {/* Modales pour les documents */}
           {selectedDocument && (
             <>
@@ -933,6 +1011,16 @@ export default function FoldersPage() {
                 document={selectedDocument}
                 isOpen={previewOpen}
                 onClose={() => setPreviewOpen(false)}
+                onDownload={(doc) => {
+                  // Logique de téléchargement
+                  console.log('Téléchargement du document:', doc.title)
+                }}
+                onEdit={(doc) => {
+                  setEditModalOpen(true)
+                }}
+                onShare={(doc) => {
+                  setShareModalOpen(true)
+                }}
               />
               <DocumentEditModal
                 document={selectedDocument}
@@ -947,7 +1035,6 @@ export default function FoldersPage() {
               />
             </>
           )}
-
           {/* Panneau de filtres des documents */}
           <DocumentsFilters
             isOpen={isDocumentFiltersOpen}
@@ -956,9 +1043,8 @@ export default function FoldersPage() {
             onApplyFilters={setDocumentFilters}
             folders={[]} // Pas de sous-dossiers dans cette vue
           />
-
           {/* Modal d'upload */}
-          <UploadModal
+          <ModernUploadModal
             isOpen={uploadModalOpen}
             onClose={() => setUploadModalOpen(false)}
             folderId={folderId}
@@ -967,7 +1053,6 @@ export default function FoldersPage() {
       </CompactPageLayout>
     )
   }
-
   // Vue par défaut : liste des dossiers
   return (
     <CompactPageLayout>
@@ -997,7 +1082,6 @@ export default function FoldersPage() {
                     Remplissez les informations requises pour créer un nouveau dossier comptable.
                   </DialogDescription>
                 </DialogHeader>
-                
                 <FolderCreationForm
                   postesComptables={postesComptables}
                   naturesDocuments={naturesDocuments}
@@ -1011,26 +1095,25 @@ export default function FoldersPage() {
           </>
         }
       />
-
         {/* Navigation horizontale par statut */}
         <FolderStatusNavigation
           folders={folders || []}
           currentFilter={statusFilter}
           onFilterChange={setStatusFilter}
         />
-
         {/* Barre d'outils - Maintenant identique à la page des fichiers */}
-        <FoldersToolbar
-          searchQuery={query}
-          onSearchQueryChange={setQuery}
-          onSearchSelect={handleSearchSelect}
-          sortField={sortField}
-          sortOrder={sortOrder}
-          onSortFieldChange={setSortField}
-          onSortOrderChange={setSortOrder}
-          onOpenFilters={() => setIsFiltersOpen(true)}
-        />
-
+        <ContentSection title="Recherche et filtres">
+          <FoldersToolbar
+            searchQuery={query}
+            onSearchQueryChange={setQuery}
+            onSearchSelect={handleSearchSelect}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSortFieldChange={setSortField}
+            onSortOrderChange={setSortOrder}
+            onOpenFilters={() => setIsFiltersOpen(true)}
+          />
+        </ContentSection>
         {/* Stats compactes */}
         <CompactStats
           stats={[
@@ -1047,7 +1130,6 @@ export default function FoldersPage() {
           ]}
           columns={2}
         />
-
         {/* Liste des dossiers */}
         <ContentSection>
             {isLoading ? (
@@ -1154,12 +1236,17 @@ export default function FoldersPage() {
                                   e.stopPropagation()
                                   handleEditFolder(folder)
                                 }}
+                                disabled={folder.statut === 'VALIDÉ_CB' || folder.statut === 'VALIDÉ_ORDONNATEUR' || folder.statut === 'PAYÉ' || folder.statut === 'TERMINÉ'}
                               >
                                 <Edit className="mr-2 h-3 w-3" />
-                                Modifier
+                                {folder.statut === 'VALIDÉ_CB' || folder.statut === 'VALIDÉ_ORDONNATEUR' || folder.statut === 'PAYÉ' || folder.statut === 'TERMINÉ' 
+                                  ? 'Modifier (interdit)' 
+                                  : 'Modifier'
+                                }
                               </DropdownMenuItem>
                               {/* Bouton de soumission - seulement si le dossier n'est pas déjà soumis */}
-                              {(!folder.statut || folder.statut === 'BROUILLON' || folder.statut === 'EN_ATTENTE') && (
+                              {(!folder.statut || folder.statut === 'BROUILLON' || folder.statut === 'EN_ATTENTE') && 
+                               !submittedFolders.has(folder.id) && (
                                 <DropdownMenuItem 
                                   onClick={(e) => {
                                     e.stopPropagation()
@@ -1171,16 +1258,53 @@ export default function FoldersPage() {
                                   Soumettre au CB
                                 </DropdownMenuItem>
                               )}
+                              {/* Indicateur si le dossier a déjà été soumis */}
+                              {submittedFolders.has(folder.id) && (
+                                <DropdownMenuItem 
+                                  disabled
+                                  className="text-gray-500 cursor-not-allowed"
+                                >
+                                  <CheckCircle className="mr-2 h-3 w-3" />
+                                  Déjà soumis
+                                </DropdownMenuItem>
+                              )}
+                              {/* Bouton de mise à jour - seulement pour les dossiers en attente */}
+                              {submittedFolders.has(folder.id) && folder.statut === 'EN_ATTENTE' && (
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleOpenUpdateModal(folder)
+                                  }}
+                                  className="text-orange-600"
+                                >
+                                  <Edit className="mr-2 h-3 w-3" />
+                                  Mettre à jour
+                                </DropdownMenuItem>
+                              )}
+                              {/* Indicateur pour les dossiers validés (non modifiables) */}
+                              {submittedFolders.has(folder.id) && folder.statut === 'VALIDÉ_CB' && (
+                                <DropdownMenuItem 
+                                  disabled
+                                  className="text-green-600 cursor-not-allowed"
+                                >
+                                  <CheckCircle className="mr-2 h-3 w-3" />
+                                  Validé (non modifiable)
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setDeleteConfirm(folder.id)
                                 }}
                                 className="text-red-600"
+                                disabled={folder.statut === 'VALIDÉ_CB' || folder.statut === 'VALIDÉ_ORDONNATEUR' || folder.statut === 'PAYÉ' || folder.statut === 'TERMINÉ'}
                               >
                                 <Trash2 className="mr-2 h-3 w-3" />
-                                Supprimer
+                                {folder.statut === 'VALIDÉ_CB' || folder.statut === 'VALIDÉ_ORDONNATEUR' || folder.statut === 'PAYÉ' || folder.statut === 'TERMINÉ' 
+                                  ? 'Supprimer (interdit)' 
+                                  : 'Supprimer'
+                                }
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1207,21 +1331,22 @@ export default function FoldersPage() {
               <p className="text-xs text-destructive mt-4 px-4">{error}</p>
             )}
           </ContentSection>
-
         {/* Dialogue de confirmation de suppression */}
-        <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialog 
+          open={!!deleteConfirm} 
+          onOpenChange={() => setDeleteConfirm(null)}
+          title="Êtes-vous sûr ?"
+          description="Cette action ne peut pas être annulée. Le dossier sera définitivement supprimé. Assurez-vous qu'il ne contient aucun document ou sous-dossier."
+        >
           <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Cette action ne peut pas être annulée. Le dossier sera définitivement supprimé.
-                Assurez-vous qu'il ne contient aucun document ou sous-dossier.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setDeleteConfirm(null)}>
+                Annuler
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteConfirm && handleDeleteFolder(deleteConfirm)}
+                loading={isDeleting}
+                loadingText="Suppression en cours..."
                 className="bg-red-600 hover:bg-red-700"
               >
                 Supprimer
@@ -1229,30 +1354,30 @@ export default function FoldersPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
         {/* Dialogue de confirmation de soumission */}
-        <AlertDialog open={!!submitConfirm} onOpenChange={() => setSubmitConfirm(null)}>
+        <AlertDialog 
+          open={!!submitConfirm} 
+          onOpenChange={() => setSubmitConfirm(null)}
+          title="Soumettre le dossier"
+          description="Êtes-vous sûr de vouloir soumettre ce dossier au Contrôleur Budgétaire ? Une fois soumis, le dossier passera en statut 'En attente' et ne pourra plus être modifié."
+        >
           <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Soumettre le dossier</AlertDialogTitle>
-              <AlertDialogDescription>
-                Êtes-vous sûr de vouloir soumettre ce dossier au Contrôleur Budgétaire ?
-                Une fois soumis, le dossier passera en statut "En attente" et ne pourra plus être modifié.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setSubmitConfirm(null)}>
+                Annuler
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => submitConfirm && handleSubmitFolder(submitConfirm)}
                 disabled={submittingFolder === submitConfirm}
+                loading={submittingFolder === submitConfirm}
+                loadingText="Soumission en cours..."
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {submittingFolder === submitConfirm ? 'Soumission...' : 'Soumettre'}
+                Soumettre
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
         {/* Panneau de filtres des dossiers */}
         <FoldersFilters
           isOpen={isFiltersOpen}
@@ -1262,8 +1387,6 @@ export default function FoldersPage() {
           postesComptables={postesComptables}
           naturesDocuments={naturesDocuments}
         />
-
-
          {/* Modal de confirmation de suppression de document */}
          <DeleteConfirmationModal
            isOpen={deleteModalOpen}
@@ -1278,7 +1401,6 @@ export default function FoldersPage() {
            itemType="document"
            isLoading={isDeleting}
          />
-
          {/* Modal de succès de soumission */}
          <SuccessModal
            isOpen={successModalOpen}
@@ -1301,8 +1423,202 @@ export default function FoldersPage() {
              ]
            }}
          />
+         {/* Modal de mise à jour de dossier */}
+         <Dialog open={updateModalOpen} onOpenChange={setUpdateModalOpen}>
+           <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+             <DialogHeader>
+               <DialogTitle>Mettre à jour le dossier</DialogTitle>
+               <DialogDescription>
+                 Modifiez les informations du dossier et gérez ses documents. Le CB sera notifié de la modification.
+               </DialogDescription>
+             </DialogHeader>
+             <div className="grid gap-6 py-4">
+               {/* Informations du dossier */}
+               <div className="space-y-4">
+                 <h3 className="text-lg font-semibold">Informations du dossier</h3>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                     <Label htmlFor="numeroDossier">Numéro de dossier</Label>
+                     <Input
+                       id="numeroDossier"
+                       value={updateForm.numeroDossier}
+                       onChange={(e) => setUpdateForm(prev => ({ ...prev, numeroDossier: e.target.value }))}
+                       placeholder="Ex: DOS-2024-001"
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="numeroNature">Numéro nature</Label>
+                     <Input
+                       id="numeroNature"
+                       value={updateForm.numeroNature}
+                       onChange={(e) => setUpdateForm(prev => ({ ...prev, numeroNature: e.target.value }))}
+                       placeholder="Ex: NAT-001"
+                     />
+                   </div>
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="objetOperation">Objet de l'opération</Label>
+                   <Input
+                     id="objetOperation"
+                     value={updateForm.objetOperation}
+                     onChange={(e) => setUpdateForm(prev => ({ ...prev, objetOperation: e.target.value }))}
+                     placeholder="Description de l'opération"
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="beneficiaire">Bénéficiaire</Label>
+                   <Input
+                     id="beneficiaire"
+                     value={updateForm.beneficiaire}
+                     onChange={(e) => setUpdateForm(prev => ({ ...prev, beneficiaire: e.target.value }))}
+                     placeholder="Nom du bénéficiaire"
+                   />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                     <Label htmlFor="posteComptable">Poste comptable</Label>
+                     <Select
+                       value={updateForm.posteComptableId}
+                       onValueChange={(value) => setUpdateForm(prev => ({ ...prev, posteComptableId: value }))}
+                     >
+                       <SelectTrigger>
+                         <SelectValue placeholder="Sélectionner un poste" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {postesComptables.map((poste) => (
+                           <SelectItem key={poste.id} value={poste.id}>
+                             {poste.numero} - {poste.intitule}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="natureDocument">Nature du document</Label>
+                     <Select
+                       value={updateForm.natureDocumentId}
+                       onValueChange={(value) => setUpdateForm(prev => ({ ...prev, natureDocumentId: value }))}
+                     >
+                       <SelectTrigger>
+                         <SelectValue placeholder="Sélectionner une nature" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {naturesDocuments.map((nature) => (
+                           <SelectItem key={nature.id} value={nature.id}>
+                             {nature.numero} - {nature.nom}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                 </div>
+               </div>
+               {/* Gestion des documents */}
+               {submittedFolders.has(folderToUpdate?.id) && (
+                 <div className="space-y-4">
+                   <div className="flex items-center justify-between">
+                     <h3 className="text-lg font-semibold">Documents du dossier</h3>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => {
+                         setShowDocumentManager(!showDocumentManager)
+                         if (!showDocumentManager) {
+                           loadAvailableDocuments()
+                         }
+                       }}
+                     >
+                       {showDocumentManager ? 'Masquer' : 'Gérer les documents'}
+                     </Button>
+                   </div>
+                   {/* Documents actuels du dossier */}
+                   <div className="space-y-2">
+                     <Label>Documents actuels ({dossierDocuments.length})</Label>
+                     {documentsLoading ? (
+                       <div className="text-center py-4">Chargement des documents...</div>
+                     ) : documentsError ? (
+                       <div className="text-red-500 py-2">{documentsError}</div>
+                     ) : dossierDocuments.length === 0 ? (
+                       <div className="text-gray-500 py-2">Aucun document dans ce dossier</div>
+                     ) : (
+                       <div className="space-y-2 max-h-32 overflow-y-auto">
+                         {dossierDocuments.map((doc) => (
+                           <div key={doc.id} className="flex items-center justify-between p-2 border rounded">
+                             <div className="flex-1">
+                               <div className="font-medium">{doc.title}</div>
+                               <div className="text-sm text-gray-500">
+                                 {doc.file_name} • {Math.round(doc.file_size / 1024)} KB
+                               </div>
+                             </div>
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => handleRemoveDocument(doc.id)}
+                               className="text-red-600 hover:text-red-700"
+                             >
+                               <Trash2 className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                   {/* Gestionnaire de documents */}
+                   {showDocumentManager && (
+                     <div className="space-y-2">
+                       <Label>Documents disponibles à ajouter</Label>
+                       <div className="max-h-32 overflow-y-auto space-y-2">
+                         {availableDocuments.length === 0 ? (
+                           <div className="text-gray-500 py-2">Aucun document disponible</div>
+                         ) : (
+                           availableDocuments.map((doc) => (
+                             <div key={doc.id} className="flex items-center justify-between p-2 border rounded">
+                               <div className="flex-1">
+                                 <div className="font-medium">{doc.title}</div>
+                                 <div className="text-sm text-gray-500">
+                                   {doc.file_name} • {Math.round(doc.file_size / 1024)} KB
+                                 </div>
+                               </div>
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => handleAddDocument(doc.id)}
+                                 className="text-green-600 hover:text-green-700"
+                               >
+                                 <Plus className="h-4 w-4" />
+                               </Button>
+                             </div>
+                           ))
+                         )}
+                       </div>
+                     </div>
+                   )}
+                 </div>
+               )}
+             </div>
+             <DialogFooter>
+               <Button
+                 variant="outline"
+                 onClick={() => {
+                   setUpdateModalOpen(false)
+                   setShowDocumentManager(false)
+                   setDossierDocuments([])
+                   setAvailableDocuments([])
+                 }}
+                 disabled={updatingFolder === folderToUpdate?.id}
+               >
+                 Annuler
+               </Button>
+               <Button
+                 onClick={handleUpdateFolder}
+                 disabled={updatingFolder === folderToUpdate?.id}
+                 className="bg-orange-600 hover:bg-orange-700"
+               >
+                 {updatingFolder === folderToUpdate?.id ? 'Mise à jour...' : 'Mettre à jour'}
+               </Button>
+             </DialogFooter>
+           </DialogContent>
+         </Dialog>
       </CompactPageLayout>
     )
 }
-
-

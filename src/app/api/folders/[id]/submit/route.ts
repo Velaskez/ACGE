@@ -53,10 +53,10 @@ export async function POST(
       )
     }
 
-    // Vérifier si le dossier n'a pas déjà été soumis
-    const { data: existingDossier, error: dossierCheckError } = await admin
+    // Vérifier si le dossier n'a pas déjà été soumis (par numéro de dossier)
+    const { data: existingDossierByNumber, error: dossierCheckError } = await admin
       .from('dossiers')
-      .select('id, numeroDossier')
+      .select('id, numeroDossier, statut')
       .eq('numeroDossier', numeroDossier)
       .maybeSingle()
 
@@ -64,9 +64,33 @@ export async function POST(
       throw dossierCheckError
     }
 
-    if (existingDossier) {
+    if (existingDossierByNumber) {
       return NextResponse.json(
-        { error: 'Un dossier avec ce numéro a déjà été soumis' },
+        { 
+          error: 'Un dossier avec ce numéro a déjà été soumis',
+          details: `Le dossier ${existingDossierByNumber.numeroDossier} existe déjà avec le statut ${existingDossierByNumber.statut}`
+        },
+        { status: 409 }
+      )
+    }
+
+    // Vérifier si ce folderId n'a pas déjà été soumis
+    const { data: existingDossierByFolder, error: folderCheckError } = await admin
+      .from('dossiers')
+      .select('id, numeroDossier, statut, folderId')
+      .eq('folderId', folderId)
+      .maybeSingle()
+
+    if (folderCheckError && folderCheckError.code !== 'PGRST116') {
+      throw folderCheckError
+    }
+
+    if (existingDossierByFolder) {
+      return NextResponse.json(
+        { 
+          error: 'Ce dossier a déjà été soumis',
+          details: `Le dossier ${existingDossierByFolder.numeroDossier} a déjà été soumis avec le statut ${existingDossierByFolder.statut}`
+        },
         { status: 409 }
       )
     }

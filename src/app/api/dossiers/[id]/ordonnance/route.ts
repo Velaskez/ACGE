@@ -56,6 +56,54 @@ export async function PUT(
       )
     }
 
+    // 🔍 NOUVELLE VÉRIFICATION : Contrôler que toutes les vérifications ordonnateur sont validées
+    const { data: syntheseVerifications, error: syntheseError } = await admin
+      .from('syntheses_verifications_ordonnateur')
+      .select('*')
+      .eq('dossier_id', id)
+      .single()
+    
+    if (syntheseError && syntheseError.code !== 'PGRST116') {
+      console.error('❌ Erreur récupération synthèse vérifications:', syntheseError)
+      return NextResponse.json(
+        { error: 'Erreur lors de la vérification des contrôles ordonnateur' },
+        { status: 500 }
+      )
+    }
+    
+    // Vérifier que les vérifications ordonnateur ont été effectuées et sont toutes validées
+    if (!syntheseVerifications) {
+      return NextResponse.json(
+        { 
+          error: 'Les vérifications ordonnateur doivent être effectuées avant l\'ordonnancement',
+          code: 'VERIFICATIONS_ORDONNATEUR_MANQUANTES'
+        },
+        { status: 400 }
+      )
+    }
+    
+    if (syntheseVerifications.statut !== 'VALIDÉ') {
+      return NextResponse.json(
+        { 
+          error: 'Toutes les vérifications ordonnateur doivent être validées avant l\'ordonnancement',
+          code: 'VERIFICATIONS_ORDONNATEUR_NON_VALIDEES',
+          details: {
+            statut: syntheseVerifications.statut,
+            totalVerifications: syntheseVerifications.total_verifications,
+            verificationsValidees: syntheseVerifications.verifications_validees,
+            verificationsRejetees: syntheseVerifications.verifications_rejetees
+          }
+        },
+        { status: 400 }
+      )
+    }
+    
+    console.log('✅ Vérifications ordonnateur validées:', {
+      total: syntheseVerifications.total_verifications,
+      validees: syntheseVerifications.verifications_validees,
+      statut: syntheseVerifications.statut
+    })
+
     // Mettre à jour le statut du dossier
     const { data: updatedDossier, error: updateError } = await admin
       .from('dossiers')

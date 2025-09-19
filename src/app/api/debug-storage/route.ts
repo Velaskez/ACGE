@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Lister le contenu du bucket documents
+    // Lister le contenu du bucket documents (dans le sous-dossier documents/)
     const { data: files, error: listError } = await supabase.storage
       .from('documents')
-      .list('', {
+      .list('documents', {
         limit: 100,
         sortBy: { column: 'created_at', order: 'asc' }
       })
