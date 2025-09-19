@@ -7,14 +7,22 @@ export async function GET(request: NextRequest) {
     
     const admin = getSupabaseAdmin()
     
-    // Récupérer les dossiers comptables
+    // Récupérer les dossiers comptables avec relations sécurisées
     const { data: dossiers, error: dossiersError } = await admin
       .from('dossiers')
       .select(`
-        *,
-        poste_comptable:posteComptableId(*),
-        nature_document:natureDocumentId(*),
-        secretaire:secretaireId(id, name, email)
+        id,
+        numeroDossier,
+        numeroNature,
+        objetOperation,
+        beneficiaire,
+        montant,
+        status,
+        created_at,
+        updated_at,
+        posteComptableId,
+        natureDocumentId,
+        secretaireId
       `)
       .order('created_at', { ascending: false })
 

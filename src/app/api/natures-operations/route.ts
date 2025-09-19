@@ -11,16 +11,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const typeId = searchParams.get('type_id')
 
-    if (!typeId) {
-      return NextResponse.json({ error: 'type_id est requis' }, { status: 400 })
-    }
-
-    const { data: natures, error } = await supabase
+    let query = supabase
       .from('natures_operations')
       .select('*')
-      .eq('type_operation_id', typeId)
       .eq('actif', true)
       .order('nom')
+
+    // Si un type_id est fourni, filtrer par ce type
+    if (typeId) {
+      query = query.eq('type_operation_id', typeId)
+    }
+
+    const { data: natures, error } = await query
 
     if (error) {
       console.error('Erreur lors de la récupération des natures:', error)

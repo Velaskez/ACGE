@@ -19,14 +19,22 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Récupérer les dossiers comptables avec leurs relations
+    // Récupérer les dossiers comptables (simplifié pour éviter les erreurs de relations)
     const { data: dossiersComptables, error } = await admin
       .from('dossiers')
       .select(`
-        *,
-        poste_comptable:posteComptableId(*),
-        nature_document:natureDocumentId(*),
-        secretaire:secretaireId(id, name, email)
+        id,
+        numeroDossier,
+        numeroNature,
+        objetOperation,
+        beneficiaire,
+        montant,
+        status,
+        created_at,
+        updated_at,
+        posteComptableId,
+        natureDocumentId,
+        secretaireId
       `)
       .order('created_at', { ascending: false })
 

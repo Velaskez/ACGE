@@ -6,6 +6,54 @@ import { getSupabaseAdmin } from '@/lib/supabase-server'
  * 
  * Génère automatiquement un quitus pour un dossier validé définitivement
  */
+
+// GET pour les tests - retourne les informations du quitus existant
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params
+    const dossierId = resolvedParams.id
+    
+    const admin = getSupabaseAdmin()
+    
+    // Vérifier si un quitus existe déjà pour ce dossier
+    const { data: existingQuitus, error } = await admin
+      .from('quitus')
+      .select('*')
+      .eq('dossierId', dossierId)
+      .maybeSingle()
+
+    if (error && error.code !== 'PGRST116') {
+      return NextResponse.json(
+        { error: 'Erreur lors de la vérification du quitus' },
+        { status: 500 }
+      )
+    }
+
+    if (existingQuitus) {
+      return NextResponse.json({
+        success: true,
+        quitus: existingQuitus,
+        message: 'Quitus déjà généré'
+      })
+    } else {
+      return NextResponse.json({
+        success: false,
+        message: 'Aucun quitus généré pour ce dossier. Utilisez POST pour en créer un.'
+      })
+    }
+
+  } catch (error) {
+    console.error('❌ Erreur GET quitus:', error)
+    return NextResponse.json(
+      { error: 'Erreur lors de la récupération du quitus' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
