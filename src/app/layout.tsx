@@ -4,6 +4,8 @@ import "../styles/print-a4.css";
 import { ClientProviders } from "@/components/providers/client-providers";
 import { LoadingProvider } from "@/components/providers/loading-provider";
 import { ThemeProvider } from "next-themes";
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from '@vercel/analytics/react';
 
 export const metadata: Metadata = {
   title: "ACGE - Agence Comptable des Grandes Écoles",
@@ -65,6 +67,8 @@ export default function RootLayout({
               {children}
             </ClientProviders>
           </LoadingProvider>
+          <SpeedInsights />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
